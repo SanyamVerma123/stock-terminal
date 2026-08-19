@@ -48,3 +48,7 @@
 - [x] Repair selected-industry detail panels so they do not show mismatched top companies or empty results while the sector screen shows another classification.
 - [x] Make predefined day gainers, day losers, and most active cards render their own prompt fallback/refresh state rather than waiting behind unrelated dashboard calls.
 - [x] Revalidate the upgraded sector and movers dashboard behavior on desktop and mobile, then save the correction checkpoint.
+- [x] Trace and repair the quote-backed price and market-weight path used by sector company cards and screener fallback rows.
+- [x] Hide unavailable market-cap and market-weight metrics from representative coverage instead of rendering dash-filled summary cards.
+- [x] Restore the useful lower sector dashboard panels with selected-sector-scoped company, industry, and ETF content.
+- [x] Validate every main dashboard screener/sector state on desktop and mobile, then save the focused dashboard correction checkpoint.

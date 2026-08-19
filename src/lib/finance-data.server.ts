@@ -1061,7 +1061,24 @@ async function fallbackSectorOverview(sectorKey: string, region: string): Promis
   const profiles = profilesForRegion(region).filter((profile) =>
     taxonomyMatches(profile.sector, sectorKey, "sector"),
   );
-  const quotes = await resolveWithin(fetchQuotes(profiles.map((profile) => profile.symbol)), []);
+  const symbols = profiles.map((profile) => profile.symbol);
+  let quotes = await resolveWithin(fetchQuotes(symbols), [], 6_500);
+  if (quotes.length === 0 && symbols.length > 0) {
+    const snapshots = await Promise.allSettled(
+      symbols.map((symbol) =>
+        resolveWithin(
+          callMcpTool("get_price_snapshot", { ticker: symbol }).catch(() => null),
+          null,
+          1_800,
+        ),
+      ),
+    );
+    quotes = snapshots.flatMap((result, index) => {
+      if (result.status !== "fulfilled" || !result.value) return [];
+      const snapshot = pick(result.value, "snapshot");
+      return isRecord(snapshot) ? [buildQuote(symbols[index]!, snapshot, null)] : [];
+    });
+  }
   const quoteBySymbol = new Map(quotes.map((quote) => [safeSymbol(quote.symbol), quote]));
   const covered = profiles.map((profile) => ({ profile, quote: quoteBySymbol.get(safeSymbol(profile.symbol)) }));
   const marketCap = covered.reduce((sum, row) => sum + (row.quote?.marketCap ?? 0), 0);
@@ -1122,7 +1139,7 @@ export async function fetchSectorOverview(sectorKey: string, region = "US") {
   const raw = await resolveWithin(callMcpTool("get_sector_overview", {
     sector_key: providerTaxonomyLabel(canonicalSector, "sector"),
     region,
-  }).catch(() => null), null, 300);
+  }).catch(() => null), null, 750);
   const o = isRecord(pick(raw, "overview"))
     ? (pick(raw, "overview") as Record<string, unknown>)
     : {};

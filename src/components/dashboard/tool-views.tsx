@@ -7,6 +7,7 @@ import {
   getEstimates,
   getMarketCalendar,
   getMarketStatus,
+  getQuotes,
   getMarketSummary,
   getOptionChain,
   getOptionExpirations,
@@ -34,7 +35,7 @@ import { profilesForRegion } from "@/lib/sector-universe";
 import { cn } from "@/lib/utils";
 import { IndustryHeatmap } from "@/components/dashboard/industry-heatmap/IndustryHeatmap";
 import { DataLoading } from "@/components/ui/loading-state";
-import type { ScreenerRow } from "@/lib/finance-types";
+import type { Quote, ScreenerRow } from "@/lib/finance-types";
 
 const field =
   "h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary/60";
@@ -618,6 +619,7 @@ export function TableBarChart({
 export function SectorsView() {
   const overviewFn = useServerFn(getSectorOverview);
   const industryFn = useServerFn(getIndustryOverview);
+  const quotesFn = useServerFn(getQuotes);
   const cfg = useMarketConfig();
   const [sector, setSector] = useState("technology");
   const [industry, setIndustry] = useState<string | null>(null);
@@ -628,6 +630,8 @@ export function SectorsView() {
     staleTime: 300_000,
     placeholderData: (previousData) => previousData,
     refetchOnWindowFocus: false,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
   });
   const { data: ind, isLoading: isIndustryLoading } = useQuery({
     queryKey: ["industry", industry, cfg.id],
@@ -635,6 +639,45 @@ export function SectorsView() {
     enabled: Boolean(industry),
     staleTime: 300_000,
   });
+  const sectorSymbolColumn = data?.topCompanies.columns.find((column) => /symbol|ticker|code/i.test(column)) ?? "Symbol";
+  const sectorSymbols = data?.topCompanies.rows
+    .map((row) => row[sectorSymbolColumn])
+    .filter((symbol): symbol is string => Boolean(symbol)) ?? [];
+  const { data: sectorQuotes, isLoading: isSectorQuotesLoading } = useQuery({
+    queryKey: ["sector-live-quotes", cfg.id, sectorSymbols.join(",")],
+    queryFn: () => quotesFn({ data: { symbols: sectorSymbols.join(",") } }),
+    enabled: Boolean(data?.source === "tracked" && sectorSymbols.length > 0),
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+  });
+  const quoteBySymbol = new Map((sectorQuotes ?? []).map((quote) => [quote.symbol, quote]));
+  const totalTrackedMarketCap = (sectorQuotes ?? []).reduce(
+    (total, quote) => total + (quote.marketCap ?? 0),
+    0,
+  );
+  const liveMarketCap = data?.marketCap ?? (totalTrackedMarketCap > 0 ? totalTrackedMarketCap : null);
+  const liveCompanyTable = data ? {
+    columns: [...new Set([...data.topCompanies.columns, "Price", "Market Cap", "Market Weight"])],
+    rows: data.topCompanies.rows.map((row) => {
+      const quote: Quote | undefined = quoteBySymbol.get(row[sectorSymbolColumn] ?? "");
+      const weight = quote?.marketCap && totalTrackedMarketCap > 0
+        ? (quote.marketCap / totalTrackedMarketCap) * 100
+        : null;
+      return {
+        ...row,
+        Price: quote?.price === null || quote?.price === undefined
+          ? isSectorQuotesLoading ? "Syncing live quote" : "Live quote unavailable"
+          : fmtPrice(quote.price, quote.currency),
+        "Market Cap": quote?.marketCap === null || quote?.marketCap === undefined
+          ? isSectorQuotesLoading ? "Syncing live quote" : "Live quote unavailable"
+          : fmtCompact(quote.marketCap),
+        "Market Weight": weight === null
+          ? isSectorQuotesLoading ? "Syncing live quote" : "Live quote unavailable"
+          : `${weight.toFixed(2)}%`,
+      };
+    }),
+  } : undefined;
   const matchingProfiles = profilesForRegion(cfg.id).filter(
     (profile) => canonicalSectorKey(profile.sector) === sector,
   );
@@ -673,18 +716,14 @@ export function SectorsView() {
         ))}
       </div>
 
-      {isLoading && !data ? <DataLoading compact label="Loading sector coverage" detail="Resolving live industry composition and companies." /> : null}
-
-      {data && (
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+      {data ? (
+        <>
+        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {[
-            ["Market cap", fmtCompact(data.marketCap)],
+            ...(liveMarketCap !== null ? [["Market cap", fmtCompact(liveMarketCap)]] : []),
             [data.source === "tracked" ? "Tracked companies" : "Companies", data.companiesCount?.toLocaleString() ?? "—"],
             ["Industries", data.industriesCount?.toLocaleString() ?? "—"],
-            [
-              "Market weight",
-              data.marketWeight === null ? "—" : `${(data.marketWeight * 100).toFixed(1)}%`,
-            ],
+            ...(data.marketWeight !== null ? [["Market weight", `${(data.marketWeight * 100).toFixed(1)}%`]] : []),
           ].map(([label, value]) => (
             <div key={label} className="rounded-2xl border border-border bg-card p-4">
               <p className="text-xs uppercase tracking-wider text-muted-foreground">{label}</p>
@@ -692,15 +731,14 @@ export function SectorsView() {
             </div>
           ))}
         </div>
-      )}
 
-      {data?.description && (
+      {data.description && (
         <p className="rounded-2xl border border-border bg-card p-5 text-sm leading-relaxed text-muted-foreground">
           {data.description}
         </p>
       )}
 
-      <Panel title="Industry performance" subtitle="Relative performance inside the sector">
+      <Panel title="Industry coverage mix" subtitle={data.mixBasis === "market-cap" ? "Share of the selected sector’s available market capitalization." : "Representative company coverage inside the selected sector."}>
         <TableBarChart table={industryTable} />
       </Panel>
       <Panel
@@ -734,8 +772,22 @@ export function SectorsView() {
       )}
 
       <Panel title={`${sectorLabel(sector)} — listed company coverage`} subtitle="All companies matched to the selected sector.">
-        {isLoading && !data ? <DataLoading compact label="Loading listed company coverage" detail="Resolving the selected sector’s company set." /> : <DataTable table={data?.topCompanies} empty="No matching company coverage returned for this sector." />}
+        <DataTable table={liveCompanyTable} empty="No matching company coverage returned for this sector." />
       </Panel>
+      {data?.industries.rows.length ? (
+        <Panel title={`${sectorLabel(sector)} — industry directory`} subtitle="Industry coverage and its share of the selected sector only.">
+          <DataTable table={data.industries} />
+        </Panel>
+      ) : null}
+      {data?.topEtfs.rows.length ? (
+        <Panel title={`${sectorLabel(sector)} — related ETFs`} subtitle="Provider-reported ETFs associated with the selected sector.">
+          <DataTable table={data.topEtfs} />
+        </Panel>
+      ) : null}
+        </>
+      ) : (
+        <DataLoading label="Loading sector coverage" detail="Resolving live prices, market capitalization, industry composition, and listed companies for the selected sector." />
+      )}
     </div>
   );
 }
