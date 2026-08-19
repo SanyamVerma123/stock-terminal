@@ -31,3 +31,17 @@
 - [x] Document the concrete structural differences between the original repository layout and the current route compositions.
 - [x] Rebuild the managed home, stock, compare, and chat page shells to match the original repository’s layout hierarchy and navigation model.
 - [x] Revalidate desktop and mobile routes against the source layout, then save the repository-alignment checkpoint.
+- [x] Audit the complete connected repository for direct source-code migration, including routes, shared components, utilities, styles, and server modules.
+- [x] Produce a file-level migration map that identifies direct-copy candidates and required managed-framework adapters.
+- [x] Replace adapted managed implementations with direct ports of the repository’s source logic and component behavior wherever compatible.
+- [x] Adapt only framework-dependent source integrations to the managed server and service contracts without changing user-facing behavior.
+- [x] Validate the direct GitHub-source port on desktop and mobile, then save the repository-source checkpoint.
+- [x] Port source `app-state` watchlist, alert, market-selection, theme, and research-prefill persistence into a managed client context.
+- [x] Replace terminal placeholder notices with source-aligned dashboard tool, news, watchlist, alert, and settings views.
+- [x] Align source chat prefill, saved conversation, and transport behavior with the managed streaming endpoint.
+- [x] Replace generic dashboard fallback tables with source-specific movers, sector, global market, ETF, and screener views.
+- [x] Port source market and asset-class selection state into the managed workspace controls and scoped watchlists.
+- [ ] Inspect `insightful-search-main.zip` and document its project structure, framework, dependencies, and managed-runtime compatibility requirements.
+- [ ] Save a recoverable checkpoint of the current project before replacing its source with the uploaded archive.
+- [ ] Replace the current project source with the uploaded Insightful Search code and retain only necessary managed-runtime configuration.
+- [ ] Install uploaded-project dependencies, validate its application routes and production build, and save the uploaded-code checkpoint.

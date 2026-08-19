@@ -28,6 +28,7 @@ export const appRouter = router({
     corporateActions: publicProcedure.input(z.object({ symbol: z.string() })).query(({ input }) => finance.getCorporateActions(input.symbol)),
     marketStrip: publicProcedure.query(() => finance.getMarketStrip()),
     quotes: publicProcedure.input(z.object({ symbols: z.array(z.string()).min(1).max(12) })).query(({ input }) => finance.getQuotes(input.symbols)),
+    compare: publicProcedure.input(z.object({ symbols: z.string().min(1).max(120), range: z.enum(["1D", "5D", "1M", "6M", "1Y", "5Y"]).default("1Y") })).query(({ input }) => finance.getCompare(input.symbols, input.range)),
   }),
   chat: router({
     respond: publicProcedure.input(chatRequestSchema).mutation(({ input }) => respondToChat(input)),

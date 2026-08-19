@@ -253,3 +253,8 @@ export async function getQuotes(symbols: string[]) {
   const unique = Array.from(new Set(symbols.map(normalizeSymbol))).slice(0, 12);
   return Promise.all(unique.map(symbol => getSummary(symbol).then(item => item.quote).catch(() => null))).then(items => items.filter(Boolean));
 }
+
+export async function getCompare(inputSymbols: string, range = "1Y") {
+  const symbols = Array.from(new Set(inputSymbols.split(",").map(value => value.trim()).filter(Boolean).map(normalizeSymbol))).slice(0, 5);
+  return Promise.all(symbols.map(async symbol => ({ symbol, points: await getHistory(symbol, range) })));
+}
