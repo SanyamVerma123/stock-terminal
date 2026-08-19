@@ -429,12 +429,17 @@ export async function fetchCompare(
     .map((s) => s.trim())
     .filter(Boolean)
     .slice(0, 20);
-  const raw = await callMcpTool("batch_price_history", {
-    tickers,
-    period,
-    interval,
-    max_rows: 400,
-  });
+  const raw = await resolveWithin(
+    callMcpTool("batch_price_history", {
+      tickers,
+      period,
+      interval,
+      max_rows: 400,
+    }).catch(() => null),
+    null,
+    4_500,
+  );
+  if (!raw) return [];
   const results = pick(raw, "results");
   if (!isRecord(results)) return [];
   return tickers
@@ -741,21 +746,36 @@ function immediateRegionRows(region: string, size: number): ScreenerRow[] {
 }
 
 export async function fetchScreenEquities(input: EquityScreenInput): Promise<ScreenerRow[]> {
-  const raw = await callMcpTool("screen_equities", screenerRequest(input, true));
+  const regionalFallback = () =>
+    filterScreenerRows(immediateRegionRows(input.region ?? "us", input.size ?? 25), input);
+  const raw = await resolveWithin(
+    callMcpTool("screen_equities", screenerRequest(input, true)).catch(() => null),
+    null,
+    1_200,
+  );
+  if (!raw) return regionalFallback();
   let all = await enrichScreenerRows(toScreenerRows(pick(raw, "quotes") ?? pick(raw, "data")));
   let filtered = filterScreenerRows(all, input);
-  if (filtered.length > 0 || (!input.sector && !input.industry)) return filtered;
+  if (filtered.length > 0) return filtered;
 
-  const broadRaw = await callMcpTool("screen_equities", screenerRequest(input, false));
+  const representative = regionalFallback();
+  if (representative.length > 0) return representative;
+
+  const broadRaw = await resolveWithin(
+    callMcpTool("screen_equities", screenerRequest(input, false)).catch(() => null),
+    null,
+    1_200,
+  );
+  if (!broadRaw) return representative;
   all = await enrichScreenerRows(
     toScreenerRows(pick(broadRaw, "quotes") ?? pick(broadRaw, "data")),
   );
   filtered = filterScreenerRows(all, input);
   if (filtered.length > 0) return filtered;
   if (input.sector || input.industry) {
-    return filterScreenerRows(await fallbackSectorRows(input), input);
+    return representative;
   }
-  return filtered;
+  return regionalFallback();
 }
 
 export type TickerMeta = {

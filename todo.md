@@ -38,3 +38,8 @@
 - [x] Replace the numeric industry-mix center treatment with a 21st.dev-inspired labeled pie-chart presentation.
 - [x] Improve the stock close-price chart with per-date closing-value tooltips and clearer date/value context.
 - [x] Validate the refined activity and chart interactions on desktop and mobile, then save the update checkpoint.
+- [x] Trace and repair Pro Screener sector and industry filters so valid selected classifications return matching local or provider data.
+- [x] Align dashboard sector and industry coverage with selected market taxonomy and representative stocks instead of unrelated classifications.
+- [x] Preserve an active AI research session and response state when navigating between stock detail and the AI Analyst workspace.
+- [x] Upgrade the comparison chart into a clearer, richer multi-stock visual treatment.
+- [x] Inspect the supplied yfinance reference contract, validate the repaired flows on desktop and mobile, and save the correction checkpoint.

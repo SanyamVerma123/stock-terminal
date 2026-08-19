@@ -1,12 +1,15 @@
 import { describe, expect, it } from "vitest";
 import {
   canonicalIndustryKey,
+  canonicalSectorKey,
   providerTaxonomyLabel,
   taxonomyMatches,
 } from "./sector-normalize";
 
 describe("sector taxonomy normalization", () => {
   it("collapses the UI and provider aliases into one canonical industry key", () => {
+    expect(canonicalSectorKey("Healthcare")).toBe("healthcare");
+    expect(canonicalSectorKey("Financial Services")).toBe("financial-services");
     expect(canonicalIndustryKey("Internet Content & Information")).toBe("internet-content");
     expect(canonicalIndustryKey("Auto Manufacturers")).toBe("automobiles");
     expect(canonicalIndustryKey("Banks - Diversified")).toBe("banks");
@@ -26,5 +29,7 @@ describe("sector taxonomy normalization", () => {
     expect(taxonomyMatches("internet-content", "internet-content-information", "industry")).toBe(true);
     expect(taxonomyMatches("banks", "banks-regional", "industry")).toBe(true);
     expect(taxonomyMatches("automobiles", "auto-manufacturers", "industry")).toBe(true);
+    expect(taxonomyMatches("pharmaceuticals", "drug-manufacturers-general", "industry")).toBe(true);
+    expect(taxonomyMatches("pharmaceuticals", "drug-manufacturers-specialty-generic", "industry")).toBe(true);
   });
 });

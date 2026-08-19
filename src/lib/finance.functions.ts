@@ -125,6 +125,7 @@ export const runEquityScreener = createServerFn({ method: "POST" })
       exchange?: string;
       nameContains?: string;
       sector?: string;
+      industry?: string;
       size?: number;
       sortField?: string;
       sortAscending?: boolean;

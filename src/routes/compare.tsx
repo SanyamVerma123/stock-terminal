@@ -2,7 +2,7 @@ import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
+import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend, ReferenceLine } from "recharts";
 import { SiteHeader } from "@/components/finance/SiteHeader";
 import { getCompare } from "@/lib/finance.functions";
 import { DataLoading } from "@/components/ui/loading-state";
@@ -21,16 +21,26 @@ export const Route = createFileRoute("/compare")({
 });
 
 const COLORS = ["var(--primary)", "var(--positive)", "var(--negative)", "var(--chart-4)", "var(--chart-5)"];
+const WINDOWS = [
+  { id: "1mo", label: "1M", period: "1mo", interval: "1d" },
+  { id: "3mo", label: "3M", period: "3mo", interval: "1d" },
+  { id: "6mo", label: "6M", period: "6mo", interval: "1d" },
+  { id: "1y", label: "1Y", period: "1y", interval: "1d" },
+  { id: "5y", label: "5Y", period: "5y", interval: "1wk" },
+] as const;
 
 function ComparePage() {
   const [input, setInput] = useState("RELIANCE.NS, TCS.NS, INFY.NS");
   const [symbols, setSymbols] = useState("RELIANCE.NS,TCS.NS,INFY.NS");
+  const [windowId, setWindowId] = useState<(typeof WINDOWS)[number]["id"]>("1y");
   const compare = useServerFn(getCompare);
+  const activeWindow = WINDOWS.find((window) => window.id === windowId) ?? WINDOWS[3];
 
   const { data, isFetching } = useQuery({
-    queryKey: ["compare", symbols],
-    queryFn: () => compare({ data: { symbols, period: "1y", interval: "1d" } }),
+    queryKey: ["compare", symbols, activeWindow.id],
+    queryFn: () => compare({ data: { symbols, period: activeWindow.period, interval: activeWindow.interval } }),
     staleTime: 120_000,
+    retry: false,
   });
 
   const series = data ?? [];
@@ -40,7 +50,7 @@ function ComparePage() {
     if (!base) continue;
     for (const p of s.points) {
       const row = merged.get(p.t) ?? { t: p.t };
-      row[s.symbol] = ((p.c / base - 1) * 100).toFixed(2) as unknown as number;
+      row[s.symbol] = Number(((p.c / base - 1) * 100).toFixed(2));
       merged.set(p.t, row);
     }
   }
@@ -59,7 +69,7 @@ function ComparePage() {
     <div className="min-h-screen bg-background">
       <SiteHeader />
       <main className="compare-workspace mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        <div className="compare-hero"><div><p className="eyebrow">Relative return explorer</p><h1>Compare performance</h1><p>Rebased to 0% at the start of the trailing year.</p></div><span className="compare-window">1Y window</span></div>
+        <div className="compare-hero"><div><p className="eyebrow">Relative return explorer</p><h1>Compare performance</h1><p>Rebased to 0% at the start of the selected period, making relative movement comparable across prices.</p></div><span className="compare-window">{activeWindow.label} window</span></div>
 
         <form
           onSubmit={(e) => {
@@ -86,8 +96,14 @@ function ComparePage() {
         </form>
 
         {symbols.split(",").filter(Boolean).length > 0 && <div className="compare-chips">{symbols.split(",").filter(Boolean).map((symbol) => <button key={symbol} onClick={() => removeSymbol(symbol)}><span className="compare-chip-dot" style={{ background: COLORS[Math.max(0, symbols.split(",").indexOf(symbol)) % COLORS.length] }}/>{symbol}<X size={13}/></button>)}</div>}
-        {snapshots.length > 0 && <div className="compare-snapshot-grid">{snapshots.map((item, index) => <article key={item.symbol} className="compare-snapshot"><span className="compare-chip-dot" style={{ background: COLORS[index % COLORS.length] }}/><div><p>{item.symbol}</p><b className={(item.change ?? 0) >= 0 ? "text-positive" : "text-negative"}>{item.change === null ? "—" : `${item.change >= 0 ? "+" : ""}${item.change.toFixed(2)}%`}</b></div><small>relative return</small></article>)}</div>}
+        {snapshots.length > 0 && <div className="compare-snapshot-grid">{snapshots.map((item, index) => <article key={item.symbol} className="compare-snapshot"><span className="compare-chip-dot" style={{ background: COLORS[index % COLORS.length] }}/><div><p>{item.symbol}</p><b className={(item.change ?? 0) >= 0 ? "text-positive" : "text-negative"}>{item.change === null ? "—" : `${item.change >= 0 ? "+" : ""}${item.change.toFixed(2)}%`}</b></div><small>{activeWindow.label} relative return</small></article>)}</div>}
         <div className="compare-chart-panel mt-6 rounded-2xl border border-border bg-card p-4" style={{ height: 440 }}>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 px-1">
+            <div><p className="text-sm font-semibold text-foreground">Rebased relative return</p><p className="text-xs text-muted-foreground">Hover any point for the exact date and return by stock.</p></div>
+            <div className="flex rounded-xl border border-border bg-muted/20 p-1" role="group" aria-label="Comparison time window">
+              {WINDOWS.map((window) => <button key={window.id} type="button" onClick={() => setWindowId(window.id)} className={`rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors ${window.id === activeWindow.id ? "bg-card text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"}`}>{window.label}</button>)}
+            </div>
+          </div>
           {rows.length ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
@@ -110,14 +126,8 @@ function ComparePage() {
                   tick={{ fill: "var(--muted-foreground)", fontSize: 11 }}
                   tickFormatter={(v: number) => `${v}%`}
                 />
-                <Tooltip
-                  contentStyle={{
-                    background: "var(--popover)",
-                    border: "1px solid var(--border)",
-                    borderRadius: 14,
-                    fontSize: 12,
-                  }}
-                />
+                <ReferenceLine y={0} stroke="var(--muted-foreground)" strokeDasharray="4 5" strokeOpacity={0.6} />
+                <Tooltip content={({ active, label, payload }) => active && payload?.length ? <div className="rounded-xl border border-border bg-popover px-3 py-2 text-xs shadow-lg"><p className="mb-1.5 font-medium text-foreground">{new Date(String(label).replace(" ", "T")).toLocaleDateString(undefined, { day: "numeric", month: "short", year: "numeric" })}</p><div className="space-y-1">{payload.filter((entry) => typeof entry.value === "number").map((entry) => <div key={entry.name} className="flex items-center justify-between gap-5"><span style={{ color: entry.color }} className="font-medium">{entry.name}</span><b className={Number(entry.value) >= 0 ? "text-positive" : "text-negative"}>{Number(entry.value) >= 0 ? "+" : ""}{Number(entry.value).toFixed(2)}%</b></div>)}</div></div> : null} />
                 <Legend wrapperStyle={{ fontSize: 12 }} />
                 {series.map((s, i) => (
                   <Line
@@ -135,7 +145,7 @@ function ComparePage() {
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            isFetching ? <DataLoading label="Building comparison view" detail="Rebasing the latest price histories." /> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No data for these tickers.</div>
+            isFetching ? <DataLoading label="Building comparison view" detail="Rebasing the latest price histories." /> : <div className="flex h-full flex-col items-center justify-center gap-2 text-center"><p className="text-sm font-medium text-foreground">No comparison history is available right now.</p><p className="max-w-sm text-xs leading-5 text-muted-foreground">The market-data service did not return a complete price series for these tickers. Try a shorter window, another exchange-qualified symbol, or retry once the provider refreshes.</p></div>
           )}
         </div>
       </main>

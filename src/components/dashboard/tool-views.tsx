@@ -29,6 +29,8 @@ import { TickerAutocomplete } from "@/components/finance/TickerAutocomplete";
 import { fmtCompact, fmtPrice, timeAgo } from "@/lib/format";
 import { useAppState, useMarketConfig, EMPTY_FILTERS, type ScreenerFilters } from "@/lib/app-state";
 import { SECTOR_INDUSTRIES, SECTOR_KEYS, sectorLabel } from "@/lib/markets";
+import { canonicalSectorKey } from "@/lib/sector-normalize";
+import { profilesForRegion } from "@/lib/sector-universe";
 import { cn } from "@/lib/utils";
 import { IndustryHeatmap } from "@/components/dashboard/industry-heatmap/IndustryHeatmap";
 import { DataLoading } from "@/components/ui/loading-state";
@@ -194,7 +196,8 @@ function toParams(f: ScreenerFilters): ScreenParams {
   const str = (k: string, v: string) => {
     if (v.trim() !== "") out[k] = v.trim();
   };
-  str("sector", f.sector);
+  str("sector", canonicalSectorKey(f.sector));
+  str("industry", f.industry ?? "");
   str("exchange", f.exchange);
   str("nameContains", f.nameContains);
   num("minMarketCap", f.minMarketCap);
@@ -257,7 +260,10 @@ export function ProScreenerView() {
     staleTime: 120_000,
   });
 
-  const sectorOptions = sectors && sectors.length > 0 ? sectors : [...SECTOR_KEYS];
+  const sectorOptions = Array.from(
+    new Set((sectors && sectors.length > 0 ? sectors : [...SECTOR_KEYS]).map(canonicalSectorKey)),
+  ).filter(Boolean);
+  const industryOptions = f.sector ? (SECTOR_INDUSTRIES[f.sector] ?? []) : [];
 
   return (
     <div className="space-y-4">
@@ -281,13 +287,31 @@ export function ProScreenerView() {
             Sector
             <select
               value={f.sector}
-              onChange={(e) => set("sector", e.target.value)}
+              onChange={(e) =>
+                setF((previous) => ({ ...previous, sector: e.target.value, industry: "" }))
+              }
               className={cn(field, "mt-1 block w-48")}
             >
               <option value="">Any sector</option>
               {sectorOptions.map((s) => (
                 <option key={s} value={s}>
                   {sectorLabel(s)}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="text-xs text-muted-foreground">
+            Industry
+            <select
+              value={f.industry ?? ""}
+              onChange={(e) => set("industry", e.target.value)}
+              disabled={!f.sector}
+              className={cn(field, "mt-1 block w-56 disabled:cursor-not-allowed disabled:opacity-55")}
+            >
+              <option value="">{f.sector ? "Any industry" : "Choose a sector first"}</option>
+              {industryOptions.map((industry) => (
+                <option key={industry} value={industry}>
+                  {sectorLabel(industry)}
                 </option>
               ))}
             </select>
@@ -613,9 +637,16 @@ export function SectorsView() {
     enabled: Boolean(industry),
     staleTime: 300_000,
   });
-  const representativeIndustries: Record<string, string>[] = (SECTOR_INDUSTRIES[sector] ?? []).map((industry) => ({
-    Industry: industry,
-    "Tracked Share": `${(100 / Math.max(SECTOR_INDUSTRIES[sector]?.length ?? 1, 1)).toFixed(2)}%`,
+  const matchingProfiles = profilesForRegion(cfg.id).filter(
+    (profile) => canonicalSectorKey(profile.sector) === sector,
+  );
+  const industryCounts = matchingProfiles.reduce<Map<string, number>>((counts, profile) => {
+    counts.set(profile.industry, (counts.get(profile.industry) ?? 0) + 1);
+    return counts;
+  }, new Map());
+  const representativeIndustries: Record<string, string>[] = Array.from(industryCounts, ([industryName, count]) => ({
+    Industry: industryName,
+    "Tracked Share": `${((count / Math.max(matchingProfiles.length, 1)) * 100).toFixed(2)}%`,
   }));
   const industryTable: { columns: string[]; rows: Record<string, string>[] } = data?.industries.rows.length
     ? data.industries
