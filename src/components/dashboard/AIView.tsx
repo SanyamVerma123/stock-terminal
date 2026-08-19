@@ -792,13 +792,13 @@ export function AIView({ visible = true }: { visible?: boolean }) {
                                   const working =
                                     sessionStatus === "submitted" || sessionStatus === "streaming";
                                   return working ? (
-                                    <span
-                                      className="flex shrink-0 items-center gap-0.5"
-                                      aria-label="Research in progress"
-                                    >
-                                      <span className="tool-dot h-1.5 w-1.5 rounded-full bg-primary" />
-                                      <span className="tool-dot tool-dot-delay-1 h-1.5 w-1.5 rounded-full bg-primary" />
-                                      <span className="tool-dot tool-dot-delay-2 h-1.5 w-1.5 rounded-full bg-primary" />
+                                    <span className="chat-history-working" aria-label="AI research in progress">
+                                      <span className="chat-history-working-dots" aria-hidden="true">
+                                        <i />
+                                        <i />
+                                        <i />
+                                      </span>
+                                      <span className="chat-history-working-label">Working</span>
                                     </span>
                                   ) : null;
                                 })()}

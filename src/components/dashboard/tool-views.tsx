@@ -520,8 +520,8 @@ function IndustryMixPieChart({ table }: { table?: { columns: string[]; rows: Rec
   const total = raw.reduce((sum, row) => sum + row.value, 0);
   if (total <= 0) return <p className="p-5 text-sm text-muted-foreground">No numeric industry mix is available yet.</p>;
   const data = raw.map((row) => ({ ...row, percentage: (row.value / total) * 100 }));
-  const colors = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-5)", "var(--chart-4)", "var(--primary)", "var(--positive)"];
-  return <div className="industry-mix-layout"><div className="industry-mix-chart"><ResponsiveContainer width="100%" height="100%"><PieChart><Tooltip formatter={(_, __, item) => [`${Number(item.payload.percentage).toFixed(1)}%`, item.payload.name]} contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }} /><Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={54} outerRadius={86} paddingAngle={3} cornerRadius={8} stroke="none">{data.map((entry, index) => <Cell key={entry.name} fill={colors[index % colors.length]} />)}</Pie></PieChart></ResponsiveContainer><span className="industry-mix-center"><b>{data.length}</b><small>industries</small></span></div><div className="industry-mix-legend">{data.map((entry, index) => <div key={entry.name}><span style={{ background: colors[index % colors.length] }} /><b title={entry.name}>{entry.name}</b><small>{entry.percentage.toFixed(1)}%</small></div>)}</div></div>;
+  const colors = ["#168A5B", "#259B74", "#4BB184", "#77C796", "#3A7D6A", "#C88C3D", "#6588B5"];
+  return <div className="industry-mix-layout"><div className="industry-mix-chart" aria-label="Industry market mix pie chart"><ResponsiveContainer width="100%" height="100%"><PieChart><Tooltip formatter={(_, __, item) => [`${Number(item.payload.percentage).toFixed(1)}%`, item.payload.name]} contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }} /><Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={16} outerRadius={96} paddingAngle={3} cornerRadius={8} stroke="none" startAngle={90} endAngle={-270}>{data.map((entry, index) => <Cell key={entry.name} fill={colors[index % colors.length]} />)}</Pie></PieChart></ResponsiveContainer></div><div className="industry-mix-legend">{data.map((entry, index) => <div key={entry.name}><span style={{ background: colors[index % colors.length] }} /><b title={entry.name}>{entry.name}</b><small>{entry.percentage.toFixed(1)}%</small></div>)}</div></div>;
 }
 
 /** Horizontal bar chart from a generic table column. */
@@ -613,8 +613,15 @@ export function SectorsView() {
     enabled: Boolean(industry),
     staleTime: 300_000,
   });
-  const providedIndustries = data?.industries.columns[0]
-    ? data.industries.rows.map((row) => row[data.industries.columns[0]!]).filter((value): value is string => Boolean(value && value !== "—"))
+  const representativeIndustries: Record<string, string>[] = (SECTOR_INDUSTRIES[sector] ?? []).map((industry) => ({
+    Industry: industry,
+    "Tracked Share": `${(100 / Math.max(SECTOR_INDUSTRIES[sector]?.length ?? 1, 1)).toFixed(2)}%`,
+  }));
+  const industryTable: { columns: string[]; rows: Record<string, string>[] } = data?.industries.rows.length
+    ? data.industries
+    : { columns: ["Industry", "Tracked Share"], rows: representativeIndustries };
+  const providedIndustries = industryTable.columns[0]
+    ? industryTable.rows.map((row) => row[industryTable.columns[0]!]).filter((value): value is string => Boolean(value && value !== "—"))
     : [];
   const industryOptions = providedIndustries.length > 0 ? [...new Set(providedIndustries)] : (SECTOR_INDUSTRIES[sector] ?? []);
 
@@ -663,13 +670,13 @@ export function SectorsView() {
       )}
 
       <Panel title="Industry performance" subtitle="Relative performance inside the sector">
-        <TableBarChart table={data?.industries} />
+        <TableBarChart table={industryTable} />
       </Panel>
       <Panel
         title="Industry market mix"
-        subtitle={data?.source === "tracked" ? data.mixBasis === "market-cap" ? "Share of tracked market capitalization, labeled by industry." : "Share of representative company coverage when live provider metrics are unavailable." : "Provider-reported industry mix, labeled by industry."}
+        subtitle={data?.industries.rows.length ? data.source === "tracked" ? data.mixBasis === "market-cap" ? "Share of tracked market capitalization, labeled by industry." : "Share of representative company coverage when live provider metrics are unavailable." : "Provider-reported industry mix, labeled by industry." : "Representative industry coverage is shown immediately while live sector composition loads."}
       >
-        <IndustryMixPieChart table={data?.industries} />
+        <IndustryMixPieChart table={industryTable} />
       </Panel>
 
       <div className="no-scrollbar flex gap-2 overflow-x-auto">

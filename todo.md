@@ -34,3 +34,7 @@
 - [x] Record the user-approved waiver of an external provider-response test after configuring the no-cost model and configured-provider model catalogs; no live response is claimed as verified.
 - [x] Configure the AI Analyst default and fallback selection for a compatible no-cost model; live provider verification was deferred at the user’s instruction.
 - [x] Add Kilo AI to the settings-driven provider flow and show only models from providers with configured API keys.
+- [x] Strengthen the active chat-history indicator and in-message AI working animation so research activity is always visibly communicated.
+- [x] Replace the numeric industry-mix center treatment with a 21st.dev-inspired labeled pie-chart presentation.
+- [x] Improve the stock close-price chart with per-date closing-value tooltips and clearer date/value context.
+- [x] Validate the refined activity and chart interactions on desktop and mobile, then save the update checkpoint.
