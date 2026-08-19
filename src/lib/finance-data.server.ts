@@ -548,13 +548,43 @@ export async function fetchPredefinedScreeners(): Promise<string[]> {
   return Array.isArray(list) ? list.map(String) : [];
 }
 
+async function fastMoverFallback(name: string, region: string, size: number): Promise<ScreenerRow[]> {
+  const market = region.toLowerCase() === "in" ? MARKETS.IN : MARKETS.US;
+  const quotes = await resolveWithin(fetchQuotes(market.equities), [], 1_500);
+  const rows = quotes.map((quote) => ({
+    symbol: quote.symbol,
+    name: quote.name,
+    price: quote.price,
+    changePercent: quote.changePercent,
+    marketCap: quote.marketCap,
+    volume: null,
+    peRatio: null,
+    exchange: quote.exchange,
+    sector: null,
+    industry: null,
+    currency: quote.currency,
+    rating: null,
+  } satisfies ScreenerRow));
+  return rows
+    .sort((left, right) => {
+      if (name.includes("active")) return (right.volume ?? -Infinity) - (left.volume ?? -Infinity);
+      const difference = (right.changePercent ?? -Infinity) - (left.changePercent ?? -Infinity);
+      return name.includes("loser") ? -difference : difference;
+    })
+    .slice(0, size);
+}
+
 export async function fetchScreenPredefined(
   name: string,
   size = 25,
   region = "us",
 ): Promise<ScreenerRow[]> {
-  const raw = await resolveWithin(callMcpTool("screen_predefined", { name, size, region }), null);
-  if (!raw) return immediateRegionRows(region, size);
+  const fallbackPromise = fastMoverFallback(name, region, size);
+  const raw = await resolveWithin(
+    callMcpTool("screen_predefined", { name, size, region }).catch(() => null),
+    null,
+    1_500,
+  );
   const normalized = await enrichScreenerRows(
     toScreenerRows(pick(raw, "quotes") ?? pick(raw, "data")),
   );
@@ -563,7 +593,9 @@ export async function fetchScreenPredefined(
     inIndia ? /\.(NS|BO)$/i.test(row.symbol) : !/\.(NS|BO)$/i.test(row.symbol),
   );
   if (regionRows.length > 0) return regionRows;
-  if (normalized.length === 0) return immediateRegionRows(region, size);
+  const rankedFallback = await fallbackPromise;
+  if (rankedFallback.length > 0) return rankedFallback;
+  if (normalized.length === 0) return [];
 
   const fallbackSort = name.includes("loser")
     ? { sortField: "percentchange", sortAscending: true }
@@ -606,7 +638,32 @@ export type EquityScreenInput = {
 
 function providerScreenValue(value: string | undefined, kind: "sector" | "industry") {
   if (!value) return undefined;
-  return providerTaxonomyLabel(value, kind) || value;
+  const canonical = kind === "sector" ? canonicalSectorKey(value) : canonicalIndustryKey(value);
+  if (kind === "sector") {
+    return canonical
+      .split("-")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
+  }
+  const industryLabels: Record<string, string> = {
+    "oil-gas-e-p": "Oil & Gas E&P",
+    "oil-gas-integrated": "Oil & Gas Integrated",
+    "oil-gas-midstream": "Oil & Gas Midstream",
+    "drug-manufacturers-general": "Drug Manufacturers - General",
+    "drug-manufacturers-specialty-generic": "Drug Manufacturers - Specialty & Generic",
+    "information-technology-services": "Information Technology Services",
+    "internet-content-information": "Internet Content & Information",
+    "banks-diversified": "Banks - Diversified",
+    "banks-regional": "Banks - Regional",
+    "auto-manufacturers": "Auto Manufacturers",
+    "utilities-regulated-electric": "Utilities - Regulated Electric",
+  };
+  return industryLabels[providerTaxonomyLabel(canonical, "industry")] ??
+    industryLabels[canonical] ??
+    canonical
+      .split("-")
+      .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+      .join(" ");
 }
 
 function filterScreenerRows(all: ScreenerRow[], input: EquityScreenInput) {
@@ -748,33 +805,26 @@ function immediateRegionRows(region: string, size: number): ScreenerRow[] {
 export async function fetchScreenEquities(input: EquityScreenInput): Promise<ScreenerRow[]> {
   const regionalFallback = () =>
     filterScreenerRows(immediateRegionRows(input.region ?? "us", input.size ?? 25), input);
-  const raw = await resolveWithin(
+  const [raw, broadRaw] = await Promise.all([
+    resolveWithin(
     callMcpTool("screen_equities", screenerRequest(input, true)).catch(() => null),
     null,
-    1_200,
-  );
-  if (!raw) return regionalFallback();
-  let all = await enrichScreenerRows(toScreenerRows(pick(raw, "quotes") ?? pick(raw, "data")));
-  let filtered = filterScreenerRows(all, input);
-  if (filtered.length > 0) return filtered;
-
-  const representative = regionalFallback();
-  if (representative.length > 0) return representative;
-
-  const broadRaw = await resolveWithin(
+    3_000,
+    ),
+    resolveWithin(
     callMcpTool("screen_equities", screenerRequest(input, false)).catch(() => null),
     null,
-    1_200,
-  );
-  if (!broadRaw) return representative;
-  all = await enrichScreenerRows(
-    toScreenerRows(pick(broadRaw, "quotes") ?? pick(broadRaw, "data")),
-  );
-  filtered = filterScreenerRows(all, input);
-  if (filtered.length > 0) return filtered;
-  if (input.sector || input.industry) {
-    return representative;
-  }
+    3_000,
+    ),
+  ]);
+  const classifiedRows = raw ? toScreenerRows(pick(raw, "quotes") ?? pick(raw, "data")) : [];
+  const classifiedMatches = filterScreenerRows(classifiedRows, input);
+  if (classifiedMatches.length > 0) return classifiedMatches;
+
+  const broadRows = broadRaw ? toScreenerRows(pick(broadRaw, "quotes") ?? pick(broadRaw, "data")) : [];
+  const broadMatches = filterScreenerRows(broadRows, input);
+  if (broadMatches.length > 0) return broadMatches;
+
   return regionalFallback();
 }
 
@@ -1108,35 +1158,42 @@ export async function fetchSectorOverview(sectorKey: string, region = "US") {
   };
 }
 
+function immediateFallbackIndustryOverview(industryKey: string, region: string): GenericTable {
+  const canonicalIndustry = canonicalIndustryKey(industryKey);
+  const profiles = profilesForRegion(region).filter((profile) =>
+    taxonomyMatches(profile.industry, canonicalIndustry, "industry"),
+  );
+  return {
+    columns: ["Symbol", "Name", "Industry", "Market Weight", "Price"],
+    rows: profiles.map((profile) => ({
+      Symbol: profile.symbol,
+      Name: profile.name,
+      Industry: profile.industry,
+      "Market Weight": "—",
+      Price: "—",
+    })),
+  };
+}
+
 export async function fetchIndustryOverview(industryKey: string, region = "US") {
   const canonicalIndustry = canonicalIndustryKey(industryKey);
   const candidates = [...new Set([industryKey, providerTaxonomyLabel(canonicalIndustry, "industry"), canonicalIndustry])];
-  for (const candidate of candidates) {
-    const raw = await callMcpTool("get_industry_overview", { industry_key: candidate, region }).catch(() => null);
+  const providerResults = await Promise.all(
+    candidates.map((candidate) =>
+      resolveWithin(
+        callMcpTool("get_industry_overview", { industry_key: candidate, region }).catch(() => null),
+        null,
+        1_200,
+      ),
+    ),
+  );
+  for (const raw of providerResults) {
     const table = toGenericTable(pick(raw, "top_companies") ?? pick(raw, "data"), 25);
     if (table.rows.length > 0) {
       return enhanceCompanyTable(table, profilesForRegion(region));
     }
   }
-  const profiles = profilesForRegion(region).filter((profile) =>
-    taxonomyMatches(profile.industry, canonicalIndustry, "industry"),
-  );
-  const quotes = await fetchQuotes(profiles.map((profile) => profile.symbol));
-  const quoteBySymbol = new Map(quotes.map((quote) => [safeSymbol(quote.symbol), quote]));
-  const totalMarketCap = quotes.reduce((sum, quote) => sum + (quote.marketCap ?? 0), 0);
-  return {
-    columns: ["Symbol", "Name", "Market Weight", "Price"],
-    rows: profiles.map((profile) => {
-      const quote = quoteBySymbol.get(safeSymbol(profile.symbol));
-      const weight = totalMarketCap && quote?.marketCap ? (quote.marketCap / totalMarketCap) * 100 : null;
-      return {
-        Symbol: profile.symbol,
-        Name: profile.name,
-        "Market Weight": weight === null ? "—" : `${weight.toFixed(2)}%`,
-        Price: quote?.price === null || quote?.price === undefined ? "—" : fmtPrice(quote.price, quote.currency),
-      };
-    }),
-  };
+  return immediateFallbackIndustryOverview(canonicalIndustry, region);
 }
 
 type CalendarKind = "earnings" | "ipo" | "splits" | "economic";

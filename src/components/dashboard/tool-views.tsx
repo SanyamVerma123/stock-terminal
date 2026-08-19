@@ -115,8 +115,7 @@ function useWatchSymbol() {
 
 const PRIMARY_MOVER_NAMES = ["day_gainers", "day_losers", "most_actives"] as const;
 
-function MoverCardDeck({ rows }: { rows?: ScreenerRow[] | undefined }) {
-  if (!rows || rows.length === 0) return <div className="mover-deck-empty">Market movers will appear when the live screener returns results.</div>;
+function MoverCardDeck({ rows }: { rows: ScreenerRow[] }) {
   const deckRows = rows.slice(0, 25);
   const max = Math.max(...deckRows.map(row => Math.abs(row.changePercent ?? 0)), 1);
   return <div className="mover-card-deck" aria-label="Scrollable market mover cards">{deckRows.map((row) => { const hasPrice = row.price !== null && row.price !== undefined; const hasChange = row.changePercent !== null && row.changePercent !== undefined; const positive = (row.changePercent ?? 0) >= 0; const width = `${Math.max(12, Math.min(100, Math.abs(row.changePercent ?? 0) / max * 100))}%`; return <a className="mover-card" href={`/stock/${encodeURIComponent(row.symbol)}`} key={row.symbol}><div className="mover-card-main"><div className="min-w-0"><b>{row.symbol}</b><small title={row.name}>{row.name || "Company name unavailable"}</small></div>{hasPrice ? <strong>{fmtPrice(row.price, row.currency)}</strong> : <span className="mover-quote-status">Live quote syncing</span>}</div><div className="mover-card-footer"><span className="mover-performance"><i className={positive ? "positive" : "negative"} style={{ width }}/></span>{hasChange ? <DeltaBadge value={row.changePercent} size="sm"/> : <span className="mover-change-pending">Awaiting price action</span>}</div></a>; })}</div>;
@@ -130,7 +129,6 @@ export function MoversView({ initialName = "day_gainers" }: { initialName?: stri
     queryKey: ["screen", name, cfg.region],
     queryFn: () => runFn({ data: { name, size: 25, region: cfg.region } }),
     staleTime: 300_000,
-    placeholderData: (previousData) => previousData,
     refetchOnWindowFocus: false,
     refetchInterval: 20_000,
     refetchIntervalInBackground: false,
@@ -146,7 +144,7 @@ export function MoversView({ initialName = "day_gainers" }: { initialName?: stri
         ))}
       </div>
       <Panel title={name.replace(/_/g, " ")} subtitle="Live predefined market screener">
-        {isLoading && !data ? <DataLoading compact label="Ranking live market movers" detail="Calculating price action and liquidity." /> : <MoverCardDeck rows={data} />}
+        {isLoading || !data || data.length === 0 ? <DataLoading compact label={`Ranking ${name.replace(/_/g, " ")}`} detail="Refreshing the predefined price-action and liquidity ranking." /> : <MoverCardDeck rows={data} />}
       </Panel>
     </div>
   );
@@ -631,7 +629,7 @@ export function SectorsView() {
     placeholderData: (previousData) => previousData,
     refetchOnWindowFocus: false,
   });
-  const { data: ind } = useQuery({
+  const { data: ind, isLoading: isIndustryLoading } = useQuery({
     queryKey: ["industry", industry, cfg.id],
     queryFn: () => industryFn({ data: { industryKey: industry!, region: cfg.id } }),
     enabled: Boolean(industry),
@@ -654,7 +652,9 @@ export function SectorsView() {
   const providedIndustries = industryTable.columns[0]
     ? industryTable.rows.map((row) => row[industryTable.columns[0]!]).filter((value): value is string => Boolean(value && value !== "—"))
     : [];
-  const industryOptions = providedIndustries.length > 0 ? [...new Set(providedIndustries)] : (SECTOR_INDUSTRIES[sector] ?? []);
+  const industryOptions = data?.source === "provider" && providedIndustries.length > 0
+    ? [...new Set(providedIndustries)]
+    : [...new Set(matchingProfiles.map((profile) => profile.industry))];
 
   return (
     <div className="space-y-4">
@@ -724,23 +724,17 @@ export function SectorsView() {
 
       {industry && (
         <>
-          <Panel title={`${sectorLabel(industry)} — top companies`}>
-            <TableBarChart table={ind} />
+          <Panel title={`${readableIndustryLabel(industry)} — top companies`}>
+            {isIndustryLoading ? <DataLoading compact label={`Loading ${readableIndustryLabel(industry)} coverage`} detail="Finding companies in the selected industry." /> : <TableBarChart table={ind} />}
           </Panel>
-          <Panel title={`${sectorLabel(industry)} — companies`}>
-            <DataTable table={ind} />
+          <Panel title={`${readableIndustryLabel(industry)} — companies`}>
+            {isIndustryLoading ? <DataLoading compact label="Loading company coverage" detail="Checking the selected industry against the market-data service." /> : <DataTable table={ind} empty="No matching company coverage returned for this industry." />}
           </Panel>
         </>
       )}
 
-      <Panel title="Top companies">
-        <DataTable table={data?.topCompanies} />
-      </Panel>
-      <Panel title="Top ETFs">
-        <DataTable table={data?.topEtfs} />
-      </Panel>
-      <Panel title="Industries">
-        <DataTable table={data?.industries} />
+      <Panel title={`${sectorLabel(sector)} — listed company coverage`} subtitle="All companies matched to the selected sector.">
+        {isLoading && !data ? <DataLoading compact label="Loading listed company coverage" detail="Resolving the selected sector’s company set." /> : <DataTable table={data?.topCompanies} empty="No matching company coverage returned for this sector." />}
       </Panel>
     </div>
   );

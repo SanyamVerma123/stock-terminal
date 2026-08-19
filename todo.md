@@ -43,3 +43,8 @@
 - [x] Preserve an active AI research session and response state when navigating between stock detail and the AI Analyst workspace.
 - [x] Upgrade the comparison chart into a clearer, richer multi-stock visual treatment.
 - [x] Inspect the supplied yfinance reference contract, validate the repaired flows on desktop and mobile, and save the correction checkpoint.
+- [x] Prevent temporary provider waits from rendering a premature “No data available” state before data or representative coverage arrives.
+- [x] Expand representative sector coverage and selected-industry matching so valid sector classifications return the broadest available real symbol set.
+- [x] Repair selected-industry detail panels so they do not show mismatched top companies or empty results while the sector screen shows another classification.
+- [x] Make predefined day gainers, day losers, and most active cards render their own prompt fallback/refresh state rather than waiting behind unrelated dashboard calls.
+- [x] Revalidate the upgraded sector and movers dashboard behavior on desktop and mobile, then save the correction checkpoint.
