@@ -1,5 +1,13 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { convertToModelMessages, stepCountIs, streamText, tool, type UIMessage } from "ai";
+import {
+  convertToModelMessages,
+  createUIMessageStream,
+  createUIMessageStreamResponse,
+  stepCountIs,
+  streamText,
+  tool,
+  type UIMessage,
+} from "ai";
 import { z } from "zod";
 import {
   createDeepSeekProvider,
@@ -47,6 +55,11 @@ import {
   createChatDiagnostic,
   serializeChatDiagnostic,
 } from "@/lib/chat-diagnostics";
+import {
+  createStockPageAnalystBrief,
+  extractStockSymbol,
+  isStockAnalystRequest,
+} from "@/lib/stock-analyst";
 
 const SYSTEM_PROMPT = `You are the AI analyst inside a market research terminal.
 You answer questions about listed companies, ETFs, funds, sectors, indices and markets using live tools.
@@ -89,6 +102,35 @@ function logChatEvent(
   fields: Record<string, string | number | boolean | undefined>,
 ) {
   console.info(`[chat:${event}]`, JSON.stringify(fields));
+}
+
+function latestUserMessageText(messages: UIMessage[]) {
+  const latestUserMessage = [...messages].reverse().find((message) => message.role === "user");
+  if (!latestUserMessage) return "";
+  return latestUserMessage.parts
+    .filter((part) => part.type === "text")
+    .map((part) => (part.type === "text" ? part.text : ""))
+    .join(" ")
+    .trim();
+}
+
+function stockPageBriefResponse(messages: UIMessage[], brief: string) {
+  const stream = createUIMessageStream({
+    originalMessages: messages,
+    execute: ({ writer }) => {
+      const id = "stock-page-analyst-brief";
+      writer.write({ type: "start" });
+      writer.write({ type: "start-step" });
+      writer.write({ type: "text-start", id });
+      for (const chunk of brief.match(/[\s\S]{1,320}/g) ?? [brief]) {
+        writer.write({ type: "text-delta", id, delta: chunk });
+      }
+      writer.write({ type: "text-end", id });
+      writer.write({ type: "finish-step" });
+      writer.write({ type: "finish" });
+    },
+  });
+  return createUIMessageStreamResponse({ stream });
 }
 
 async function tinyFishSearch(
@@ -504,6 +546,20 @@ export const Route = createFileRoute("/api/chat")({
           );
         }
 
+        const messages = body.messages as UIMessage[];
+        const latestQuestion = latestUserMessageText(messages);
+        const directStockSymbol = extractStockSymbol(latestQuestion);
+        if (directStockSymbol && isStockAnalystRequest(latestQuestion)) {
+          const brief = await createStockPageAnalystBrief(directStockSymbol);
+          if (brief) {
+            logChatEvent("stock-page-brief", {
+              requestId,
+              symbol: directStockSymbol,
+            });
+            return stockPageBriefResponse(messages, brief);
+          }
+        }
+
         const keys = (body.keys ?? {}) as {
           openrouter?: string;
           openrouterFallback?: string;
@@ -642,7 +698,6 @@ export const Route = createFileRoute("/api/chat")({
           opencode: createOpenCodeProvider,
         } satisfies Record<ProviderId, (apiKey: string) => (modelId: string) => unknown>;
         const model = providerFactories[candidate.providerId](candidate.key!)(candidate.modelId);
-        const messages = body.messages as UIMessage[];
         const tinyfishKey = keys.tinyfish?.trim() || process.env["TINYFISH_API_KEY"];
         const researchMode = typeof body.researchMode === "string" ? body.researchMode : "Balanced";
         const effort = typeof body.effort === "string" ? body.effort : "Medium Effort";

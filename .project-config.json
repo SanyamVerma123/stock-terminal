@@ -1,8 +1,8 @@
 {
   "build_command": "pnpm run build",
   "capabilities": [
-    "server",
     "db",
+    "server",
     "user"
   ],
   "dev_command": "pnpm run dev",
