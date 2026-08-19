@@ -7,12 +7,12 @@ export function Sparkline({ points, up }: { points: SeriesPoint[]; up: boolean }
   const id = `spark-${up ? "up" : "down"}`;
 
   return (
-    <div className="h-10 w-full">
+    <div className="index-sparkline h-12 w-full">
       <ResponsiveContainer width="100%" height="100%">
-        <AreaChart data={points} margin={{ top: 2, right: 0, bottom: 0, left: 0 }}>
+        <AreaChart data={points} margin={{ top: 6, right: 2, bottom: 1, left: 2 }}>
           <defs>
             <linearGradient id={id} x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor={color} stopOpacity={0.35} />
+              <stop offset="0%" stopColor={color} stopOpacity={0.42} />
               <stop offset="100%" stopColor={color} stopOpacity={0} />
             </linearGradient>
           </defs>
@@ -20,9 +20,11 @@ export function Sparkline({ points, up }: { points: SeriesPoint[]; up: boolean }
             type="monotone"
             dataKey="c"
             stroke={color}
-            strokeWidth={1.5}
+            strokeWidth={2}
             fill={`url(#${id})`}
-            isAnimationActive={false}
+            activeDot={{ r: 3.5, fill: color, stroke: "var(--card)", strokeWidth: 2 }}
+            isAnimationActive
+            animationDuration={420}
             dot={false}
           />
         </AreaChart>

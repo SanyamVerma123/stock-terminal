@@ -28,17 +28,15 @@ export function MarketStrip() {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {(data ?? []).map((ix) => (
-        <div key={ix.key} className="rounded-2xl border border-border/70 bg-card/55 p-4">
-          <p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">
-            {ix.label}
-          </p>
-          <p className="tabular mt-1 text-xl font-semibold text-foreground">
+        <div key={ix.key} className="index-card rounded-2xl border border-border/70 bg-card/55 p-4">
+          <div className="flex items-center justify-between gap-3"><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{ix.label}</p><span className="index-card-live">Live</span></div>
+          <p className="tabular mt-2 text-2xl font-semibold tracking-tight text-foreground">
             {ix.last === null
               ? "—"
               : ix.last.toLocaleString(undefined, { maximumFractionDigits: 2 })}
           </p>
-          <DeltaBadge value={ix.changePercent} size="sm" />
-          <div className="mt-2">
+          <div className="mt-1 flex items-center justify-between"><DeltaBadge value={ix.changePercent} size="sm" /><span className="text-[10px] text-muted-foreground">Today</span></div>
+          <div className="mt-3">
             <Sparkline points={ix.points} up={(ix.changePercent ?? 0) >= 0} />
           </div>
         </div>

@@ -3,7 +3,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { SiteHeader } from "@/components/finance/SiteHeader";
-import { TradingViewResearchChart } from "@/components/finance/TradingViewResearchChart";
+import { StockPriceChart } from "@/components/finance/StockPriceChart";
 import { DeltaBadge } from "@/components/finance/DeltaBadge";
 import {
   getAnalyst,
@@ -18,7 +18,8 @@ import {
 import { RANGES, type RangeKey } from "@/lib/finance-types";
 import { fmtCompact, fmtDate, fmtNumber, fmtPercent, fmtPrice, timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
-import { DataLoading, InlineLoading } from "@/components/ui/loading-state";
+import { DataLoading } from "@/components/ui/loading-state";
+import { TextShimmerLoader } from "@/components/ui/loader";
 
 export const Route = createFileRoute("/stock/$symbol")({
   head: ({ params }) => ({
@@ -161,7 +162,7 @@ function StockPage() {
               <span className="tabular text-xs text-muted-foreground">{symbol}</span>
             </div>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
-              {loadingSummary ? <InlineLoading label={`Loading ${symbol} overview`} variant="wave" /> : (q?.name ?? symbol)}
+              {loadingSummary ? <TextShimmerLoader text={`Loading ${symbol} overview`} /> : (q?.name ?? symbol)}
             </h1>
             <div className="mt-3 flex items-end gap-3">
               <span className="tabular text-4xl font-semibold text-foreground">
@@ -210,7 +211,7 @@ function StockPage() {
                 </div>
               }
             >
-              {loadingHistory ? <DataLoading compact label={`Loading ${symbol} price history`} detail="Preparing the selected chart range." /> : <div className="chart-ready"><TradingViewResearchChart symbol={symbol} /></div>}
+              {loadingHistory ? <DataLoading compact label={`Loading ${symbol} price history`} detail="Preparing the selected chart range." /> : <div className="chart-ready"><StockPriceChart symbol={symbol} points={history ?? []} currency={q?.currency} /></div>}
             </Card>
 
             <Card

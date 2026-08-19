@@ -13,3 +13,7 @@
 - [x] Validate enhanced loading behavior and responsive UI, then save the enhancement checkpoint.
 - [x] Inspect the project’s pasted-content animation reference and apply it to the shared loading component where appropriate.
 - [x] Retry the uploaded-code replacement checkpoint after resolving the remote history synchronization conflict.
+- [x] Audit the current circular/dot loader, market-weight, bar-chart, stock-chart, and index-card implementations.
+- [x] Replace circular and three-dot loading motion with a clean non-circular loading treatment.
+- [x] Improve market-weight, bar-chart, stock-price chart, and index-card components with 21st.dev-inspired data-visual elements.
+- [x] Validate the visual refinements on desktop and mobile, then save the chart and loader update checkpoint.

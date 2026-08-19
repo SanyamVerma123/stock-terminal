@@ -522,9 +522,10 @@ export function TableBarChart({
     return <p className="p-5 text-sm text-muted-foreground">No numeric column to plot.</p>;
 
   return (
-    <div className="p-4" style={{ height }}>
+    <div className="bar-chart-surface p-4" style={{ height }}>
       <ResponsiveContainer width="100%" height="100%">
-        <BarChart data={data} layout="vertical" margin={{ left: 24, right: 16, top: 4, bottom: 4 }}>
+        <BarChart data={data} layout="vertical" margin={{ left: 24, right: 16, top: 8, bottom: 8 }} barCategoryGap="26%">
+          <defs><linearGradient id="bar-positive" x1="0" x2="1"><stop offset="0%" stopColor="var(--positive)" stopOpacity=".68"/><stop offset="100%" stopColor="var(--positive)" stopOpacity="1"/></linearGradient><linearGradient id="bar-negative" x1="0" x2="1"><stop offset="0%" stopColor="var(--negative)" stopOpacity=".64"/><stop offset="100%" stopColor="var(--negative)" stopOpacity="1"/></linearGradient></defs>
           <XAxis
             type="number"
             tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
@@ -540,17 +541,17 @@ export function TableBarChart({
             tickLine={false}
           />
           <Tooltip
-            cursor={{ fill: "var(--accent)" }}
+            cursor={{ fill: "color-mix(in oklab,var(--primary) 9%,transparent)" }}
             contentStyle={{
               background: "var(--card)",
               border: "1px solid var(--border)",
-              borderRadius: 12,
+              borderRadius: 14,
               fontSize: 12,
             }}
           />
-          <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+          <Bar dataKey="value" radius={[9, 9, 9, 9]} background={{ fill: "color-mix(in oklab,var(--muted) 46%,transparent)", radius: 9 }}>
             {data.map((d, i) => (
-              <Cell key={i} fill={d.value >= 0 ? "var(--positive)" : "var(--negative)"} />
+              <Cell key={i} fill={d.value >= 0 ? "url(#bar-positive)" : "url(#bar-negative)"} />
             ))}
           </Bar>
         </BarChart>

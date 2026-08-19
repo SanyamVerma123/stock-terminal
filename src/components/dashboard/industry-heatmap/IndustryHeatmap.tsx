@@ -105,7 +105,7 @@ export function IndustryHeatmap({ table }: { table?: IndustryTable | undefined }
   }
 
   return (
-    <div className="overflow-hidden bg-background/20 p-2 sm:p-3">
+    <div className="market-weight-surface overflow-hidden bg-background/20 p-2 sm:p-3">
       <div className="rounded-2xl border border-border/70 bg-card/45 p-1.5 shadow-inner shadow-primary/5 sm:p-2">
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
@@ -141,10 +141,10 @@ export function IndustryHeatmap({ table }: { table?: IndustryTable | undefined }
                   y={tile.y + inset}
                   width={Math.max(tile.width - inset * 2, 1)}
                   height={Math.max(tile.height - inset * 2, 1)}
-                  rx={active ? 16 : 12}
+                  rx={active ? 18 : 14}
                   fill={`color-mix(in oklab, var(--primary) ${tile.intensity}%, var(--muted))`}
                   stroke={active ? "var(--primary)" : "var(--border)"}
-                  strokeWidth={active ? 3 : 1}
+                  strokeWidth={active ? 3 : 1.25}
                   strokeOpacity={active ? 0.95 : 0.72}
                   opacity={hovered && !active ? 0.62 : 1}
                 />
