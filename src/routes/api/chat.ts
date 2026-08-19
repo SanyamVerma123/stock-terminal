@@ -521,7 +521,7 @@ export const Route = createFileRoute("/api/chat")({
         };
         type ProviderId = "openrouter" | "kilo" | "groq" | "together" | "deepseek" | "opencode";
         const defaults: Record<ProviderId, string> = {
-          openrouter: "openai/gpt-4o-mini",
+          openrouter: "openrouter/free",
           kilo: "anthropic/claude-sonnet-4.5",
           groq: "llama-3.3-70b-versatile",
           together: "meta-llama/Llama-3.3-70B-Instruct-Turbo",
@@ -556,7 +556,7 @@ export const Route = createFileRoute("/api/chat")({
         const selected =
           hasExplicitModel && typeof body.model === "string"
             ? body.model
-            : "openrouter:openai/gpt-4o-mini";
+            : "openrouter:openrouter/free";
         const [rawProvider, ...rest] = selected.split(":");
         const requestedProvider: ProviderId =
           rawProvider === "kilo" ||
@@ -659,11 +659,10 @@ export const Route = createFileRoute("/api/chat")({
             : researchMode === "Deep Research"
               ? "Use the relevant finance and web tools thoroughly. Cross-check important claims, cite sources, and provide a detailed structured response with assumptions and as-of context."
               : "Use a balanced workflow: call the relevant tools, explain the key evidence, and keep the response focused.";
-        // These are generous response budgets for long-running research. The selected provider
-        // may clamp them to its own context window, but the request should not stop early because
-        // of the terminal's previous 850/1600/2600 token ceilings.
+        // Keep the interactive terminal responsive. Users can select Deep Research or High Effort
+        // when a longer report is needed, rather than waiting behind a very large default budget.
         const requestedMaxOutputTokens =
-          effort === "High Effort" ? 1_000_000 : effort === "Medium Effort" ? 75_000 : 50_000;
+          effort === "High Effort" ? 6_000 : effort === "Medium Effort" ? 3_000 : 1_500;
         // Kilo's Nemotron 3 Ultra catalog entry advertises a 65,536-token completion ceiling.
         // Sending a larger max_tokens value makes the gateway reject the request before the
         // model can emit its first token, which previously appeared in the UI as a mid-session stop.
@@ -672,7 +671,7 @@ export const Route = createFileRoute("/api/chat")({
           ? Math.min(requestedMaxOutputTokens, 65_536)
           : requestedMaxOutputTokens;
         const maxResearchSteps =
-          researchMode === "Deep Research" || effort === "High Effort" ? 100 : 40;
+          researchMode === "Deep Research" || effort === "High Effort" ? 12 : researchMode === "Quick Take" ? 4 : 8;
         const kiloReasoningEffort =
           effort === "Low Effort" ? "low" : effort === "High Effort" ? "high" : "medium";
         const providerOptions =

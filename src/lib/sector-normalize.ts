@@ -37,10 +37,32 @@ const INDUSTRY_ALIASES: Record<string, string> = {
   communicationequipment: "communication-equipment",
   electroniccomponents: "electronic-components",
   pharmaceuticals: "pharmaceuticals",
+  drugmanufacturersgeneral: "pharmaceuticals",
+  drugmanufacturersspecialtygeneric: "pharmaceuticals",
   banks: "banks",
   diversifiedbanks: "banks",
+  banksdiversified: "banks",
+  banksregional: "banks",
   oilgasintegrated: "oil-gas-integrated",
   automobiles: "automobiles",
+  automanufacturers: "automobiles",
+  internetcontent: "internet-content",
+  internetcontentinformation: "internet-content",
+  internetcontentandinformation: "internet-content",
+  beverages: "beverages",
+  beveragesnonalcoholic: "beverages",
+  householdproducts: "household-products",
+  householdpersonalproducts: "household-products",
+  householdandpersonalproducts: "household-products",
+};
+
+const PROVIDER_INDUSTRY_KEYS: Record<string, string> = {
+  "internet-content": "internet-content-information",
+  automobiles: "auto-manufacturers",
+  banks: "banks-diversified",
+  pharmaceuticals: "drug-manufacturers-general",
+  beverages: "beverages-non-alcoholic",
+  "household-products": "household-personal-products",
 };
 
 function clean(value: string) {
@@ -77,7 +99,9 @@ export function providerTaxonomyLabel(
   kind: "sector" | "industry",
 ) {
   if (!value) return "";
-  return kind === "sector" ? canonicalSectorKey(value) : canonicalIndustryKey(value);
+  if (kind === "sector") return canonicalSectorKey(value);
+  const canonical = canonicalIndustryKey(value);
+  return PROVIDER_INDUSTRY_KEYS[canonical] ?? canonical;
 }
 
 export function taxonomyMatches(

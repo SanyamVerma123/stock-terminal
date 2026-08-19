@@ -19,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { InlineLoading } from "@/components/ui/loading-state";
-import { TextShimmerLoader } from "@/components/ui/loader";
+import { TerminalLoader, TextShimmerLoader } from "@/components/ui/loader";
 import { listChatModels } from "@/lib/models.functions";
 import { PromptInput } from "@/components/ui/ai-chat-input";
 import { Markdown } from "@/components/chat/Markdown";
@@ -307,12 +307,31 @@ const SUGGESTIONS = [
   "What moved Reliance today and why?",
 ];
 
+function ResearchActivity({ phase, detail }: { phase: string; detail: string }) {
+  return (
+    <div className="research-activity" role="status" aria-live="polite">
+      <span className="research-activity-terminal" aria-hidden="true">
+        <TerminalLoader size="md" />
+      </span>
+      <span className="min-w-0">
+        <TextShimmerLoader text={phase} size="sm" className="research-activity-title" />
+        <span className="research-activity-detail">{detail}</span>
+      </span>
+      <span className="research-activity-stages" aria-hidden="true">
+        <i />
+        <i />
+        <i />
+      </span>
+    </div>
+  );
+}
+
 export function AIView({ visible = true }: { visible?: boolean }) {
   const [sessionErrors, setSessionErrors] = useState<Record<string, ChatDiagnostic>>({});
   const [, forceRuntimeRender] = useState(0);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
   const [artifact, setArtifact] = useState<Artifact | null>(null);
-  const [model, setModel] = useState("openrouter:openai/gpt-4o-mini");
+  const [model, setModel] = useState("openrouter:openrouter/free");
   const [historyOpen, setHistoryOpen] = useState(false);
   const [historyQuery, setHistoryQuery] = useState("");
   const [historyMenuId, setHistoryMenuId] = useState<string | null>(null);
@@ -494,7 +513,12 @@ export function AIView({ visible = true }: { visible?: boolean }) {
     });
   }, [messages, saveScreener]);
 
-  const models = [...(catalog?.models ?? []), ...(apiKeys.customModels ?? [])].filter(
+  const models = [
+    ...(catalog?.models ?? []),
+    ...(apiKeys.customModels ?? []).filter(
+      (item) => catalog?.configuredProviders[item.provider] ?? false,
+    ),
+  ].filter(
     (item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index,
   );
   const busy = status === "submitted" || status === "streaming";
@@ -561,7 +585,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
   const selectedProviderLabel =
     providerGroups.find((group) => group.models.some((item) => item.id === model))?.label ??
     selectedProvider;
-  const selectedProviderReady = catalog?.configuredProviders?.[selectedProvider] ?? true;
+  const selectedProviderReady = catalog?.configuredProviders?.[selectedProvider] ?? false;
 
   const createChat = () => {
     const session = newChatSession();
@@ -916,8 +940,8 @@ export function AIView({ visible = true }: { visible?: boolean }) {
                     Ask sharper market questions.
                   </h1>
                   <p className="mt-3 max-w-xl text-sm leading-6 text-muted-foreground">
-                    Every answer is grounded in live quotes, fundamentals, analyst data, and news.
-                    Ask for a comparison, a table, or a visual explanation.
+                    Your AI analyst turns live quotes, fundamentals, analyst data, and news into a
+                    focused research brief. Ask for a comparison, a table, or a visual explanation.
                   </p>
                   <div className="mt-7 grid gap-2 sm:grid-cols-2">
                     {SUGGESTIONS.map((s) => (
@@ -1053,14 +1077,16 @@ export function AIView({ visible = true }: { visible?: boolean }) {
             })}
 
             {status === "submitted" && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <InlineLoading label="Preparing research tools" variant="wave" />
-              </div>
+              <ResearchActivity
+                phase="Preparing research"
+                detail="The AI analyst is gathering the requested market context."
+              />
             )}
             {status === "streaming" && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                <TextShimmerLoader text="Writing research" size="sm" />
-              </div>
+              <ResearchActivity
+                phase="Writing research"
+                detail="The AI analyst is synthesizing findings into your answer."
+              />
             )}
             {activeError && retryText && (
               <ChatDiagnosticCard

@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { ExternalLink } from "lucide-react";
-import { Bar, BarChart, Cell, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
   getEstimates,
   getMarketCalendar,
@@ -115,8 +115,9 @@ const PRIMARY_MOVER_NAMES = ["day_gainers", "day_losers", "most_actives"] as con
 
 function MoverCardDeck({ rows }: { rows?: ScreenerRow[] | undefined }) {
   if (!rows || rows.length === 0) return <div className="mover-deck-empty">Market movers will appear when the live screener returns results.</div>;
-  const max = Math.max(...rows.slice(0, 8).map(row => Math.abs(row.changePercent ?? 0)), 1);
-  return <div className="mover-card-deck">{rows.slice(0, 8).map((row, index) => { const positive = (row.changePercent ?? 0) >= 0; const width = `${Math.max(12, Math.min(100, Math.abs(row.changePercent ?? 0) / max * 100))}%`; return <a className="mover-card" href={`/stock/${encodeURIComponent(row.symbol)}`} key={row.symbol}><span className="mover-rank">{String(index + 1).padStart(2, "0")}</span><div className="mover-card-main"><div><b>{row.symbol}</b><small>{row.name}</small></div><strong>{fmtPrice(row.price, row.currency)}</strong></div><div className="mover-card-footer"><span className="mover-performance"><i className={positive ? "positive" : "negative"} style={{ width }}/></span><DeltaBadge value={row.changePercent} size="sm"/></div></a>; })}</div>;
+  const deckRows = rows.slice(0, 25);
+  const max = Math.max(...deckRows.map(row => Math.abs(row.changePercent ?? 0)), 1);
+  return <div className="mover-card-deck" aria-label="Scrollable market mover cards">{deckRows.map((row) => { const hasPrice = row.price !== null && row.price !== undefined; const hasChange = row.changePercent !== null && row.changePercent !== undefined; const positive = (row.changePercent ?? 0) >= 0; const width = `${Math.max(12, Math.min(100, Math.abs(row.changePercent ?? 0) / max * 100))}%`; return <a className="mover-card" href={`/stock/${encodeURIComponent(row.symbol)}`} key={row.symbol}><div className="mover-card-main"><div className="min-w-0"><b>{row.symbol}</b><small title={row.name}>{row.name || "Company name unavailable"}</small></div>{hasPrice ? <strong>{fmtPrice(row.price, row.currency)}</strong> : <span className="mover-quote-status">Live quote syncing</span>}</div><div className="mover-card-footer"><span className="mover-performance"><i className={positive ? "positive" : "negative"} style={{ width }}/></span>{hasChange ? <DeltaBadge value={row.changePercent} size="sm"/> : <span className="mover-change-pending">Awaiting price action</span>}</div></a>; })}</div>;
 }
 
 export function MoversView({ initialName = "day_gainers" }: { initialName?: string } = {}) {
@@ -126,7 +127,11 @@ export function MoversView({ initialName = "day_gainers" }: { initialName?: stri
   const { data, isLoading } = useQuery({
     queryKey: ["screen", name, cfg.region],
     queryFn: () => runFn({ data: { name, size: 25, region: cfg.region } }),
-    staleTime: 60_000,
+    staleTime: 300_000,
+    placeholderData: (previousData) => previousData,
+    refetchOnWindowFocus: false,
+    refetchInterval: 20_000,
+    refetchIntervalInBackground: false,
   });
 
   return (
@@ -139,7 +144,7 @@ export function MoversView({ initialName = "day_gainers" }: { initialName?: stri
         ))}
       </div>
       <Panel title={name.replace(/_/g, " ")} subtitle="Live predefined market screener">
-        {isLoading ? <DataLoading compact label="Ranking live market movers" detail="Calculating price action and liquidity." /> : <MoverCardDeck rows={data} />}
+        {isLoading && !data ? <DataLoading compact label="Ranking live market movers" detail="Calculating price action and liquidity." /> : <MoverCardDeck rows={data} />}
       </Panel>
     </div>
   );
@@ -501,6 +506,24 @@ function numeric(v: string | undefined) {
   return Number.isFinite(n) ? n : null;
 }
 
+function readableIndustryLabel(value: string) {
+  return value
+    .replace(/[-_]+/g, " ")
+    .replace(/\b\w/g, (letter) => letter.toUpperCase());
+}
+
+function IndustryMixPieChart({ table }: { table?: { columns: string[]; rows: Record<string, string>[] } | undefined }) {
+  if (!table || table.rows.length === 0) return <p className="p-5 text-sm text-muted-foreground">No industry mix is available yet.</p>;
+  const label = table.columns[0] ?? "Industry";
+  const value = table.columns.find((column) => /weight|share|market cap/i.test(column)) ?? table.columns[1] ?? label;
+  const raw = table.rows.map((row) => ({ name: readableIndustryLabel(row[label] ?? "Industry"), value: numeric(row[value]) })).filter((row): row is { name: string; value: number } => row.value !== null && row.value > 0).slice(0, 10);
+  const total = raw.reduce((sum, row) => sum + row.value, 0);
+  if (total <= 0) return <p className="p-5 text-sm text-muted-foreground">No numeric industry mix is available yet.</p>;
+  const data = raw.map((row) => ({ ...row, percentage: (row.value / total) * 100 }));
+  const colors = ["var(--chart-1)", "var(--chart-2)", "var(--chart-3)", "var(--chart-5)", "var(--chart-4)", "var(--primary)", "var(--positive)"];
+  return <div className="industry-mix-layout"><div className="industry-mix-chart"><ResponsiveContainer width="100%" height="100%"><PieChart><Tooltip formatter={(_, __, item) => [`${Number(item.payload.percentage).toFixed(1)}%`, item.payload.name]} contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }} /><Pie data={data} dataKey="value" nameKey="name" cx="50%" cy="50%" innerRadius={54} outerRadius={86} paddingAngle={3} cornerRadius={8} stroke="none">{data.map((entry, index) => <Cell key={entry.name} fill={colors[index % colors.length]} />)}</Pie></PieChart></ResponsiveContainer><span className="industry-mix-center"><b>{data.length}</b><small>industries</small></span></div><div className="industry-mix-legend">{data.map((entry, index) => <div key={entry.name}><span style={{ background: colors[index % colors.length] }} /><b title={entry.name}>{entry.name}</b><small>{entry.percentage.toFixed(1)}%</small></div>)}</div></div>;
+}
+
 /** Horizontal bar chart from a generic table column. */
 export function TableBarChart({
   table,
@@ -518,11 +541,14 @@ export function TableBarChart({
   const label = labelKey ?? table.columns[0]!;
   const value =
     valueKey ??
-    table.columns.find((c) => /change|perf|weight|return|%/i.test(c)) ??
+    table.columns.find((c) => /change|perf|weight|share|return|%/i.test(c)) ??
     table.columns[1] ??
     table.columns[0]!;
   const data = table.rows
-    .map((r) => ({ name: r[label] ?? "", value: numeric(r[value]) }))
+    .map((r) => ({
+      name: /industry/i.test(label) ? readableIndustryLabel(r[label] ?? "") : r[label] ?? "",
+      value: numeric(r[value]),
+    }))
     .filter((d): d is { name: string; value: number } => d.value !== null)
     .slice(0, 15);
   if (data.length === 0)
@@ -574,10 +600,12 @@ export function SectorsView() {
   const [sector, setSector] = useState("technology");
   const [industry, setIndustry] = useState<string | null>(null);
 
-  const { data } = useQuery({
+  const { data, isLoading } = useQuery({
     queryKey: ["sector", sector, cfg.id],
     queryFn: () => overviewFn({ data: { sectorKey: sector, region: cfg.id } }),
     staleTime: 300_000,
+    placeholderData: (previousData) => previousData,
+    refetchOnWindowFocus: false,
   });
   const { data: ind } = useQuery({
     queryKey: ["industry", industry, cfg.id],
@@ -585,6 +613,10 @@ export function SectorsView() {
     enabled: Boolean(industry),
     staleTime: 300_000,
   });
+  const providedIndustries = data?.industries.columns[0]
+    ? data.industries.rows.map((row) => row[data.industries.columns[0]!]).filter((value): value is string => Boolean(value && value !== "—"))
+    : [];
+  const industryOptions = providedIndustries.length > 0 ? [...new Set(providedIndustries)] : (SECTOR_INDUSTRIES[sector] ?? []);
 
   return (
     <div className="space-y-4">
@@ -603,11 +635,13 @@ export function SectorsView() {
         ))}
       </div>
 
+      {isLoading && !data ? <DataLoading compact label="Loading sector coverage" detail="Resolving live industry composition and companies." /> : null}
+
       {data && (
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
           {[
             ["Market cap", fmtCompact(data.marketCap)],
-            ["Companies", data.companiesCount?.toLocaleString() ?? "—"],
+            [data.source === "tracked" ? "Tracked companies" : "Companies", data.companiesCount?.toLocaleString() ?? "—"],
             ["Industries", data.industriesCount?.toLocaleString() ?? "—"],
             [
               "Market weight",
@@ -632,20 +666,20 @@ export function SectorsView() {
         <TableBarChart table={data?.industries} />
       </Panel>
       <Panel
-        title="Industry market weight"
-        subtitle="A responsive mosaic sized by each industry's share of the selected sector"
+        title="Industry market mix"
+        subtitle={data?.source === "tracked" ? data.mixBasis === "market-cap" ? "Share of tracked market capitalization, labeled by industry." : "Share of representative company coverage when live provider metrics are unavailable." : "Provider-reported industry mix, labeled by industry."}
       >
-        <IndustryHeatmap table={data?.industries} />
+        <IndustryMixPieChart table={data?.industries} />
       </Panel>
 
       <div className="no-scrollbar flex gap-2 overflow-x-auto">
-        {(SECTOR_INDUSTRIES[sector] ?? []).map((i) => (
+        {industryOptions.map((i) => (
           <Chip
             key={i}
             active={i === industry}
             onClick={() => setIndustry(i === industry ? null : i)}
           >
-            {sectorLabel(i)}
+            {readableIndustryLabel(i)}
           </Chip>
         ))}
       </div>

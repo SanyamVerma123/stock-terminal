@@ -45,6 +45,14 @@ const PROFILES: StaticSectorProfile[] = [
     sector: "consumer-defensive",
     industry: "household-products",
   },
+  { symbol: "LIN", name: "Linde plc", sector: "basic-materials", industry: "specialty-chemicals" },
+  { symbol: "FCX", name: "Freeport-McMoRan", sector: "basic-materials", industry: "copper" },
+  { symbol: "CAT", name: "Caterpillar Inc.", sector: "industrials", industry: "farm-heavy-construction-machinery" },
+  { symbol: "HON", name: "Honeywell International", sector: "industrials", industry: "conglomerates" },
+  { symbol: "PLD", name: "Prologis Inc.", sector: "real-estate", industry: "reit-industrial" },
+  { symbol: "AMT", name: "American Tower", sector: "real-estate", industry: "reit-specialty" },
+  { symbol: "NEE", name: "NextEra Energy", sector: "utilities", industry: "utilities-renewable" },
+  { symbol: "DUK", name: "Duke Energy", sector: "utilities", industry: "utilities-regulated-electric" },
   {
     symbol: "RELIANCE.NS",
     name: "Reliance Industries",
@@ -66,6 +74,12 @@ const PROFILES: StaticSectorProfile[] = [
   { symbol: "HDFCBANK.NS", name: "HDFC Bank", sector: "financial-services", industry: "banks" },
   { symbol: "ICICIBANK.NS", name: "ICICI Bank", sector: "financial-services", industry: "banks" },
   { symbol: "ITC.NS", name: "ITC Ltd.", sector: "consumer-defensive", industry: "tobacco" },
+  { symbol: "TATASTEEL.NS", name: "Tata Steel", sector: "basic-materials", industry: "steel" },
+  { symbol: "BHARTIARTL.NS", name: "Bharti Airtel", sector: "communication-services", industry: "telecom-services" },
+  { symbol: "MARUTI.NS", name: "Maruti Suzuki India", sector: "consumer-cyclical", industry: "automobiles" },
+  { symbol: "CIPLA.NS", name: "Cipla", sector: "healthcare", industry: "pharmaceuticals" },
+  { symbol: "DLF.NS", name: "DLF Ltd.", sector: "real-estate", industry: "real-estate-development" },
+  { symbol: "NTPC.NS", name: "NTPC Ltd.", sector: "utilities", industry: "utilities-regulated-electric" },
 ];
 
 function normalizeRegion(region: string) {

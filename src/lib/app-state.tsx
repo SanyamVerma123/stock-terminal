@@ -193,9 +193,9 @@ function normalizeApiKeys(raw: unknown): ApiKeys {
     opencodeFallback: text("opencodeFallback"),
     tinyfish: text("tinyfish"),
     preferredModel:
-      typeof item["preferredModel"] === "string" && item["preferredModel"]
+      typeof item["preferredModel"] === "string" && item["preferredModel"] && item["preferredModel"] !== "openrouter:openai/gpt-4o-mini"
         ? item["preferredModel"]
-        : "openrouter:openai/gpt-4o-mini",
+        : "openrouter:openrouter/free",
     customModels,
   };
 }
@@ -275,7 +275,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     deepseek: "",
     opencode: "",
     tinyfish: "",
-    preferredModel: "openrouter:openai/gpt-4o-mini",
+    preferredModel: "openrouter:openrouter/free",
     customModels: [],
   });
   const [refreshSeconds, setRefreshState] = useState(60);

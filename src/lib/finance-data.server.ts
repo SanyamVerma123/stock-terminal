@@ -26,6 +26,7 @@ import type {
 } from "./finance-types";
 import { MARKET_INDICES } from "./finance-types";
 import { CRYPTO_SYMS, FOREX_SYMS, MARKETS } from "./markets";
+import { fmtPrice } from "./format";
 import { UNIVERSE } from "./universe";
 import {
   canonicalIndustryKey,
@@ -547,7 +548,8 @@ export async function fetchScreenPredefined(
   size = 25,
   region = "us",
 ): Promise<ScreenerRow[]> {
-  const raw = await callMcpTool("screen_predefined", { name, size, region });
+  const raw = await resolveWithin(callMcpTool("screen_predefined", { name, size, region }), null);
+  if (!raw) return immediateRegionRows(region, size);
   const normalized = await enrichScreenerRows(
     toScreenerRows(pick(raw, "quotes") ?? pick(raw, "data")),
   );
@@ -556,6 +558,7 @@ export async function fetchScreenPredefined(
     inIndia ? /\.(NS|BO)$/i.test(row.symbol) : !/\.(NS|BO)$/i.test(row.symbol),
   );
   if (regionRows.length > 0) return regionRows;
+  if (normalized.length === 0) return immediateRegionRows(region, size);
 
   const fallbackSort = name.includes("loser")
     ? { sortField: "percentchange", sortAscending: true }
@@ -717,6 +720,26 @@ async function fallbackRegionRows(region: string, size: number) {
   return quotesToStaticRows(profilesForRegion(region), size);
 }
 
+function immediateRegionRows(region: string, size: number): ScreenerRow[] {
+  const india = region.toLowerCase() === "in";
+  return profilesForRegion(region)
+    .slice(0, size)
+    .map((profile) => ({
+      symbol: profile.symbol,
+      name: profile.name,
+      price: null,
+      changePercent: null,
+      marketCap: null,
+      volume: null,
+      peRatio: null,
+      exchange: india ? "NSE" : "US market",
+      sector: profile.sector,
+      industry: profile.industry,
+      currency: india ? "INR" : "USD",
+      rating: null,
+    }));
+}
+
 export async function fetchScreenEquities(input: EquityScreenInput): Promise<ScreenerRow[]> {
   const raw = await callMcpTool("screen_equities", screenerRequest(input, true));
   let all = await enrichScreenerRows(toScreenerRows(pick(raw, "quotes") ?? pick(raw, "data")));
@@ -860,28 +883,240 @@ export async function fetchSectors(): Promise<string[]> {
   return Array.isArray(list) ? list.map(String) : [];
 }
 
+type SectorFallback = {
+  marketCap: number | null;
+  companiesCount: number;
+  industriesCount: number;
+  mixBasis: "market-cap" | "company-coverage";
+  topCompanies: GenericTable;
+  industries: GenericTable;
+};
+
+async function resolveWithin<T>(promise: Promise<T>, fallback: T, timeoutMs = 1_800): Promise<T> {
+  let timeout: ReturnType<typeof setTimeout> | undefined;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise<T>((resolve) => {
+        timeout = setTimeout(() => resolve(fallback), timeoutMs);
+      }),
+    ]);
+  } finally {
+    if (timeout) clearTimeout(timeout);
+  }
+}
+
+function firstMatchingColumn(columns: string[], expression: RegExp) {
+  return columns.find((column) => expression.test(column));
+}
+
+function safeSymbol(value: string | undefined) {
+  return (value ?? "").trim().toUpperCase();
+}
+
+function asPercentage(value: string) {
+  const parsed = Number(value.replace(/[,%+]/g, ""));
+  if (!Number.isFinite(parsed)) return value;
+  const percentage = Math.abs(parsed) <= 1 ? parsed * 100 : parsed;
+  return `${percentage.toFixed(percentage >= 10 ? 1 : 2)}%`;
+}
+
+function compactMarketCap(value: number | null) {
+  if (value === null || !Number.isFinite(value)) return "—";
+  const magnitude = Math.abs(value);
+  if (magnitude >= 1_000_000_000_000) return `${(value / 1_000_000_000_000).toFixed(2)}T`;
+  if (magnitude >= 1_000_000_000) return `${(value / 1_000_000_000).toFixed(2)}B`;
+  if (magnitude >= 1_000_000) return `${(value / 1_000_000).toFixed(2)}M`;
+  return value.toFixed(2);
+}
+
+function enhanceCompanyTable(table: GenericTable, profiles: StaticSectorProfile[]): GenericTable {
+  if (table.rows.length === 0) return table;
+  const symbolColumn = firstMatchingColumn(table.columns, /symbol|ticker|code/i) ?? table.columns[0] ?? "Symbol";
+  const existingNameColumn = firstMatchingColumn(table.columns, /^name$|company.*name|name.*company/i);
+  const nameColumn = existingNameColumn ?? "Name";
+  const columns: string[] = existingNameColumn
+    ? table.columns
+    : [symbolColumn, nameColumn, ...table.columns.filter((column) => column !== symbolColumn)];
+  const profilesBySymbol = new Map(profiles.map((profile) => [safeSymbol(profile.symbol), profile]));
+  return {
+    columns,
+    rows: table.rows.map((row) => {
+      const symbol = row[symbolColumn] ?? "";
+      const profile = profilesBySymbol.get(safeSymbol(symbol));
+      const existingName = row[nameColumn];
+      const name = existingName && existingName !== "—" ? existingName : profile?.name ?? displayNameForSymbol(symbol);
+      const next = { ...row, [nameColumn]: name };
+      for (const column of columns) {
+        if (/market.*weight|weight.*market|^weight$/i.test(column) && next[column]) {
+          next[column] = asPercentage(next[column]);
+        }
+      }
+      return next;
+    }),
+  };
+}
+
+function immediateFallbackSectorOverview(sectorKey: string, region: string): SectorFallback {
+  const profiles = profilesForRegion(region).filter((profile) =>
+    taxonomyMatches(profile.sector, sectorKey, "sector"),
+  );
+  const industryMap = new Map<string, number>();
+  for (const profile of profiles) {
+    industryMap.set(profile.industry, (industryMap.get(profile.industry) ?? 0) + 1);
+  }
+  const industries = [...industryMap.entries()]
+    .map(([industry, companies]) => ({
+      Industry: industry,
+      Companies: String(companies),
+      "Tracked Share": `${((companies / Math.max(profiles.length, 1)) * 100).toFixed(2)}%`,
+    }))
+    .sort((left, right) => Number(right["Tracked Share"].replace("%", "")) - Number(left["Tracked Share"].replace("%", "")));
+  return {
+    marketCap: null,
+    companiesCount: profiles.length,
+    industriesCount: industryMap.size,
+    mixBasis: "company-coverage",
+    topCompanies: {
+      columns: ["Symbol", "Name", "Industry"],
+      rows: profiles
+        .map((profile) => ({ Symbol: profile.symbol, Name: profile.name, Industry: profile.industry }))
+        .sort((left, right) => left.Name.localeCompare(right.Name)),
+    },
+    industries: { columns: ["Industry", "Companies", "Tracked Share"], rows: industries },
+  };
+}
+
+async function fallbackSectorOverview(sectorKey: string, region: string): Promise<SectorFallback> {
+  const profiles = profilesForRegion(region).filter((profile) =>
+    taxonomyMatches(profile.sector, sectorKey, "sector"),
+  );
+  const quotes = await resolveWithin(fetchQuotes(profiles.map((profile) => profile.symbol)), []);
+  const quoteBySymbol = new Map(quotes.map((quote) => [safeSymbol(quote.symbol), quote]));
+  const covered = profiles.map((profile) => ({ profile, quote: quoteBySymbol.get(safeSymbol(profile.symbol)) }));
+  const marketCap = covered.reduce((sum, row) => sum + (row.quote?.marketCap ?? 0), 0);
+  const totalMarketCap = marketCap > 0 ? marketCap : null;
+  const rows = covered
+    .map(({ profile, quote }) => {
+      const weight = totalMarketCap && quote?.marketCap ? (quote.marketCap / totalMarketCap) * 100 : null;
+      return {
+        Symbol: profile.symbol,
+        Name: profile.name,
+        Industry: profile.industry,
+        Price: quote?.price === null || quote?.price === undefined ? "—" : fmtPrice(quote.price, quote.currency),
+        "Market Cap": compactMarketCap(quote?.marketCap ?? null),
+        "Market Weight": weight === null ? "—" : `${weight.toFixed(2)}%`,
+      };
+    })
+    .sort((a, b) => {
+      const left = Number(a["Market Weight"].replace("%", "")) || 0;
+      const right = Number(b["Market Weight"].replace("%", "")) || 0;
+      return right - left;
+    });
+  const industryMap = new Map<string, { companies: number; marketCap: number }>();
+  for (const { profile, quote } of covered) {
+    const previous = industryMap.get(profile.industry) ?? { companies: 0, marketCap: 0 };
+    industryMap.set(profile.industry, {
+      companies: previous.companies + 1,
+      marketCap: previous.marketCap + (quote?.marketCap ?? 0),
+    });
+  }
+  const industries = [...industryMap.entries()]
+    .map(([industry, value]) => ({
+      Industry: industry,
+      Companies: String(value.companies),
+      "Tracked Share": totalMarketCap
+        ? `${((value.marketCap / totalMarketCap) * 100).toFixed(2)}%`
+        : `${((value.companies / Math.max(profiles.length, 1)) * 100).toFixed(2)}%`,
+    }))
+    .sort((a, b) => Number(b["Tracked Share"].replace("%", "")) - Number(a["Tracked Share"].replace("%", "")));
+  return {
+    marketCap: totalMarketCap,
+    companiesCount: profiles.length,
+    industriesCount: industryMap.size,
+    mixBasis: totalMarketCap ? "market-cap" : "company-coverage",
+    topCompanies: {
+      columns: ["Symbol", "Name", "Industry", "Price", "Market Cap", "Market Weight"],
+      rows,
+    },
+    industries: {
+      columns: ["Industry", "Companies", "Tracked Share"],
+      rows: industries,
+    },
+  };
+}
+
 export async function fetchSectorOverview(sectorKey: string, region = "US") {
-  const raw = await callMcpTool("get_sector_overview", { sector_key: sectorKey, region });
+  const canonicalSector = canonicalSectorKey(sectorKey);
+  const fallback = immediateFallbackSectorOverview(canonicalSector, region);
+  const raw = await resolveWithin(callMcpTool("get_sector_overview", {
+    sector_key: providerTaxonomyLabel(canonicalSector, "sector"),
+    region,
+  }).catch(() => null), null, 300);
   const o = isRecord(pick(raw, "overview"))
     ? (pick(raw, "overview") as Record<string, unknown>)
     : {};
+  const providerTopCompanies = toGenericTable(pick(raw, "top_companies"), 25);
+  const providerIndustries = toGenericTable(pick(raw, "industries"), 25);
+  const needsFallback = providerTopCompanies.rows.length === 0 || providerIndustries.rows.length === 0;
+  const profiles = profilesForRegion(region).filter((profile) =>
+    taxonomyMatches(profile.sector, canonicalSector, "sector"),
+  );
+  const topCompanies = enhanceCompanyTable(
+    providerTopCompanies.rows.length > 0 ? providerTopCompanies : fallback.topCompanies,
+    profiles,
+  );
+  const industries = providerIndustries.rows.length > 0 ? providerIndustries : fallback.industries;
+  const usingTrackedFallback = providerTopCompanies.rows.length === 0 || providerIndustries.rows.length === 0;
   return {
-    name: str(pick(raw, "name")) ?? sectorKey,
-    description: str(o["description"]),
-    marketCap: num(o["market_cap"]),
-    companiesCount: num(o["companies_count"]),
-    industriesCount: num(o["industries_count"]),
+    name: str(pick(raw, "name")) ?? canonicalSector,
+    description:
+      str(o["description"]) ??
+      (usingTrackedFallback
+        ? "Representative listed-company coverage is shown while the provider’s sector aggregate refreshes."
+        : null),
+    marketCap: num(o["market_cap"]) ?? fallback.marketCap,
+    companiesCount: num(o["companies_count"]) ?? fallback.companiesCount,
+    industriesCount: num(o["industries_count"]) ?? fallback.industriesCount,
     employeeCount: num(o["employee_count"]),
     marketWeight: num(o["market_weight"]),
-    topCompanies: toGenericTable(pick(raw, "top_companies"), 25),
+    source: usingTrackedFallback ? "tracked" : "provider",
+    mixBasis: usingTrackedFallback ? fallback.mixBasis : "market-cap",
+    topCompanies,
     topEtfs: toGenericTable(pick(raw, "top_etfs"), 15),
-    industries: toGenericTable(pick(raw, "industries"), 25),
+    industries,
   };
 }
 
 export async function fetchIndustryOverview(industryKey: string, region = "US") {
-  const raw = await callMcpTool("get_industry_overview", { industry_key: industryKey, region });
-  return toGenericTable(pick(raw, "top_companies") ?? pick(raw, "data"), 25);
+  const canonicalIndustry = canonicalIndustryKey(industryKey);
+  const candidates = [...new Set([industryKey, providerTaxonomyLabel(canonicalIndustry, "industry"), canonicalIndustry])];
+  for (const candidate of candidates) {
+    const raw = await callMcpTool("get_industry_overview", { industry_key: candidate, region }).catch(() => null);
+    const table = toGenericTable(pick(raw, "top_companies") ?? pick(raw, "data"), 25);
+    if (table.rows.length > 0) {
+      return enhanceCompanyTable(table, profilesForRegion(region));
+    }
+  }
+  const profiles = profilesForRegion(region).filter((profile) =>
+    taxonomyMatches(profile.industry, canonicalIndustry, "industry"),
+  );
+  const quotes = await fetchQuotes(profiles.map((profile) => profile.symbol));
+  const quoteBySymbol = new Map(quotes.map((quote) => [safeSymbol(quote.symbol), quote]));
+  const totalMarketCap = quotes.reduce((sum, quote) => sum + (quote.marketCap ?? 0), 0);
+  return {
+    columns: ["Symbol", "Name", "Market Weight", "Price"],
+    rows: profiles.map((profile) => {
+      const quote = quoteBySymbol.get(safeSymbol(profile.symbol));
+      const weight = totalMarketCap && quote?.marketCap ? (quote.marketCap / totalMarketCap) * 100 : null;
+      return {
+        Symbol: profile.symbol,
+        Name: profile.name,
+        "Market Weight": weight === null ? "—" : `${weight.toFixed(2)}%`,
+        Price: quote?.price === null || quote?.price === undefined ? "—" : fmtPrice(quote.price, quote.currency),
+      };
+    }),
+  };
 }
 
 type CalendarKind = "earnings" | "ipo" | "splits" | "economic";

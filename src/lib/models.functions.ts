@@ -20,7 +20,22 @@ type CatalogInput = {
   opencodeKey?: string;
 };
 
+export const FREE_ROUTER_MODEL = "openrouter:openrouter/free";
+
+export function modelsForConfiguredProviders(
+  models: ChatModel[],
+  configuredProviders: Record<ChatProvider, boolean>,
+) {
+  return models.filter((model) => configuredProviders[model.provider]);
+}
+
 const CURATED_MODELS: ChatModel[] = [
+  {
+    id: FREE_ROUTER_MODEL,
+    label: "OpenRouter Free",
+    provider: "openrouter",
+    note: "Free router",
+  },
   {
     id: "openrouter:openai/gpt-4o-mini",
     label: "GPT-4o Mini",
@@ -76,26 +91,38 @@ export const listChatModels = createServerFn({ method: "GET" })
       deepseek: keyAvailable(data.deepseekKey, "DEEPSEEK_API_KEY"),
       opencode: keyAvailable(data.opencodeKey, "OPENCODE_ZEN_API_KEY"),
     };
-    let openrouter: ChatModel[] = [];
-    if (configuredProviders.openrouter) {
+    const discoverModels = async (url: string, provider: ChatProvider) => {
       try {
-        const response = await fetch("https://openrouter.ai/api/v1/models");
+        const response = await fetch(url);
+        if (!response.ok) return [] as ChatModel[];
         const json = (await response.json()) as { data?: OpenRouterModel[] };
-        openrouter = (json.data ?? [])
+        return (json.data ?? [])
           .filter((item): item is { id: string; name?: string } => typeof item.id === "string")
-          .slice(0, 80)
+          .slice(0, 250)
           .map((item) => ({
-            id: `openrouter:${item.id}`,
+            id: `${provider}:${item.id}`,
             label: item.name ?? item.id,
-            provider: "openrouter" as const,
+            provider,
           }))
           .sort((a, b) => a.label.localeCompare(b.label));
       } catch {
-        openrouter = [];
+        return [] as ChatModel[];
       }
-    }
+    };
+    const [openrouter, kilo] = await Promise.all([
+      configuredProviders.openrouter
+        ? discoverModels("https://openrouter.ai/api/v1/models", "openrouter")
+        : Promise.resolve([] as ChatModel[]),
+      configuredProviders.kilo
+        ? discoverModels("https://api.kilo.ai/api/gateway/models", "kilo")
+        : Promise.resolve([] as ChatModel[]),
+    ]);
     return {
-      models: [...CURATED_MODELS, ...openrouter],
+      models: [
+        ...modelsForConfiguredProviders(CURATED_MODELS, configuredProviders),
+        ...openrouter,
+        ...kilo,
+      ],
       configuredProviders,
     };
   });

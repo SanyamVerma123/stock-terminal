@@ -7,7 +7,9 @@
   ],
   "dev_command": "pnpm run dev",
   "env_vars": {
-    "DATABASE_URL": "mysql://46RvugmUgbAKRFr.ad3e9aa48500:DYW4cJ839qaqFSgiyx34@gateway06.us-east-1.prod.aws.tidbcloud.com:4000/MuJSeqviNXUCnYKgTh7Var?ssl={\"rejectUnauthorized\":true}"
+    "DATABASE_URL": "mysql://46RvugmUgbAKRFr.ad3e9aa48500:DYW4cJ839qaqFSgiyx34@gateway06.us-east-1.prod.aws.tidbcloud.com:4000/MuJSeqviNXUCnYKgTh7Var?ssl={\"rejectUnauthorized\":true}",
+    "DRIZZLE_DATABASE_URL": "mysql://46RvugmUgbAKRFr.ad3e9aa48500:DYW4cJ839qaqFSgiyx34@gateway06.us-east-1.prod.aws.tidbcloud.com:4000/MuJSeqviNXUCnYKgTh7Var?ssl={\"rejectUnauthorized\":true}",
+    "MANUS_WEBDEV_PROJECT_ID": "MuJSeqviNXUCnYKgTh7Var"
   },
   "experiments": [
     "no_db_push"
@@ -26,12 +28,13 @@
     "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
     "JWT_SECRET": "XjgbetLPHLsD8ymRmvAbfL",
     "OAUTH_SERVER_URL": "https://api.manus.im",
+    "OPENROUTER_API_KEY": "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",
     "OWNER_NAME": "For Work Only",
     "OWNER_OPEN_ID": "Ue4KsjJtKBBHQrvFbA5Ey4",
     "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
     "VITE_ANALYTICS_WEBSITE_ID": "254fbe91-abeb-47b5-803b-56289a704a98",
     "VITE_APP_ID": "MuJSeqviNXUCnYKgTh7Var",
-    "VITE_APP_LOGO": "",
+    "VITE_APP_LOGO": "https://files.manuscdn.com/user_upload_by_module/web_dev_logo/310519663459133195/QogpNUbAfsImapCs.png",
     "VITE_APP_TITLE": "Insightful Search",
     "VITE_FRONTEND_FORGE_API_KEY": "b8e9yHbQG5x3YwegyepyHr",
     "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",

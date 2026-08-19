@@ -37,19 +37,30 @@ export async function callMcpTool<T = unknown>(
     if (v !== undefined && v !== null && v !== "") cleaned[k] = v;
   }
 
-  const res = await fetch(MCP_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Accept: "application/json, text/event-stream",
-    },
-    body: JSON.stringify({
-      jsonrpc: "2.0",
-      id: ++rpcId,
-      method: "tools/call",
-      params: { name, arguments: cleaned },
-    }),
-  });
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 10_000);
+  let res: Response;
+  try {
+    res = await fetch(MCP_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        Accept: "application/json, text/event-stream",
+      },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: ++rpcId,
+        method: "tools/call",
+        params: { name, arguments: cleaned },
+      }),
+      signal: controller.signal,
+    });
+  } catch (error) {
+    if (controller.signal.aborted) throw new Error(`${name} timed out after 10 seconds`);
+    throw error;
+  } finally {
+    clearTimeout(timeout);
+  }
 
   const parsed = parseSse(await res.text());
   if (parsed.error) throw new Error(parsed.error.message);

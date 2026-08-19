@@ -395,25 +395,26 @@ export function SettingsView() {
     tinyfish: apiKeys.tinyfish,
   }));
   const [preferredModel, setPreferredModel] = useState(
-    apiKeys.preferredModel ?? "openrouter:openai/gpt-4o-mini",
+    apiKeys.preferredModel ?? "openrouter:openrouter/free",
   );
   const [customProvider, setCustomProvider] = useState<
     "openrouter" | "kilo" | "groq" | "together" | "deepseek" | "opencode"
-  >("kilo");
+  >("openrouter");
   const [customModelId, setCustomModelId] = useState("");
   const [customModelLabel, setCustomModelLabel] = useState("");
   const [saved, setSaved] = useState(false);
   const field =
     "mt-1 h-9 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary/60";
   const preferredProvider = preferredModel.split(":", 1)[0];
-  const modelGroups = [
+  const configuredProviders = modelCatalog?.configuredProviders;
+  const modelGroups = ([
     { label: "OpenRouter", provider: "openrouter" },
     { label: "Kilo AI", provider: "kilo" },
     { label: "Groq", provider: "groq" },
     { label: "Together AI", provider: "together" },
     { label: "DeepSeek", provider: "deepseek" },
     { label: "OpenCode Zen", provider: "opencode" },
-  ].map(({ label, provider }) => {
+  ] as const).filter(({ provider }) => configuredProviders?.[provider] ?? false).map(({ label, provider }) => {
     const baseModels: ChatModel[] = (modelCatalog?.models ?? []).filter(
       (model) => model.provider === provider,
     );
@@ -480,6 +481,9 @@ export function SettingsView() {
     ["DeepSeek", "deepseek", "deepseekFallback"],
     ["OpenCode Zen", "opencode", "opencodeFallback"],
   ] as const;
+  const configuredProviderOptions = providers.filter(([, provider]) =>
+    configuredProviders?.[provider] ?? false,
+  );
 
   return (
     <div className="max-w-3xl space-y-4">
@@ -573,7 +577,7 @@ export function SettingsView() {
       <div className="rounded-2xl border border-border/70 bg-card/55 p-5">
         <p className="text-sm font-medium text-foreground">Preferred analyst model</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Choose the default model used when a new research chat starts.
+          Choose from models available through providers with a saved API key. Kilo models appear here after its key is saved.
         </p>
         <select
           value={preferredModel}
@@ -592,13 +596,14 @@ export function SettingsView() {
               </optgroup>
             ) : null,
           )}
+          {modelGroups.length === 0 ? <option value="">Save a provider key to load its models</option> : null}
         </select>
       </div>
 
       <div className="rounded-2xl border border-border/70 bg-card/55 p-5">
         <p className="text-sm font-medium text-foreground">Custom model registry</p>
         <p className="mt-1 text-xs text-muted-foreground">
-          Add any provider model ID and make it available in the Analyst picker.
+          Add a model ID only for a provider with a saved API key.
         </p>
         <div className="mt-3 grid gap-2 md:grid-cols-[150px_1fr_1fr_auto]">
           <select
@@ -606,7 +611,7 @@ export function SettingsView() {
             onChange={(e) => setCustomProvider(e.target.value as typeof customProvider)}
             className="h-9 rounded-lg border border-border bg-background px-2 text-xs text-foreground"
           >
-            {providers.map(([label, id]) => (
+            {configuredProviderOptions.map(([label, id]) => (
               <option key={id} value={id}>
                 {label}
               </option>
@@ -627,11 +632,13 @@ export function SettingsView() {
           <button
             type="button"
             onClick={addCustomModel}
+            disabled={configuredProviderOptions.length === 0}
             className="h-9 rounded-lg border border-primary/40 px-3 text-xs text-primary"
           >
             Add
           </button>
         </div>
+        {configuredProviderOptions.length === 0 ? <p className="mt-2 text-xs text-muted-foreground">Save a provider key above to register custom models.</p> : null}
         {(apiKeys.customModels ?? []).length > 0 && (
           <div className="mt-3 space-y-2">
             {apiKeys.customModels?.map((item) => (

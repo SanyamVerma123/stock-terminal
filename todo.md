@@ -25,3 +25,12 @@
 - [x] Upgrade remaining saved screener, pro-screener, and ETF-screener table surfaces with compact visual data summaries.
 - [x] Upgrade remaining generic dashboard DataTable and StatementView surfaces with premium visual metric summaries.
 - [x] Revalidate shared screener card surfaces on desktop and mobile before saving the premium component checkpoint.
+- [x] Audit the AI analyst loading state and restore clearly visible animation during research streaming and retry states.
+- [x] Rework large-screen market mover cards into a 4-by-3 scrollable card collection without unreadable price-overlap labels.
+- [x] Improve dashboard market-data loading behavior and remove slow/blocking presentation where resilient partial data can be shown.
+- [x] Correct sector and industry lookup/mapping behavior so selected sectors show their own metrics, industries, and companies when provider data is available.
+- [x] Replace unlabeled market-weight decimals with percentage formatting and add named industry labels to a modern interactive pie-chart treatment.
+- [x] Add practical AI Analyst workspace, visible research-progress feedback, free-model selection, and desktop/mobile dashboard validation.
+- [ ] Validate one successful end-to-end AI Analyst research response using a configured provider; provider verification remains deferred at the user’s instruction after external authentication failures.
+- [x] Configure the AI Analyst default and fallback selection for a compatible no-cost model; live provider verification was deferred at the user’s instruction.
+- [x] Add Kilo AI to the settings-driven provider flow and show only models from providers with configured API keys.
