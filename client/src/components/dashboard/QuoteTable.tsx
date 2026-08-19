@@ -1,0 +1,7 @@
+import { ArrowRight } from "lucide-react";
+import { Link } from "wouter";
+import type { FinanceQuote } from "@/lib/finance-types";
+import { fmtCompact, fmtPrice } from "@/lib/format";
+import { DeltaBadge } from "@/components/finance/DeltaBadge";
+import { Sparkline } from "@/components/finance/Sparkline";
+export function QuoteTable({ quotes, title = "Market watch" }: { quotes: FinanceQuote[]; title?: string }) { return <section className="panel quote-table"><div className="panel-heading"><div><span className="eyebrow">Live market data</span><h2>{title}</h2></div><Link href="/compare" className="text-link">Compare <ArrowRight size={14}/></Link></div><div className="table-scroll"><table><thead><tr><th>Symbol</th><th>Price</th><th>Change</th><th>Trend</th><th>Market cap</th></tr></thead><tbody>{quotes.map(quote => <tr key={quote.symbol}><td><Link href={`/stock/${quote.symbol}`} className="quote-name"><b>{quote.symbol}</b><span>{quote.name}</span></Link></td><td className="tabular">{fmtPrice(quote.price, quote.currency)}</td><td><DeltaBadge value={quote.changePercent} absolute={quote.change} currency={quote.currency}/></td><td><Sparkline values={Array.from({ length: 9 }, (_, offset) => (quote.price ?? 0) * (1 + ((offset - 4) * (quote.changePercent ?? 0)) / 400))} positive={(quote.changePercent ?? 0) >= 0}/></td><td className="tabular muted-cell">{fmtCompact(quote.marketCap)}</td></tr>)}</tbody></table>{!quotes.length && <div className="table-empty">Market quotes are loading or currently unavailable.</div>}</div></section>; }

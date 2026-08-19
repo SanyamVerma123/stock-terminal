@@ -1,0 +1,1 @@
+export function normalizeSector(value: string | null | undefined) { const clean = (value ?? "Unknown").trim(); const aliases: Record<string, string> = { "Financial Services": "Financials", "Basic Materials": "Materials", "Consumer Defensive": "Consumer Staples", "Consumer Cyclical": "Consumer Discretionary" }; return aliases[clean] ?? clean; }

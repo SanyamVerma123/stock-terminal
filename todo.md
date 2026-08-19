@@ -1,0 +1,25 @@
+# Project TODO
+
+- [x] Audit the connected GitHub repository and map every source route, component, utility, and server module to the managed application structure.
+- [x] Extract and inventory `21st-main.zip`, identify reusable UI enhancements, and document each adopted component in the implementation.
+- [x] Extract and inventory `How to Access My GitHub Account_.zip`, identify application-relevant contents, and integrate any non-sensitive resources needed by the product.
+- [x] Research Perplexity Finance and Google Finance layout patterns to define a concise visual system for the migrated product.
+- [x] Create and save a source-to-target migration matrix covering every original route, component, utility, and server module.
+- [x] Document the selected 21st.dev interaction patterns and the exact target components where they are adopted.
+- [x] Integrate selected non-sensitive supplemental archive modules and record the imported or replaced files.
+- [x] Migrate original shared finance types, formatting, normalization, market, sector, and universe utility libraries.
+- [x] Implement public tRPC finance procedures for summary, price history, news, financials, analyst ratings, upgrades, earnings calendar, and corporate actions.
+- [x] Add server-side finance data provider adapters with validation, normalization, error handling, and response caching.
+- [x] Implement multi-turn AI chat streaming through the managed LLM service, finance-specific tool calls, a tRPC response adapter, and a browser SSE reader.
+- [x] Migrate the finance components `SiteHeader`, `TickerAutocomplete`, `PriceChart`, `TradingViewResearchChart`, `DeltaBadge`, `Sparkline`, card, and stat widgets.
+- [x] Migrate dashboard components `QuoteTable`, `AIView`, `DashboardShell`, `IndustryHeatmap`, supporting tables, and views.
+- [x] Migrate chat components `ArtifactPanel`, `HtmlPreview`, `Markdown`, Mermaid support, and artifact type definitions.
+- [x] Implement the exact client routes `/`, `/stock/:symbol`, `/compare`, and `/chat` using Wouter.
+- [x] Migrate the original Tailwind dark/light styling and integrate verified improvements from supplied component assets.
+- [x] Install only required dependencies, remove unused template placeholders, retain production-compatible build scripts, and code-split route pages.
+- [x] Write or update Vitest coverage for finance normalization, finance data procedures, and AI chat request validation.
+- [x] Validate application build, type checking, tests, server behavior, route rendering, desktop UI, and mobile UI.
+- [x] Create the final project checkpoint and give the user concise instructions to publish from the workspace.
+- [x] Expand the source-parity implementation for the original universe, sector, normalization, finance, and dashboard modules where behavior is still simplified.
+- [x] Expose the existing multi-turn finance chat stream through a tRPC response adapter while preserving the SSE reader used by the browser.
+- [x] Improve code splitting and trim template-only imports so the production client bundle is more focused.
