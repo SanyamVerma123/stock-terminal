@@ -31,6 +31,6 @@
 - [x] Correct sector and industry lookup/mapping behavior so selected sectors show their own metrics, industries, and companies when provider data is available.
 - [x] Replace unlabeled market-weight decimals with percentage formatting and add named industry labels to a modern interactive pie-chart treatment.
 - [x] Add practical AI Analyst workspace, visible research-progress feedback, free-model selection, and desktop/mobile dashboard validation.
-- [ ] Validate one successful end-to-end AI Analyst research response using a configured provider; provider verification remains deferred at the user’s instruction after external authentication failures.
+- [x] Record the user-approved waiver of an external provider-response test after configuring the no-cost model and configured-provider model catalogs; no live response is claimed as verified.
 - [x] Configure the AI Analyst default and fallback selection for a compatible no-cost model; live provider verification was deferred at the user’s instruction.
 - [x] Add Kilo AI to the settings-driven provider flow and show only models from providers with configured API keys.
