@@ -1,3 +1,0 @@
-.terminal-view-table { margin-top:17px; }
-.terminal-screener-filter { display:flex; align-items:center; gap:9px; margin-top:17px; padding:0 12px; border:1px solid var(--border); border-radius:10px; background:var(--card); color:var(--muted-foreground); }
-.terminal-screener-filter input { width:100%; height:40px; border:0; outline:0; background:transparent; color:var(--foreground); }

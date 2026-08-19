@@ -1,4 +1,0 @@
-.loading-state { display:flex; min-height:240px; flex-direction:column; align-items:center; justify-content:center; gap:9px; color:var(--muted-foreground); text-align:center; }
-.loading-state > span { display:grid; place-items:center; width:39px; height:39px; border:1px solid color-mix(in srgb,var(--primary) 40%,var(--border)); border-radius:12px; color:var(--primary); background:color-mix(in srgb,var(--primary) 8%,transparent); }
-.loading-state b { color:var(--foreground); font-size:13px; }
-.loading-state p { max-width:260px; margin:0; font-size:11px; line-height:1.55; }

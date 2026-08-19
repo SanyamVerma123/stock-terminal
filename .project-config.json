@@ -1,0 +1,42 @@
+{
+  "build_command": "pnpm run build",
+  "capabilities": [
+    "server",
+    "db",
+    "user"
+  ],
+  "dev_command": "pnpm run dev",
+  "env_vars": {
+    "DATABASE_URL": "mysql://46RvugmUgbAKRFr.ad3e9aa48500:DYW4cJ839qaqFSgiyx34@gateway06.us-east-1.prod.aws.tidbcloud.com:4000/MuJSeqviNXUCnYKgTh7Var?ssl={\"rejectUnauthorized\":true}"
+  },
+  "experiments": [
+    "no_db_push"
+  ],
+  "git_remote": {
+    "repo_url": "https://7f0548f6b28a1758d9bf7be630d36cb4.artifacts.cloudflare.net/git/prod/MuJSeqviNXUCnYKgTh7Var.git",
+    "expiration": "2026-08-20T09:18:29.689Z",
+    "token": "art_v2_x_1f1683bfd70172c01d6e13ef81429f438268258a?expires=1787217509",
+    "backend": "GIT_BACKEND_ARTIFACTS"
+  },
+  "name": "insightful-search-deployed",
+  "path": "/home/ubuntu/insightful-search-deployed",
+  "port": 3000,
+  "secrets": {
+    "BUILT_IN_FORGE_API_KEY": "BPEwf9A4rabKviUdhJyWux",
+    "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
+    "JWT_SECRET": "XjgbetLPHLsD8ymRmvAbfL",
+    "OAUTH_SERVER_URL": "https://api.manus.im",
+    "OWNER_NAME": "For Work Only",
+    "OWNER_OPEN_ID": "Ue4KsjJtKBBHQrvFbA5Ey4",
+    "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
+    "VITE_ANALYTICS_WEBSITE_ID": "254fbe91-abeb-47b5-803b-56289a704a98",
+    "VITE_APP_ID": "MuJSeqviNXUCnYKgTh7Var",
+    "VITE_APP_LOGO": "",
+    "VITE_APP_TITLE": "Insightful Search",
+    "VITE_FRONTEND_FORGE_API_KEY": "b8e9yHbQG5x3YwegyepyHr",
+    "VITE_FRONTEND_FORGE_API_URL": "https://forge.manus.ai",
+    "VITE_OAUTH_PORTAL_URL": "https://manus.im"
+  },
+  "template_id": "web-db-user",
+  "test_command": "pnpm test"
+}

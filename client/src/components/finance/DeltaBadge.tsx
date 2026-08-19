@@ -1,4 +1,0 @@
-import { ArrowDownRight, ArrowUpRight, Minus } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { fmtPercent, fmtPrice } from "@/lib/format";
-export function DeltaBadge({ value, absolute, currency = "USD", size = "sm" }: { value: number | null | undefined; absolute?: number | null; currency?: string; size?: "sm" | "lg" }) { const direction = value === null || value === undefined ? "flat" : value > 0 ? "up" : value < 0 ? "down" : "flat"; const Icon = direction === "up" ? ArrowUpRight : direction === "down" ? ArrowDownRight : Minus; return <span className={cn("delta-badge", direction, size === "lg" && "delta-badge-lg")}><Icon size={size === "lg" ? 17 : 14} />{absolute !== undefined && absolute !== null ? fmtPrice(absolute, currency) : ""}{absolute !== undefined && absolute !== null ? " " : ""}{fmtPercent(value)}</span>; }

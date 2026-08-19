@@ -1,47 +1,10 @@
 # Project TODO
 
-- [x] Audit the connected GitHub repository and map every source route, component, utility, and server module to the managed application structure.
-- [x] Extract and inventory `21st-main.zip`, identify reusable UI enhancements, and document each adopted component in the implementation.
-- [x] Extract and inventory `How to Access My GitHub Account_.zip`, identify application-relevant contents, and integrate any non-sensitive resources needed by the product.
-- [x] Research Perplexity Finance and Google Finance layout patterns to define a concise visual system for the migrated product.
-- [x] Create and save a source-to-target migration matrix covering every original route, component, utility, and server module.
-- [x] Document the selected 21st.dev interaction patterns and the exact target components where they are adopted.
-- [x] Integrate selected non-sensitive supplemental archive modules and record the imported or replaced files.
-- [x] Migrate original shared finance types, formatting, normalization, market, sector, and universe utility libraries.
-- [x] Implement public tRPC finance procedures for summary, price history, news, financials, analyst ratings, upgrades, earnings calendar, and corporate actions.
-- [x] Add server-side finance data provider adapters with validation, normalization, error handling, and response caching.
-- [x] Implement multi-turn AI chat streaming through the managed LLM service, finance-specific tool calls, a tRPC response adapter, and a browser SSE reader.
-- [x] Migrate the finance components `SiteHeader`, `TickerAutocomplete`, `PriceChart`, `TradingViewResearchChart`, `DeltaBadge`, `Sparkline`, card, and stat widgets.
-- [x] Migrate dashboard components `QuoteTable`, `AIView`, `DashboardShell`, `IndustryHeatmap`, supporting tables, and views.
-- [x] Migrate chat components `ArtifactPanel`, `HtmlPreview`, `Markdown`, Mermaid support, and artifact type definitions.
-- [x] Implement the exact client routes `/`, `/stock/:symbol`, `/compare`, and `/chat` using Wouter.
-- [x] Migrate the original Tailwind dark/light styling and integrate verified improvements from supplied component assets.
-- [x] Install only required dependencies, remove unused template placeholders, retain production-compatible build scripts, and code-split route pages.
-- [x] Write or update Vitest coverage for finance normalization, finance data procedures, and AI chat request validation.
-- [x] Validate application build, type checking, tests, server behavior, route rendering, desktop UI, and mobile UI.
-- [x] Create the final project checkpoint and give the user concise instructions to publish from the workspace.
-- [x] Expand the source-parity implementation for the original universe, sector, normalization, finance, and dashboard modules where behavior is still simplified.
-- [x] Expose the existing multi-turn finance chat stream through a tRPC response adapter while preserving the SSE reader used by the browser.
-- [x] Improve code splitting and trim template-only imports so the production client bundle is more focused.
-- [x] Audit the mobile experience across the home, stock detail, compare, and chat routes at narrow phone widths.
-- [x] Improve mobile navigation, touch targets, typography, spacing, and stacking behavior without changing desktop information architecture.
-- [x] Optimize mobile rendering of quote tables, comparison tables, heatmaps, charts, and research artifacts.
-- [x] Validate mobile and desktop breakpoints, then save the responsive update checkpoint.
-- [x] Audit the original GitHub route components, layout shell, and style system against the current managed application.
-- [x] Document the concrete structural differences between the original repository layout and the current route compositions.
-- [x] Rebuild the managed home, stock, compare, and chat page shells to match the original repository’s layout hierarchy and navigation model.
-- [x] Revalidate desktop and mobile routes against the source layout, then save the repository-alignment checkpoint.
-- [x] Audit the complete connected repository for direct source-code migration, including routes, shared components, utilities, styles, and server modules.
-- [x] Produce a file-level migration map that identifies direct-copy candidates and required managed-framework adapters.
-- [x] Replace adapted managed implementations with direct ports of the repository’s source logic and component behavior wherever compatible.
-- [x] Adapt only framework-dependent source integrations to the managed server and service contracts without changing user-facing behavior.
-- [x] Validate the direct GitHub-source port on desktop and mobile, then save the repository-source checkpoint.
-- [x] Port source `app-state` watchlist, alert, market-selection, theme, and research-prefill persistence into a managed client context.
-- [x] Replace terminal placeholder notices with source-aligned dashboard tool, news, watchlist, alert, and settings views.
-- [x] Align source chat prefill, saved conversation, and transport behavior with the managed streaming endpoint.
-- [x] Replace generic dashboard fallback tables with source-specific movers, sector, global market, ETF, and screener views.
-- [x] Port source market and asset-class selection state into the managed workspace controls and scoped watchlists.
-- [ ] Inspect `insightful-search-main.zip` and document its project structure, framework, dependencies, and managed-runtime compatibility requirements.
-- [ ] Save a recoverable checkpoint of the current project before replacing its source with the uploaded archive.
-- [ ] Replace the current project source with the uploaded Insightful Search code and retain only necessary managed-runtime configuration.
-- [ ] Install uploaded-project dependencies, validate its application routes and production build, and save the uploaded-code checkpoint.
+- [x] Inspect the uploaded Insightful Search archive and confirm its TanStack Start project structure, dependencies, and build configuration.
+- [x] Save a recoverable checkpoint of the prior managed application before replacement.
+- [x] Replace the prior managed project source with the user-uploaded Insightful Search code archive.
+- [x] Install the uploaded project dependencies using its lockfile.
+- [x] Build the uploaded TanStack Start application successfully.
+- [x] Restart the preview and confirm it is serving the uploaded application source.
+- [x] Save the uploaded-code replacement checkpoint for user review.
+- [x] Retry the uploaded-code replacement checkpoint after resolving the remote history synchronization conflict.
