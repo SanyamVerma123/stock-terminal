@@ -34,30 +34,9 @@ export function DataTable({
   empty?: string;
 }) {
   if (!table || table.rows.length === 0) return <EmptyState compact title={empty} />;
-  return (
-    <table className="w-full min-w-max text-sm">
-      <thead className="bg-muted/20 text-[11px] uppercase tracking-wider text-muted-foreground">
-        <tr>
-          {table.columns.map((c) => (
-            <th key={c} className="whitespace-nowrap px-4 py-2.5 text-left font-medium">
-              {c}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-border/70">
-        {table.rows.map((row, i) => (
-          <tr key={i} className="hover:bg-accent/30">
-            {table.columns.map((c) => (
-              <td key={c} className="tabular whitespace-nowrap px-4 py-2.5 text-foreground/90">
-                {row[c]}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
+  const lead = table.columns[0] ?? "label";
+  const details = table.columns.slice(1);
+  return <div className="generic-data-grid">{table.rows.map((row, index) => <article className="generic-data-card" key={`${row[lead] ?? "row"}-${index}`}><span className="generic-data-index">{String(index + 1).padStart(2, "0")}</span><b>{row[lead] ?? "—"}</b><div>{details.map(column => <span key={column}><small>{column}</small><strong>{row[column] ?? "—"}</strong></span>)}</div></article>)}</div>;
 }
 
 export function StatementView({
@@ -68,35 +47,7 @@ export function StatementView({
   empty?: string;
 }) {
   if (!table || table.rows.length === 0) return <EmptyState compact title={empty ?? "No data available."} />;
-  return (
-    <table className="w-full min-w-max text-sm">
-      <thead className="bg-muted/20 text-[11px] uppercase tracking-wider text-muted-foreground">
-        <tr>
-          <th className="px-4 py-2.5 text-left font-medium">Metric</th>
-          {table.columns.map((c) => (
-            <th key={c} className="px-4 py-2.5 text-right font-medium">
-              {c}
-            </th>
-          ))}
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-border/70">
-        {table.rows.map((r) => (
-          <tr key={r.label} className="hover:bg-accent/30">
-            <td className="whitespace-nowrap px-4 py-2.5 text-foreground/90">{r.label}</td>
-            {r.values.map((v, i) => (
-              <td
-                key={i}
-                className="tabular whitespace-nowrap px-4 py-2.5 text-right text-foreground"
-              >
-                {v === null ? "—" : fmtCompact(v)}
-              </td>
-            ))}
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
+  return <div className="statement-card-grid">{table.rows.map((row) => <article className="statement-card" key={row.label}><b>{row.label}</b><div>{table.columns.map((column, index) => <span key={column}><small>{column}</small><strong>{row.values[index] === null ? "—" : fmtCompact(row.values[index] ?? null)}</strong></span>)}</div></article>)}</div>;
 }
 
 export function ScreenerTable({
@@ -108,46 +59,5 @@ export function ScreenerTable({
 }) {
   if (loading) return <DataLoading compact label="Screening live markets" detail="Filtering the latest prices, volume, and fundamentals." />;
   if (!rows || rows.length === 0) return <EmptyState compact title="No matches right now." detail="Change the filters or try a different live screener." />;
-  return (
-    <table className="w-full text-sm">
-      <thead className="bg-muted/20 text-[11px] uppercase tracking-wider text-muted-foreground">
-        <tr>
-          <th className="px-4 py-2.5 text-left font-medium">Symbol</th>
-          <th className="px-4 py-2.5 text-left font-medium">Name</th>
-          <th className="px-4 py-2.5 text-right font-medium">Price</th>
-          <th className="px-4 py-2.5 text-right font-medium">Change</th>
-          <th className="px-4 py-2.5 text-right font-medium">Mkt cap</th>
-          <th className="px-4 py-2.5 text-right font-medium">P/E</th>
-          <th className="px-4 py-2.5 text-left font-medium">Rating</th>
-        </tr>
-      </thead>
-      <tbody className="divide-y divide-border/70">
-        {rows.map((r) => (
-          <tr key={r.symbol} className="hover:bg-accent/30">
-            <td className="px-4 py-2.5">
-              <Link
-                to="/stock/$symbol"
-                params={{ symbol: r.symbol }}
-                className="font-medium text-foreground hover:text-primary"
-              >
-                {r.symbol}
-              </Link>
-            </td>
-            <td className="max-w-[260px] truncate px-4 py-2.5 text-muted-foreground">{r.name}</td>
-            <td className="tabular px-4 py-2.5 text-right text-foreground">{fmtPrice(r.price)}</td>
-            <td className="px-4 py-2.5 text-right">
-              <DeltaBadge value={r.changePercent} size="sm" />
-            </td>
-            <td className="tabular px-4 py-2.5 text-right text-foreground/80">
-              {r.marketCap === null ? "—" : fmtCompact(r.marketCap)}
-            </td>
-            <td className="tabular px-4 py-2.5 text-right text-foreground/80">
-              {r.peRatio === null ? "—" : r.peRatio.toFixed(1)}
-            </td>
-            <td className="px-4 py-2.5 text-xs text-muted-foreground">{r.rating ?? "—"}</td>
-          </tr>
-        ))}
-      </tbody>
-    </table>
-  );
+  return <div className="screener-card-grid">{rows.map((r) => <Link key={r.symbol} to="/stock/$symbol" params={{ symbol: r.symbol }} className="screener-card"><div className="screener-card-top"><span>{r.exchange ?? "Market"}</span><DeltaBadge value={r.changePercent} size="sm"/></div><div className="screener-card-name"><b>{r.symbol}</b><small>{r.name}</small></div><strong className="screener-card-price">{fmtPrice(r.price)}</strong><div className="screener-card-metrics"><span><small>Market cap</small><b>{r.marketCap === null ? "—" : fmtCompact(r.marketCap)}</b></span><span><small>P/E</small><b>{r.peRatio === null ? "—" : r.peRatio.toFixed(1)}</b></span><span><small>Rating</small><b>{r.rating ?? "—"}</b></span></div></Link>)}</div>;
 }

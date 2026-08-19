@@ -90,6 +90,7 @@ export function IndustryHeatmap({ table }: { table?: IndustryTable | undefined }
   const items = useMemo(() => readItems(table), [table]);
   const tiles = useMemo(() => layoutMosaic(items), [items]);
   const [hovered, setHovered] = useState<string | null>(null);
+  const leader = tiles[0];
 
   if (items.length === 0) {
     return (
@@ -106,6 +107,7 @@ export function IndustryHeatmap({ table }: { table?: IndustryTable | undefined }
 
   return (
     <div className="market-weight-surface overflow-hidden bg-background/20 p-2 sm:p-3">
+      <div className="heatmap-focus-bar"><span><i/>Market weight mosaic</span><b>{leader ? `${leader.label} · ${leader.value.toFixed(1)}%` : "Awaiting sector data"}</b></div>
       <div className="rounded-2xl border border-border/70 bg-card/45 p-1.5 shadow-inner shadow-primary/5 sm:p-2">
         <svg
           viewBox={`0 0 ${WIDTH} ${HEIGHT}`}
@@ -184,8 +186,8 @@ export function IndustryHeatmap({ table }: { table?: IndustryTable | undefined }
           })}
         </svg>
       </div>
-      <div className="mt-2 flex items-center justify-between gap-2 px-1 text-[10px] text-muted-foreground">
-        <span className="truncate">Tiles scale with industry weight</span>
+      <div className="heatmap-legend mt-2 flex items-center justify-between gap-2 px-1 text-[10px] text-muted-foreground">
+        <span className="truncate">Tiles scale with industry weight</span><span className="heatmap-scale"><i/><i/><i/><i/><i/></span>
         <span className="shrink-0 text-primary">Hover to spotlight</span>
       </div>
     </div>

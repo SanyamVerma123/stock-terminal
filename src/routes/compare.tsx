@@ -5,6 +5,8 @@ import { useServerFn } from "@tanstack/react-start";
 import { LineChart, Line, ResponsiveContainer, Tooltip, XAxis, YAxis, CartesianGrid, Legend } from "recharts";
 import { SiteHeader } from "@/components/finance/SiteHeader";
 import { getCompare } from "@/lib/finance.functions";
+import { DataLoading } from "@/components/ui/loading-state";
+import { X } from "lucide-react";
 
 export const Route = createFileRoute("/compare")({
   head: () => ({
@@ -43,13 +45,21 @@ function ComparePage() {
     }
   }
   const rows = Array.from(merged.values());
+  const snapshots = series.map((entry) => {
+    const first = entry.points[0]?.c;
+    const last = entry.points.at(-1)?.c;
+    return { symbol: entry.symbol, change: first && last ? ((last / first - 1) * 100) : null };
+  });
+  const removeSymbol = (symbol: string) => {
+    const next = input.split(",").map((value) => value.trim().toUpperCase()).filter((value) => value && value !== symbol).join(", ");
+    setInput(next); setSymbols(next.replace(/\s+/g, ""));
+  };
 
   return (
     <div className="min-h-screen bg-background">
       <SiteHeader />
-      <main className="mx-auto max-w-6xl px-4 py-10 sm:px-6">
-        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Compare performance</h1>
-        <p className="mt-2 text-sm text-muted-foreground">Rebased to 0% at the start of the trailing year.</p>
+      <main className="compare-workspace mx-auto max-w-6xl px-4 py-10 sm:px-6">
+        <div className="compare-hero"><div><p className="eyebrow">Relative return explorer</p><h1>Compare performance</h1><p>Rebased to 0% at the start of the trailing year.</p></div><span className="compare-window">1Y window</span></div>
 
         <form
           onSubmit={(e) => {
@@ -62,20 +72,22 @@ function ComparePage() {
                 .join(","),
             );
           }}
-          className="mt-6 flex gap-2"
+          className="compare-form mt-6 flex gap-2"
         >
           <input
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            className="tabular h-11 flex-1 rounded-full border border-border bg-card px-4 text-sm text-foreground outline-none focus:border-primary/60"
+            className="tabular h-12 flex-1 rounded-2xl border border-border bg-card px-4 text-sm text-foreground outline-none focus:border-primary/60"
             placeholder="Comma separated tickers"
           />
-          <button className="h-11 rounded-full bg-primary px-5 text-sm font-medium text-primary-foreground">
+          <button className="h-12 rounded-2xl bg-primary px-5 text-sm font-medium text-primary-foreground">
             Compare
           </button>
         </form>
 
-        <div className="mt-8 rounded-2xl border border-border bg-card p-4" style={{ height: 440 }}>
+        {symbols.split(",").filter(Boolean).length > 0 && <div className="compare-chips">{symbols.split(",").filter(Boolean).map((symbol) => <button key={symbol} onClick={() => removeSymbol(symbol)}><span className="compare-chip-dot" style={{ background: COLORS[Math.max(0, symbols.split(",").indexOf(symbol)) % COLORS.length] }}/>{symbol}<X size={13}/></button>)}</div>}
+        {snapshots.length > 0 && <div className="compare-snapshot-grid">{snapshots.map((item, index) => <article key={item.symbol} className="compare-snapshot"><span className="compare-chip-dot" style={{ background: COLORS[index % COLORS.length] }}/><div><p>{item.symbol}</p><b className={(item.change ?? 0) >= 0 ? "text-positive" : "text-negative"}>{item.change === null ? "—" : `${item.change >= 0 ? "+" : ""}${item.change.toFixed(2)}%`}</b></div><small>relative return</small></article>)}</div>}
+        <div className="compare-chart-panel mt-6 rounded-2xl border border-border bg-card p-4" style={{ height: 440 }}>
           {rows.length ? (
             <ResponsiveContainer width="100%" height="100%">
               <LineChart data={rows} margin={{ top: 8, right: 8, bottom: 0, left: 0 }}>
@@ -102,7 +114,7 @@ function ComparePage() {
                   contentStyle={{
                     background: "var(--popover)",
                     border: "1px solid var(--border)",
-                    borderRadius: 12,
+                    borderRadius: 14,
                     fontSize: 12,
                   }}
                 />
@@ -113,17 +125,17 @@ function ComparePage() {
                     type="monotone"
                     dataKey={s.symbol}
                     stroke={COLORS[i % COLORS.length]}
-                    strokeWidth={2}
+                    strokeWidth={2.5}
                     dot={false}
-                    isAnimationActive={false}
+                    activeDot={{ r: 4, stroke: "var(--card)", strokeWidth: 2 }}
+                    isAnimationActive
+                    animationDuration={480}
                   />
                 ))}
               </LineChart>
             </ResponsiveContainer>
           ) : (
-            <div className="flex h-full items-center justify-center text-sm text-muted-foreground">
-              {isFetching ? "Loading comparison…" : "No data for these tickers."}
-            </div>
+            isFetching ? <DataLoading label="Building comparison view" detail="Rebasing the latest price histories." /> : <div className="flex h-full items-center justify-center text-sm text-muted-foreground">No data for these tickers.</div>
           )}
         </div>
       </main>

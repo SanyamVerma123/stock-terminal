@@ -20,6 +20,8 @@ import { fmtCompact, fmtDate, fmtNumber, fmtPercent, fmtPrice, timeAgo } from "@
 import { cn } from "@/lib/utils";
 import { DataLoading } from "@/components/ui/loading-state";
 import { TextShimmerLoader } from "@/components/ui/loader";
+import { useAppState } from "@/lib/app-state";
+import { Star } from "lucide-react";
 
 export const Route = createFileRoute("/stock/$symbol")({
   head: ({ params }) => ({
@@ -73,6 +75,7 @@ function StockPage() {
   const [range, setRange] = useState<RangeKey>("6mo");
   const [statement, setStatement] = useState<"income" | "balance" | "cash">("income");
   const [quarterly, setQuarterly] = useState(false);
+  const { isWatched, toggleWatchlist } = useAppState();
 
   const summaryFn = useServerFn(getSummary);
   const historyFn = useServerFn(getHistory);
@@ -160,6 +163,7 @@ function StockPage() {
                 {q?.exchange ?? "—"}
               </span>
               <span className="tabular text-xs text-muted-foreground">{symbol}</span>
+              <button className={cn("watch-stock-button", isWatched(symbol) && "is-watched")} onClick={() => toggleWatchlist(symbol, q?.name ?? symbol)} title={isWatched(symbol) ? "Remove from watchlist" : "Add to watchlist"}><Star size={14} fill={isWatched(symbol) ? "currentColor" : "none"}/>{isWatched(symbol) ? "Watching" : "Watch"}</button>
             </div>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
               {loadingSummary ? <TextShimmerLoader text={`Loading ${symbol} overview`} /> : (q?.name ?? symbol)}

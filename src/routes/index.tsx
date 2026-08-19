@@ -52,7 +52,11 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
-  const [page, setPage] = useState<PageId>("markets");
+  const [page, setPage] = useState<PageId>(() => {
+    if (typeof window === "undefined") return "markets";
+    const requested = new URLSearchParams(window.location.search).get("view") as PageId | null;
+    return requested ?? "markets";
+  });
   const { market, watchSymbols, toggleWatchlist, alerts, screeners } = useAppState();
   const cfg = useMarketConfig();
   const qc = useQueryClient();

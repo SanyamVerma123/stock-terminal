@@ -17,3 +17,11 @@
 - [x] Replace circular and three-dot loading motion with a clean non-circular loading treatment.
 - [x] Improve market-weight, bar-chart, stock-price chart, and index-card components with 21st.dev-inspired data-visual elements.
 - [x] Validate the visual refinements on desktop and mobile, then save the chart and loader update checkpoint.
+- [x] Audit the heatmap, compare route, stock header, dashboard data views, economic calendar, filter controls, and sector views.
+- [x] Upgrade the heatmap and sector workspace with premium visual data components inspired by the supplied 21st.dev collection.
+- [x] Rework the comparison experience and dashboard table-heavy views into richer interactive data surfaces.
+- [x] Add a persistent watch control to stock detail and improve economic-calendar filters and event presentation.
+- [x] Validate premium dashboard and research components on desktop and mobile, then save the update checkpoint.
+- [x] Upgrade remaining saved screener, pro-screener, and ETF-screener table surfaces with compact visual data summaries.
+- [x] Upgrade remaining generic dashboard DataTable and StatementView surfaces with premium visual metric summaries.
+- [x] Revalidate shared screener card surfaces on desktop and mobile before saving the premium component checkpoint.

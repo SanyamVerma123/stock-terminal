@@ -32,6 +32,7 @@ import { SECTOR_INDUSTRIES, SECTOR_KEYS, sectorLabel } from "@/lib/markets";
 import { cn } from "@/lib/utils";
 import { IndustryHeatmap } from "@/components/dashboard/industry-heatmap/IndustryHeatmap";
 import { DataLoading } from "@/components/ui/loading-state";
+import type { ScreenerRow } from "@/lib/finance-types";
 
 const field =
   "h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary/60";
@@ -112,6 +113,12 @@ function useWatchSymbol() {
 
 const PRIMARY_MOVER_NAMES = ["day_gainers", "day_losers", "most_actives"] as const;
 
+function MoverCardDeck({ rows }: { rows?: ScreenerRow[] | undefined }) {
+  if (!rows || rows.length === 0) return <div className="mover-deck-empty">Market movers will appear when the live screener returns results.</div>;
+  const max = Math.max(...rows.slice(0, 8).map(row => Math.abs(row.changePercent ?? 0)), 1);
+  return <div className="mover-card-deck">{rows.slice(0, 8).map((row, index) => { const positive = (row.changePercent ?? 0) >= 0; const width = `${Math.max(12, Math.min(100, Math.abs(row.changePercent ?? 0) / max * 100))}%`; return <a className="mover-card" href={`/stock/${encodeURIComponent(row.symbol)}`} key={row.symbol}><span className="mover-rank">{String(index + 1).padStart(2, "0")}</span><div className="mover-card-main"><div><b>{row.symbol}</b><small>{row.name}</small></div><strong>{fmtPrice(row.price, row.currency)}</strong></div><div className="mover-card-footer"><span className="mover-performance"><i className={positive ? "positive" : "negative"} style={{ width }}/></span><DeltaBadge value={row.changePercent} size="sm"/></div></a>; })}</div>;
+}
+
 export function MoversView({ initialName = "day_gainers" }: { initialName?: string } = {}) {
   const runFn = useServerFn(runPredefinedScreener);
   const cfg = useMarketConfig();
@@ -132,7 +139,7 @@ export function MoversView({ initialName = "day_gainers" }: { initialName?: stri
         ))}
       </div>
       <Panel title={name.replace(/_/g, " ")} subtitle="Live predefined market screener">
-        <ScreenerTable rows={data} loading={isLoading} />
+        {isLoading ? <DataLoading compact label="Ranking live market movers" detail="Calculating price action and liquidity." /> : <MoverCardDeck rows={data} />}
       </Panel>
     </div>
   );
@@ -675,10 +682,18 @@ const CALENDARS = [
   { key: "splits", label: "Splits" },
   { key: "economic", label: "Economic events" },
 ] as const;
+const CALENDAR_WINDOWS = ["All events", "Next events", "High impact"] as const;
+
+function CalendarEventDeck({ table, filter }: { table?: { columns: string[]; rows: Record<string, string>[] } | undefined; filter: (typeof CALENDAR_WINDOWS)[number] }) {
+  const rows = (table?.rows ?? []).filter((row) => filter !== "High impact" || /high|important|3/i.test(Object.values(row).join(" "))).slice(0, 10);
+  if (rows.length === 0) return <div className="calendar-empty">No matching events are scheduled for this filter.</div>;
+  return <div className="calendar-event-deck">{rows.map((row, index) => { const values = Object.values(row); const date = row["date"] ?? row["time"] ?? row["datetime"] ?? values[0] ?? "Upcoming"; const name = row["event"] ?? row["name"] ?? row["title"] ?? values[1] ?? "Market event"; const impact = row["impact"] ?? row["importance"] ?? "Scheduled"; return <article key={`${date}-${name}-${index}`} className="calendar-event"><span className="calendar-date">{date}</span><div><b>{name}</b><small>{Object.entries(row).filter(([key]) => !/date|time|event|name|title|impact|importance/i.test(key)).slice(0, 2).map(([, value]) => value).join(" · ") || "Event details pending"}</small></div><em className={/high|important|3/i.test(impact) ? "high" : ""}>{impact}</em></article>; })}</div>;
+}
 
 export function CalendarsView() {
   const fn = useServerFn(getMarketCalendar);
   const [kind, setKind] = useState<(typeof CALENDARS)[number]["key"]>("earnings");
+  const [window, setWindow] = useState<(typeof CALENDAR_WINDOWS)[number]>("All events");
   const { data, isLoading } = useQuery({
     queryKey: ["cal", kind],
     queryFn: () => fn({ data: { kind } }),
@@ -686,18 +701,12 @@ export function CalendarsView() {
   });
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap gap-2">
-        {CALENDARS.map((c) => (
-          <Chip key={c.key} active={c.key === kind} onClick={() => setKind(c.key)}>
-            {c.label}
-          </Chip>
-        ))}
-      </div>
+      <div className="calendar-toolbar"><div className="flex flex-wrap gap-2">{CALENDARS.map((c) => <Chip key={c.key} active={c.key === kind} onClick={() => setKind(c.key)}>{c.label}</Chip>)}</div><div className="calendar-window-control">{CALENDAR_WINDOWS.map(item => <button key={item} className={window === item ? "active" : ""} onClick={() => setWindow(item)}>{item}</button>)}</div></div>
       <Panel title={`${CALENDARS.find((c) => c.key === kind)?.label} calendar`}>
         {isLoading ? (
           <DataLoading compact label="Loading market calendar" detail="Retrieving the next scheduled market events." />
         ) : (
-          <DataTable table={data} />
+          <CalendarEventDeck table={data} filter={window} />
         )}
       </Panel>
     </div>
