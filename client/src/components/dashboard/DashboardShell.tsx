@@ -1,2 +1,6 @@
 import type { ReactNode } from "react";
-export function DashboardShell({ children }: { children: ReactNode }) { return <main className="dashboard-shell">{children}</main>; }
+import { SiteHeader } from "@/components/finance/SiteHeader";
+
+export function DashboardShell({ children }: { children: ReactNode }) {
+  return <><SiteHeader/><main className="dashboard-shell">{children}</main></>;
+}

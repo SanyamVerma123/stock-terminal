@@ -23,3 +23,7 @@
 - [x] Expand the source-parity implementation for the original universe, sector, normalization, finance, and dashboard modules where behavior is still simplified.
 - [x] Expose the existing multi-turn finance chat stream through a tRPC response adapter while preserving the SSE reader used by the browser.
 - [x] Improve code splitting and trim template-only imports so the production client bundle is more focused.
+- [x] Audit the mobile experience across the home, stock detail, compare, and chat routes at narrow phone widths.
+- [x] Improve mobile navigation, touch targets, typography, spacing, and stacking behavior without changing desktop information architecture.
+- [x] Optimize mobile rendering of quote tables, comparison tables, heatmaps, charts, and research artifacts.
+- [x] Validate mobile and desktop breakpoints, then save the responsive update checkpoint.

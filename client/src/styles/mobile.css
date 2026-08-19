@@ -1,0 +1,90 @@
+.mobile-nav { display:none; }
+
+@media (max-width: 920px) {
+  .mobile-nav { display:flex; position:sticky; top:68px; z-index:29; gap:6px; padding:8px 18px; overflow-x:auto; border-bottom:1px solid var(--border); background:color-mix(in srgb,var(--background) 93%,transparent); backdrop-filter:blur(18px); scrollbar-width:none; }
+  .mobile-nav::-webkit-scrollbar { display:none; }
+  .mobile-nav a { display:grid; min-width:92px; min-height:36px; place-items:center; border:1px solid transparent; border-radius:9px; color:var(--muted-foreground); font-size:12px; font-weight:600; }
+  .mobile-nav a.active { border-color:color-mix(in srgb,var(--primary) 38%,var(--border)); background:color-mix(in srgb,var(--primary) 11%,var(--card)); color:var(--primary); }
+  .stock-page,.compare-page,.chat-page,.dashboard-shell { padding-top:22px; }
+  .market-strip { scroll-snap-type:x mandatory; overscroll-behavior-x:contain; }
+  .market-tile { scroll-snap-align:start; min-height:88px; }
+  .range-tabs { max-width:100%; overflow-x:auto; overscroll-behavior-x:contain; scrollbar-width:none; }
+  .range-tabs::-webkit-scrollbar { display:none; }
+  .range-tabs button { min-width:35px; min-height:30px; }
+  .table-scroll { position:relative; overscroll-behavior-x:contain; -webkit-overflow-scrolling:touch; }
+  .table-scroll::after { content:"Swipe to view more"; display:block; position:sticky; left:12px; bottom:7px; width:max-content; padding:4px 7px; border:1px solid var(--border); border-radius:999px; background:color-mix(in srgb,var(--card) 92%,transparent); color:var(--muted-foreground); font-family:"DM Mono",monospace; font-size:9px; }
+  .comparison-table .table-scroll::after { content:"Swipe across metrics"; }
+  .comparison-table th:first-child,.comparison-table td:first-child { position:sticky; left:0; z-index:2; background:var(--card); box-shadow:8px 0 14px color-mix(in srgb,var(--background) 38%,transparent); }
+  .comparison-table th:first-child { z-index:3; }
+  .chat-page > .artifact-panel { display:block; position:static; order:2; margin-top:2px; }
+  .chat-composer { bottom:calc(8px + env(safe-area-inset-bottom)); }
+  .chat-composer button { min-width:38px; min-height:38px; }
+}
+
+@media (max-width: 560px) {
+  .site-header { height:60px; gap:8px; padding:0 14px; }
+  .site-header .brand { flex:0 0 auto; }
+  .site-header .brand > span:last-child { display:none; }
+  .brand-mark { width:31px; height:31px; border-radius:9px; }
+  .site-header .header-tools { flex:1; min-width:0; }
+  .site-header .ticker-search-compact { width:100%; min-width:0; min-height:40px; }
+  .site-header .icon-button { width:40px; height:40px; flex:0 0 auto; }
+  .mobile-nav { top:60px; padding:7px 14px; }
+  .mobile-nav a { min-width:86px; min-height:38px; }
+  .dashboard-shell,.stock-page,.compare-page,.chat-page { padding:20px 14px calc(34px + env(safe-area-inset-bottom)); }
+  .home-hero { padding:18px 0 16px; }
+  .hero-copy h1 { margin:13px 0 12px; font-size:clamp(35px,11vw,45px); line-height:1.02; }
+  .hero-copy p { font-size:14px; line-height:1.58; }
+  .hero-search { margin-top:20px; }
+  .ticker-search { min-height:46px; padding:0 13px; }
+  .hero-trust { display:grid; grid-template-columns:1fr 1fr; gap:9px 12px; margin-top:14px; }
+  .hero-trust span:last-child { grid-column:span 2; }
+  .market-strip { margin:0 -14px; padding:8px 14px 18px; }
+  .content-grid,.stock-layout { gap:14px; }
+  .panel { border-radius:12px; }
+  .panel-heading { min-height:58px; padding:14px; }
+  .panel-heading h2 { font-size:15px; }
+  .heatmap-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:6px; padding:0 14px 14px; }
+  .heat-cell { min-height:78px; padding:9px; }
+  .ai-view,.research-note { padding:18px; }
+  .ai-orb { width:36px; height:36px; margin-bottom:15px; }
+  .prompt-chips button { min-height:42px; padding:10px; font-size:11px; }
+  .stock-overview { gap:18px; padding:2px 0 21px; }
+  .back-link { margin-bottom:13px; }
+  .stock-overview h1 { margin:8px 0; font-size:26px; }
+  .price-line { align-items:flex-start; flex-direction:column; gap:7px; }
+  .price-line strong { font-size:28px; }
+  .stat-grid { gap:0 12px; }
+  .stat { min-height:57px; padding:10px 0; }
+  .metric-list,.news-list { padding-left:14px; padding-right:14px; }
+  .analyst-panel,.event-panel { padding-left:14px; padding-right:14px; }
+  .analyst-panel .panel-heading,.event-panel .panel-heading { margin-left:-14px; margin-right:-14px; }
+  .target-price { font-size:23px; }
+  .chart-panel .panel-heading { align-items:flex-start; flex-direction:column; }
+  .chart-panel .range-tabs { align-self:stretch; justify-content:space-between; }
+  .price-chart,.price-chart > div { min-height:240px; }
+  .loading-state { min-height:235px; }
+  .compare-header { padding:2px 0 22px; }
+  .compare-header h1 { margin:8px 0; font-size:31px; line-height:1.05; }
+  .compare-header p { font-size:13px; }
+  .compare-controls { gap:9px; margin-top:17px; }
+  .compare-controls .ticker-search { width:100%; }
+  .comparison-table { margin:0 -2px; }
+  .comparison-table table { min-width:530px; }
+  .comparison-table th,.comparison-table td { padding:11px 14px; }
+  .chat-page { gap:14px; }
+  .chat-intro { gap:11px; padding:2px 0 18px; }
+  .intro-icon { width:39px; height:39px; }
+  .chat-intro h1 { font-size:24px; line-height:1.08; }
+  .chat-intro p { line-height:1.55; }
+  .starter-grid { gap:9px; margin-bottom:15px; }
+  .starter-grid button { min-height:82px; padding:13px; }
+  .messages { gap:16px; }
+  .message { grid-template-columns:28px minmax(0,1fr); gap:8px; }
+  .message-avatar { width:28px; height:28px; }
+  .message-body { font-size:13px; line-height:1.65; overflow-wrap:anywhere; }
+  .markdown pre { max-width:calc(100vw - 56px); padding:10px; }
+  .chat-composer { margin:4px -2px 0; border-radius:12px; padding:10px; }
+  .chat-composer textarea { min-height:48px; font-size:14px; }
+  .artifact-panel.empty { min-height:150px; padding:16px; }
+}
