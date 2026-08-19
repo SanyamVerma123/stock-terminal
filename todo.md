@@ -27,3 +27,7 @@
 - [x] Improve mobile navigation, touch targets, typography, spacing, and stacking behavior without changing desktop information architecture.
 - [x] Optimize mobile rendering of quote tables, comparison tables, heatmaps, charts, and research artifacts.
 - [x] Validate mobile and desktop breakpoints, then save the responsive update checkpoint.
+- [x] Audit the original GitHub route components, layout shell, and style system against the current managed application.
+- [x] Document the concrete structural differences between the original repository layout and the current route compositions.
+- [x] Rebuild the managed home, stock, compare, and chat page shells to match the original repository’s layout hierarchy and navigation model.
+- [x] Revalidate desktop and mobile routes against the source layout, then save the repository-alignment checkpoint.

@@ -1,12 +1,10 @@
-import { Moon, Sun } from "lucide-react";
+import { Search } from "lucide-react";
 import { Link, useLocation } from "wouter";
-import { useTheme } from "@/contexts/ThemeContext";
 import { TickerAutocomplete } from "./TickerAutocomplete";
 
-const links = [{ href: "/", label: "Markets" }, { href: "/compare", label: "Compare" }, { href: "/chat", label: "Research" }];
-export function SiteHeader() {
+const links = [{ href: "/", label: "Markets" }, { href: "/compare", label: "Compare" }, { href: "/chat", label: "AI Analyst" }];
+export function SiteHeader({ compactSearch = true }: { compactSearch?: boolean }) {
   const [location] = useLocation();
-  const { theme, toggleTheme } = useTheme();
   const active = (href: string) => location === href || (href === "/" && location.startsWith("/stock"));
-  return <><header className="site-header"><Link href="/" className="brand" aria-label="Insightful Search home"><span className="brand-mark">IS</span><span>Insightful <b>Search</b></span></Link><nav className="site-nav" aria-label="Primary">{links.map(link => <Link key={link.href} href={link.href} className={active(link.href) ? "active" : ""}>{link.label}</Link>)}</nav><div className="header-tools"><TickerAutocomplete compact/><button className="icon-button" onClick={toggleTheme} aria-label="Toggle color theme">{theme === "dark" ? <Sun size={17}/> : <Moon size={17}/>}</button></div></header><nav className="mobile-nav" aria-label="Mobile primary">{links.map(link => <Link key={link.href} href={link.href} className={active(link.href) ? "active" : ""}>{link.label}</Link>)}</nav></>;
+  return <header className="source-header"><div className="source-header-inner"><Link href="/" className="source-brand"><span>S</span><b>Screener</b></Link>{compactSearch && <div className="source-header-search"><TickerAutocomplete compact placeholder="Search stocks, indices or companies"/></div>}<nav className="source-nav" aria-label="Primary">{links.map(link => <Link key={link.href} href={link.href} className={active(link.href) ? "active" : ""}>{link.label}</Link>)}</nav><button className="source-search-trigger" aria-label="Search markets"><Search size={17}/></button></div></header>;
 }

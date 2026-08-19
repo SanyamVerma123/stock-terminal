@@ -2,6 +2,8 @@
 @import "tailwindcss";
 @import "./styles/loading-state.css";
 @import "./styles/mobile.css";
+@import "./styles/repository-layout.css";
+@import "./styles/source-stock.css";
 
 :root { --background:#f7f8f6; --foreground:#18201d; --card:#ffffff; --card-soft:#f0f3ef; --border:#dde4df; --muted-foreground:#65716b; --primary:#1f9d65; --primary-foreground:#ffffff; --chart-grid:#e5ebe6; --positive:#15803d; --negative:#dc3c55; --ring:#1f9d65; }
 .dark { --background:#101513; --foreground:#ecf3ee; --card:#151d19; --card-soft:#1a2420; --border:#2b3731; --muted-foreground:#9aaba1; --primary:#50d99c; --primary-foreground:#0d1712; --chart-grid:#26332c; --positive:#62db9d; --negative:#ff7d8e; --ring:#50d99c; }
