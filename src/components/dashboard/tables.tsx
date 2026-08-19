@@ -3,6 +3,8 @@ import { DeltaBadge } from "@/components/finance/DeltaBadge";
 import { fmtCompact, fmtPrice } from "@/lib/format";
 import type { GenericTable, ScreenerRow } from "@/lib/finance-types";
 import type { StatementTable } from "@/lib/finance-normalize";
+import { DataLoading } from "@/components/ui/loading-state";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function Panel({
   title,
@@ -14,7 +16,7 @@ export function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-border/70 bg-card/55">
+    <section className="premium-panel overflow-hidden rounded-2xl border border-border/70 bg-card/55">
       <header className="border-b border-border/60 px-5 py-3">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
         {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
@@ -31,8 +33,7 @@ export function DataTable({
   table?: GenericTable | undefined;
   empty?: string;
 }) {
-  if (!table || table.rows.length === 0)
-    return <p className="p-5 text-sm text-muted-foreground">{empty}</p>;
+  if (!table || table.rows.length === 0) return <EmptyState compact title={empty} />;
   return (
     <table className="w-full min-w-max text-sm">
       <thead className="bg-muted/20 text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -66,8 +67,7 @@ export function StatementView({
   table?: StatementTable | undefined;
   empty?: string;
 }) {
-  if (!table || table.rows.length === 0)
-    return <p className="p-5 text-sm text-muted-foreground">{empty ?? "No data available."}</p>;
+  if (!table || table.rows.length === 0) return <EmptyState compact title={empty ?? "No data available."} />;
   return (
     <table className="w-full min-w-max text-sm">
       <thead className="bg-muted/20 text-[11px] uppercase tracking-wider text-muted-foreground">
@@ -106,9 +106,8 @@ export function ScreenerTable({
   rows?: ScreenerRow[] | undefined;
   loading?: boolean | undefined;
 }) {
-  if (loading) return <p className="p-5 text-sm text-muted-foreground">Screening live markets…</p>;
-  if (!rows || rows.length === 0)
-    return <p className="p-5 text-sm text-muted-foreground">No matches right now.</p>;
+  if (loading) return <DataLoading compact label="Screening live markets" detail="Filtering the latest prices, volume, and fundamentals." />;
+  if (!rows || rows.length === 0) return <EmptyState compact title="No matches right now." detail="Change the filters or try a different live screener." />;
   return (
     <table className="w-full text-sm">
       <thead className="bg-muted/20 text-[11px] uppercase tracking-wider text-muted-foreground">

@@ -8,6 +8,8 @@ import { DeltaBadge } from "@/components/finance/DeltaBadge";
 import { fmtCompact, fmtPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import type { Quote } from "@/lib/finance-types";
+import { DataLoading } from "@/components/ui/loading-state";
+import { EmptyState } from "@/components/ui/empty-state";
 
 export function useQuotes(symbols: string[]) {
   const fn = useServerFn(getQuotes);
@@ -53,14 +55,7 @@ export function QuoteTable({
           </tr>
         </thead>
         <tbody>
-          {isLoading &&
-            symbols.map((s) => (
-              <tr key={s} className="border-t border-border">
-                <td colSpan={6} className="px-4 py-3">
-                  <div className="h-4 w-full animate-pulse rounded bg-muted/50" />
-                </td>
-              </tr>
-            ))}
+          {isLoading && <tr className="border-t border-border"><td colSpan={6}><DataLoading compact label="Building your live quote table" detail="Prices, ranges, and market caps are arriving now."/></td></tr>}
           {rows.map((q) => {
             const meta = UNIVERSE[q.symbol];
             const starred = watchlist.includes(q.symbol);
@@ -107,9 +102,7 @@ export function QuoteTable({
           })}
           {!isLoading && rows.length === 0 && (
             <tr>
-              <td colSpan={6} className="px-4 py-10 text-center text-sm text-muted-foreground">
-                {emptyLabel}
-              </td>
+              <td colSpan={6}><EmptyState compact title={emptyLabel} detail="Market data will appear here when it is available." /></td>
             </tr>
           )}
         </tbody>

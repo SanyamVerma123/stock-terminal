@@ -1,16 +1,12 @@
 import { cn } from "@/lib/utils";
 
-export function TextShimmerLoader({ text, size = "md" }: { text: string; size?: "sm" | "md" }) {
-  return (
-    <span
-      className={cn(
-        "animate-pulse text-muted-foreground",
-        size === "sm" ? "text-[11px]" : "text-xs",
-      )}
-      role="status"
-      aria-live="polite"
-    >
-      {text}
-    </span>
-  );
-}
+export type LoaderVariant = "circular" | "dots" | "wave" | "terminal" | "text-shimmer";
+export type LoaderSize = "sm" | "md" | "lg";
+const size = { sm: "size-4", md: "size-5", lg: "size-6" };
+
+export function CircularLoader({ className, size: value = "md" }: { className?: string | undefined; size?: LoaderSize | undefined }) { return <span className={cn("border-primary animate-spin rounded-full border-2 border-t-transparent", size[value], className)}><span className="sr-only">Loading</span></span>; }
+export function DotsLoader({ className, size: value = "md" }: { className?: string | undefined; size?: LoaderSize | undefined }) { const dot = { sm: "h-1.5 w-1.5", md: "h-2 w-2", lg: "h-2.5 w-2.5" }; return <span className={cn("flex items-center space-x-1", className)}>{[0, 1, 2].map(index => <i key={index} className={cn("bg-primary animate-[bounce-dots_1.4s_ease-in-out_infinite] rounded-full", dot[value])} style={{ animationDelay: `${index * 160}ms` }}/>)}</span>; }
+export function WaveLoader({ className, size: value = "md" }: { className?: string | undefined; size?: LoaderSize | undefined }) { const widths = { sm: "w-0.5", md: "w-0.5", lg: "w-1" }; const heights = { sm: ["6px", "9px", "12px", "9px", "6px"], md: ["8px", "12px", "16px", "12px", "8px"], lg: ["10px", "15px", "20px", "15px", "10px"] }; return <span className={cn("flex h-5 items-center gap-0.5", className)}>{heights[value].map((height, index) => <i key={index} className={cn("bg-primary animate-[wave_1s_ease-in-out_infinite] rounded-full", widths[value])} style={{ height, animationDelay: `${index * 100}ms` }}/>)}</span>; }
+export function TerminalLoader({ className, size: value = "md" }: { className?: string | undefined; size?: LoaderSize | undefined }) { const cursor = { sm: "h-3 w-1.5", md: "h-4 w-2", lg: "h-5 w-2.5" }; return <span className={cn("flex items-center space-x-1", className)}><b className="font-mono text-primary">&gt;</b><i className={cn("bg-primary animate-[blink_1s_step-end_infinite]", cursor[value])}/><span className="sr-only">Loading</span></span>; }
+export function TextShimmerLoader({ text = "Loading", size = "md", className }: { text?: string | undefined; size?: "sm" | "md" | undefined; className?: string | undefined }) { return <span className={cn("bg-[linear-gradient(to_right,var(--muted-foreground)_40%,var(--foreground)_60%,var(--muted-foreground)_80%)] bg-size-[200%_auto] bg-clip-text animate-[shimmer_4s_infinite_linear] font-medium text-transparent", size === "sm" ? "text-[11px]" : "text-xs", className)} role="status" aria-live="polite">{text}</span>; }
+export function Loader({ variant = "circular", size = "md", text, className }: { variant?: LoaderVariant | undefined; size?: LoaderSize | undefined; text?: string | undefined; className?: string | undefined }) { if (variant === "dots") return <DotsLoader size={size} className={className}/>; if (variant === "wave") return <WaveLoader size={size} className={className}/>; if (variant === "terminal") return <TerminalLoader size={size} className={className}/>; if (variant === "text-shimmer") return <TextShimmerLoader text={text} className={className}/>; return <CircularLoader size={size} className={className}/>; }

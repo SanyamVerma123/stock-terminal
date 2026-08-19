@@ -31,6 +31,7 @@ import { useAppState, useMarketConfig, EMPTY_FILTERS, type ScreenerFilters } fro
 import { SECTOR_INDUSTRIES, SECTOR_KEYS, sectorLabel } from "@/lib/markets";
 import { cn } from "@/lib/utils";
 import { IndustryHeatmap } from "@/components/dashboard/industry-heatmap/IndustryHeatmap";
+import { DataLoading } from "@/components/ui/loading-state";
 
 const field =
   "h-9 rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary/60";
@@ -693,7 +694,7 @@ export function CalendarsView() {
       </div>
       <Panel title={`${CALENDARS.find((c) => c.key === kind)?.label} calendar`}>
         {isLoading ? (
-          <p className="p-5 text-sm text-muted-foreground">Loading calendar…</p>
+          <DataLoading compact label="Loading market calendar" detail="Retrieving the next scheduled market events." />
         ) : (
           <DataTable table={data} />
         )}
@@ -800,7 +801,7 @@ export function OptionsView() {
       </div>
       <Panel title={`Calls · ${symbol} ${active ?? ""}`}>
         {isLoading ? (
-          <p className="p-5 text-sm text-muted-foreground">Loading chain…</p>
+          <DataLoading compact label="Loading options chain" detail="Gathering live contracts and open interest." />
         ) : (
           <DataTable table={chain?.calls} />
         )}
@@ -941,7 +942,7 @@ export function NewsSearchView() {
         />
       </div>
       <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border bg-card">
-        {isLoading && <p className="p-6 text-sm text-muted-foreground">Searching…</p>}
+        {isLoading && <DataLoading compact label="Searching market news" detail="Finding current coverage for your query." />}
         {(data ?? []).map((n) => (
           <a
             key={n.link}

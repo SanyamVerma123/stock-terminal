@@ -18,6 +18,7 @@ import {
 import { RANGES, type RangeKey } from "@/lib/finance-types";
 import { fmtCompact, fmtDate, fmtNumber, fmtPercent, fmtPrice, timeAgo } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { DataLoading, InlineLoading } from "@/components/ui/loading-state";
 
 export const Route = createFileRoute("/stock/$symbol")({
   head: ({ params }) => ({
@@ -160,7 +161,7 @@ function StockPage() {
               <span className="tabular text-xs text-muted-foreground">{symbol}</span>
             </div>
             <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
-              {loadingSummary ? "Loading…" : (q?.name ?? symbol)}
+              {loadingSummary ? <InlineLoading label={`Loading ${symbol} overview`} variant="wave" /> : (q?.name ?? symbol)}
             </h1>
             <div className="mt-3 flex items-end gap-3">
               <span className="tabular text-4xl font-semibold text-foreground">
@@ -209,9 +210,7 @@ function StockPage() {
                 </div>
               }
             >
-              <div className={cn(loadingHistory && "opacity-60 transition-opacity")}>
-                <TradingViewResearchChart symbol={symbol} />
-              </div>
+              {loadingHistory ? <DataLoading compact label={`Loading ${symbol} price history`} detail="Preparing the selected chart range." /> : <div className="chart-ready"><TradingViewResearchChart symbol={symbol} /></div>}
             </Card>
 
             <Card

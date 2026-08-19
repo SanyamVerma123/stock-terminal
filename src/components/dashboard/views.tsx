@@ -13,6 +13,7 @@ import { useAppState, useMarketConfig } from "@/lib/app-state";
 import { MARKETS, type MarketId } from "@/lib/markets";
 import { cn } from "@/lib/utils";
 import { listChatModels, type ChatModel } from "@/lib/models.functions";
+import { DataLoading } from "@/components/ui/loading-state";
 
 export type Alert = { id: string; symbol: string; above: boolean; price: number; enabled: boolean };
 
@@ -215,7 +216,7 @@ export function NewsView() {
       </div>
 
       <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border/70 bg-card/55">
-        {busy && <p className="p-6 text-sm text-muted-foreground">Loading headlines…</p>}
+        {busy && <DataLoading compact label="Loading market headlines" detail="Collecting the latest research and company coverage." />}
         {items.map((n) => (
           <a
             key={`${n.symbol}-${n.link}`}
