@@ -646,7 +646,7 @@ export function SectorsView() {
   const { data: sectorQuotes, isLoading: isSectorQuotesLoading } = useQuery({
     queryKey: ["sector-live-quotes", cfg.id, sectorSymbols.join(",")],
     queryFn: () => quotesFn({ data: { symbols: sectorSymbols.join(",") } }),
-    enabled: Boolean(data?.source === "tracked" && sectorSymbols.length > 0),
+    enabled: Boolean(sectorSymbols.length > 0),
     staleTime: 30_000,
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
@@ -738,6 +738,23 @@ export function SectorsView() {
         </p>
       )}
 
+      <div
+        className={cn(
+          "rounded-xl border px-3 py-2 text-xs leading-5",
+          data.coverageStatus === "full"
+            ? "border-positive/20 bg-positive/[0.05] text-positive"
+            : data.coverageStatus === "partial"
+              ? "border-amber-500/25 bg-amber-500/[0.06] text-amber-700 dark:text-amber-300"
+              : "border-border bg-muted/25 text-muted-foreground",
+        )}
+      >
+        {data.coverageStatus === "full"
+          ? `Provider coverage: all ${data.topCompanies.rows.length} returned companies are displayed.`
+          : data.coverageStatus === "partial"
+            ? `Provider-ranked coverage: showing ${data.topCompanies.rows.length} returned companies from a ${data.companiesCount?.toLocaleString() ?? "larger"} company classification.`
+            : `Representative coverage: ${data.topCompanies.rows.length} curated companies are shown while full provider classification data is unavailable.`}
+      </div>
+
       <Panel title="Industry coverage mix" subtitle={data.mixBasis === "market-cap" ? "Share of the selected sector’s available market capitalization." : "Representative company coverage inside the selected sector."}>
         <TableBarChart table={industryTable} />
       </Panel>
@@ -771,7 +788,18 @@ export function SectorsView() {
         </>
       )}
 
-      <Panel title={`${sectorLabel(sector)} — listed company coverage`} subtitle="All companies matched to the selected sector.">
+      <Panel
+        title={
+          data.source === "provider"
+            ? `${sectorLabel(sector)} — provider-ranked companies`
+            : `${sectorLabel(sector)} — listed company coverage`
+        }
+        subtitle={
+          data.source === "provider"
+            ? `Showing all ${data.topCompanies.rows.length} companies returned by the provider’s ranked sector overview${data.companiesCount && data.companiesCount > data.topCompanies.rows.length ? `, from ${data.companiesCount.toLocaleString()} companies in its classification` : ""}.`
+            : "All companies matched to the selected representative sector coverage."
+        }
+      >
         <DataTable table={liveCompanyTable} empty="No matching company coverage returned for this sector." />
       </Panel>
       {data?.industries.rows.length ? (

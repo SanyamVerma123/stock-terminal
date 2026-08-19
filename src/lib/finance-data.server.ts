@@ -450,10 +450,10 @@ export async function fetchCompare(
     }));
 }
 
-/** Fast batch quotes — one MCP call per 20 tickers. */
+/** Fast batch quotes — the connected provider accepts at least 50 symbols per snapshot request. */
 export async function fetchQuotes(symbols: string[]): Promise<Quote[]> {
   const chunks: string[][] = [];
-  for (let i = 0; i < symbols.length; i += 20) chunks.push(symbols.slice(i, i + 20));
+  for (let i = 0; i < symbols.length; i += 50) chunks.push(symbols.slice(i, i + 50));
 
   const settled = await Promise.allSettled(
     chunks.map((tickers) => callMcpTool("batch_snapshots", { tickers })),
@@ -1139,12 +1139,12 @@ export async function fetchSectorOverview(sectorKey: string, region = "US") {
   const raw = await resolveWithin(callMcpTool("get_sector_overview", {
     sector_key: providerTaxonomyLabel(canonicalSector, "sector"),
     region,
-  }).catch(() => null), null, 750);
+  }).catch(() => null), null, 4_500);
   const o = isRecord(pick(raw, "overview"))
     ? (pick(raw, "overview") as Record<string, unknown>)
     : {};
-  const providerTopCompanies = toGenericTable(pick(raw, "top_companies"), 25);
-  const providerIndustries = toGenericTable(pick(raw, "industries"), 25);
+  const providerTopCompanies = toGenericTable(pick(raw, "top_companies"), 100);
+  const providerIndustries = toGenericTable(pick(raw, "industries"), 100);
   const needsFallback = providerTopCompanies.rows.length === 0 || providerIndustries.rows.length === 0;
   const profiles = profilesForRegion(region).filter((profile) =>
     taxonomyMatches(profile.sector, canonicalSector, "sector"),
@@ -1155,6 +1155,12 @@ export async function fetchSectorOverview(sectorKey: string, region = "US") {
   );
   const industries = providerIndustries.rows.length > 0 ? providerIndustries : fallback.industries;
   const usingTrackedFallback = providerTopCompanies.rows.length === 0 || providerIndustries.rows.length === 0;
+  const providerCompaniesCount = num(o["companies_count"]);
+  const coverageStatus = usingTrackedFallback
+    ? "representative"
+    : providerCompaniesCount !== null && providerCompaniesCount > topCompanies.rows.length
+      ? "partial"
+      : "full";
   return {
     name: str(pick(raw, "name")) ?? canonicalSector,
     description:
@@ -1163,14 +1169,15 @@ export async function fetchSectorOverview(sectorKey: string, region = "US") {
         ? "Representative listed-company coverage is shown while the provider’s sector aggregate refreshes."
         : null),
     marketCap: num(o["market_cap"]) ?? fallback.marketCap,
-    companiesCount: num(o["companies_count"]) ?? fallback.companiesCount,
+    companiesCount: providerCompaniesCount ?? fallback.companiesCount,
     industriesCount: num(o["industries_count"]) ?? fallback.industriesCount,
     employeeCount: num(o["employee_count"]),
     marketWeight: num(o["market_weight"]),
     source: usingTrackedFallback ? "tracked" : "provider",
+    coverageStatus,
     mixBasis: usingTrackedFallback ? fallback.mixBasis : "market-cap",
     topCompanies,
-    topEtfs: toGenericTable(pick(raw, "top_etfs"), 15),
+    topEtfs: toGenericTable(pick(raw, "top_etfs"), 100),
     industries,
   };
 }
@@ -1200,12 +1207,12 @@ export async function fetchIndustryOverview(industryKey: string, region = "US") 
       resolveWithin(
         callMcpTool("get_industry_overview", { industry_key: candidate, region }).catch(() => null),
         null,
-        1_200,
+        4_500,
       ),
     ),
   );
   for (const raw of providerResults) {
-    const table = toGenericTable(pick(raw, "top_companies") ?? pick(raw, "data"), 25);
+    const table = toGenericTable(pick(raw, "top_companies") ?? pick(raw, "data"), 100);
     if (table.rows.length > 0) {
       return enhanceCompanyTable(table, profilesForRegion(region));
     }

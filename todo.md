@@ -52,3 +52,15 @@
 - [x] Hide unavailable market-cap and market-weight metrics from representative coverage instead of rendering dash-filled summary cards.
 - [x] Restore the useful lower sector dashboard panels with selected-sector-scoped company, industry, and ETF content.
 - [x] Validate every main dashboard screener/sector state on desktop and mobile, then save the focused dashboard correction checkpoint.
+- [x] Inspect provider sector, industry, and screener pagination contracts to determine the full available company universe per classification.
+- [x] Retrieve and merge the widest provider-backed company coverage available for selected sectors and industries, retaining representative fallback only when live coverage is unavailable.
+- [x] Label sector metrics and company lists clearly by live/provider, partial, or representative coverage status.
+- [x] Validate expanded sector and industry coverage on desktop and mobile, then save the full-coverage checkpoint.
+- [x] Probe the connected provider’s relevant sector, industry, screener, quote, and pagination operations with real requests before adopting any new data path.
+- [x] Trace and repair the recurring failure for chat session chat-1787156786511, including repeated navigation, restoration, and retry behavior.
+- [x] Use only provider paths that returned valid classified market data to expand company and industry coverage, then validate their dashboard behavior.
+- [x] Add an explicit partial-provider coverage state wherever the provider returns a ranked subset rather than its full reported classification total.
+- [x] Recreate chat-1787156786511 in the active browser session and validate navigation, restoration, and retry behavior after the chat-runtime recovery fix.
+- [x] Revalidate the final provider-backed coverage state on desktop and mobile, then save the exact update checkpoint.
+- [x] Execute the Retry action in recreated chat-1787156786511 and confirm it completes and restores after navigation or reload.
+- [x] Save the exact post-validation provider-coverage and chat-recovery checkpoint.

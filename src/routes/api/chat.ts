@@ -729,8 +729,10 @@ export const Route = createFileRoute("/api/chat")({
           researchMode === "Deep Research" || effort === "High Effort" ? 12 : researchMode === "Quick Take" ? 4 : 8;
         const kiloReasoningEffort =
           effort === "Low Effort" ? "low" : effort === "High Effort" ? "high" : "medium";
+        const kiloSupportsReasoningEffort =
+          candidate.providerId === "kilo" && /(nemotron|reasoning|thinking)/i.test(candidate.modelId);
         const providerOptions =
-          candidate.providerId === "kilo"
+          kiloSupportsReasoningEffort
             ? { kilo: { reasoningEffort: kiloReasoningEffort } }
             : undefined;
 

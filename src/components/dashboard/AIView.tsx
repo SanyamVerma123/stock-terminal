@@ -89,6 +89,15 @@ function getChatRuntime(id: string, messages: UIMessage[]) {
   return runtime;
 }
 
+function recreateFailedChatRuntime(id: string) {
+  if (chatRuntimeStatuses.get(id) !== "error") return;
+  chatRuntimeStore.delete(id);
+  chatRuntimeObservers.delete(id);
+  chatRuntimeErrors.delete(id);
+  chatRuntimeStatuses.delete(id);
+  notifyRuntimeListeners();
+}
+
 function newChatSession(): ChatSession {
   const now = Date.now();
   return { id: `chat-${now}`, title: "New research", createdAt: now, updatedAt: now, messages: [] };
@@ -432,6 +441,11 @@ export function AIView({ visible = true }: { visible?: boolean }) {
 
   const { messages, sendMessage, regenerate, status, stop } = useChat({ chat: runtime });
 
+  useEffect(() => {
+    if (status !== "error") return;
+    recreateFailedChatRuntime(runtimeId);
+  }, [runtimeId, status]);
+
   const clearRuntimeError = useCallback(() => {
     chatRuntimeErrors.delete(runtimeId);
     setSessionErrors((previous) => {
@@ -601,6 +615,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
   };
 
   const selectChat = (id: string) => {
+    recreateFailedChatRuntime(id);
     setActiveChatId(id);
     setSessionErrors((previous) => {
       const next = { ...previous };
