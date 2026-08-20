@@ -84,3 +84,5 @@
 - [x] Add focused regression tests for provider-overview screener selection and economic-calendar request composition.
 - [x] Diagnose and repair the managed deployment failure caused by the missing dist/public artifact path.
 - [x] Verify the production build emits deployable public assets at the hosting image’s expected path and save a new checkpoint.
+- [x] Diagnose and repair the managed container startup failure caused by the missing dist/index.js runtime entry.
+- [x] Verify the built runtime starts on the managed port with the expected dist/index.js entry and save a corrected checkpoint.
