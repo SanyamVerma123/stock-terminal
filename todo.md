@@ -69,3 +69,16 @@
 - [x] Recover the shared live daily-mover snapshot and the provider-backed 11-sector capitalization performance map after the sandbox reset.
 - [x] Recover time-bucketed priority news presentation, stock industry-peer context, and Research with AI handoffs after the sandbox reset.
 - [x] Apply bounded AI news-importance scoring to multi-symbol Market News feeds, verify the final ranked-news UI live, and save the final recovery checkpoint.
+- [x] Audit why the Pro Screener industry filter returns fewer rows than the dashboard’s provider-backed industry view.
+- [x] Make industry-filtered Pro Screener results use the same provider-backed coverage contract as dashboard sector and industry detail.
+- [x] Prevent dashboard sector and industry panels from flashing partial company lists before the full provider-backed list is ready.
+- [x] Add a contextual Research with AI action to every individual news headline.
+- [x] Upgrade the economic-events page with professional region and calendar/date controls.
+- [x] Probe and validate provider-supported Indian sector benchmark symbols before mapping heat-map sectors to Nifty industry indices.
+- [x] Validate screener, dashboard, headline research, economic filters, and benchmark behavior on desktop and mobile, then save the update checkpoint.
+- [x] Route Pro Screener sector and industry selections through the matching provider-overview source and apply the existing screener criteria to all returned coverage rows.
+- [x] Hold sector and industry panels in their dedicated loading state until the selected provider response is available, without showing an unrelated or representative list.
+- [x] Add a compact per-headline Research with AI handoff with title, source, date, symbol, and summary context.
+- [x] Add responsive 21st.dev-inspired economic-event region and selected-date controls and send supported filter metadata to the provider.
+- [x] Use only MCP-validated Nifty indices for direct India heat-map benchmark sectors and retain the documented directional proxy for unmapped sectors.
+- [x] Add focused regression tests for provider-overview screener selection and economic-calendar request composition.

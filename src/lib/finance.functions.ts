@@ -170,8 +170,12 @@ export const getIndustryOverview = createServerFn({ method: "GET" })
   .handler(({ data }) => fetchIndustryOverview(data.industryKey, data.region ?? "US"));
 
 export const getMarketCalendar = createServerFn({ method: "GET" })
-  .inputValidator((d: { kind: "earnings" | "ipo" | "splits" | "economic" }) => d)
-  .handler(({ data }) => fetchMarketCalendar(data.kind));
+  .inputValidator((d: { kind: "earnings" | "ipo" | "splits" | "economic"; region?: string; date?: string; limit?: number }) => d)
+  .handler(({ data }) => fetchMarketCalendar(data.kind, {
+    ...(data.region ? { region: data.region } : {}),
+    ...(data.date ? { date: data.date } : {}),
+    ...(data.limit ? { limit: data.limit } : {}),
+  }));
 
 /* ---- Per-ticker deep tools ---- */
 

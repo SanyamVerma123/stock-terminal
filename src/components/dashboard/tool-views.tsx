@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
-import { ExternalLink } from "lucide-react";
+import { CalendarDays, ExternalLink, Globe2, X } from "lucide-react";
 import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import {
   getEstimates,
@@ -629,7 +629,6 @@ export function SectorsView() {
     queryKey: ["sector", sector, cfg.id],
     queryFn: () => overviewFn({ data: { sectorKey: sector, region: cfg.id } }),
     staleTime: 300_000,
-    placeholderData: (previousData) => previousData,
     refetchOnWindowFocus: false,
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
@@ -640,6 +639,8 @@ export function SectorsView() {
     enabled: Boolean(industry),
     staleTime: 300_000,
   });
+  const isProviderSectorData = data?.source === "provider";
+  const isProviderIndustryData = ind?.source === "provider";
   const sectorSymbolColumn = data?.topCompanies.columns.find((column) => /symbol|ticker|code/i.test(column)) ?? "Symbol";
   const sectorSymbols = data?.topCompanies.rows
     .map((row) => row[sectorSymbolColumn])
@@ -717,7 +718,7 @@ export function SectorsView() {
         ))}
       </div>
 
-      {data ? (
+      {isProviderSectorData && data ? (
         <>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {[
@@ -781,10 +782,10 @@ export function SectorsView() {
       {industry && (
         <>
           <Panel title={`${readableIndustryLabel(industry)} — top companies`}>
-            {isIndustryLoading ? <DataLoading compact label={`Loading ${readableIndustryLabel(industry)} coverage`} detail="Finding companies in the selected industry." /> : <TableBarChart table={ind} />}
+            {isIndustryLoading || !isProviderIndustryData ? <DataLoading compact label={`Loading ${readableIndustryLabel(industry)} coverage`} detail="Waiting for provider-ranked industry coverage before showing companies." /> : <TableBarChart table={ind} />}
           </Panel>
           <Panel title={`${readableIndustryLabel(industry)} — companies`}>
-            {isIndustryLoading ? <DataLoading compact label="Loading company coverage" detail="Checking the selected industry against the market-data service." /> : <DataTable table={ind} empty="No matching company coverage returned for this industry." />}
+            {isIndustryLoading || !isProviderIndustryData ? <DataLoading compact label="Loading company coverage" detail="Waiting for complete provider-ranked industry data." /> : <DataTable table={ind} empty="No matching company coverage returned for this industry." />}
           </Panel>
         </>
       )}
@@ -815,7 +816,7 @@ export function SectorsView() {
       ) : null}
         </>
       ) : (
-        <DataLoading label="Loading sector coverage" detail="Resolving live prices, market capitalization, industry composition, and listed companies for the selected sector." />
+        <DataLoading label="Loading sector coverage" detail={isLoading ? "Resolving live prices, market capitalization, industry composition, and listed companies for the selected sector." : "Waiting for the provider’s ranked sector coverage before showing company cards."} />
       )}
     </div>
   );
@@ -831,24 +832,40 @@ const CALENDARS = [
 ] as const;
 const CALENDAR_WINDOWS = ["All events", "Next events", "High impact"] as const;
 
+function calendarValue(row: Record<string, string>, matcher: RegExp, fallback = "") {
+  return Object.entries(row).find(([key]) => matcher.test(key))?.[1] ?? fallback;
+}
+
 function CalendarEventDeck({ table, filter }: { table?: { columns: string[]; rows: Record<string, string>[] } | undefined; filter: (typeof CALENDAR_WINDOWS)[number] }) {
   const rows = (table?.rows ?? []).filter((row) => filter !== "High impact" || /high|important|3/i.test(Object.values(row).join(" "))).slice(0, 10);
   if (rows.length === 0) return <div className="calendar-empty">No matching events are scheduled for this filter.</div>;
-  return <div className="calendar-event-deck">{rows.map((row, index) => { const values = Object.values(row); const date = row["date"] ?? row["time"] ?? row["datetime"] ?? values[0] ?? "Upcoming"; const name = row["event"] ?? row["name"] ?? row["title"] ?? values[1] ?? "Market event"; const impact = row["impact"] ?? row["importance"] ?? "Scheduled"; return <article key={`${date}-${name}-${index}`} className="calendar-event"><span className="calendar-date">{date}</span><div><b>{name}</b><small>{Object.entries(row).filter(([key]) => !/date|time|event|name|title|impact|importance/i.test(key)).slice(0, 2).map(([, value]) => value).join(" · ") || "Event details pending"}</small></div><em className={/high|important|3/i.test(impact) ? "high" : ""}>{impact}</em></article>; })}</div>;
+  return <div className="calendar-event-deck">{rows.map((row, index) => { const values = Object.values(row); const date = calendarValue(row, /date|time/i, values[0] ?? "Upcoming"); const name = calendarValue(row, /^event$|^name$|^title$/i, values[1] ?? "Market event"); const impact = calendarValue(row, /impact|importance/i, "Scheduled"); return <article key={`${date}-${name}-${index}`} className="calendar-event"><span className="calendar-date">{date}</span><div><b>{name}</b><small>{Object.entries(row).filter(([key]) => !/date|time|event|name|title|impact|importance/i.test(key)).slice(0, 2).map(([, value]) => value).join(" · ") || "Event details pending"}</small></div><em className={/high|important|3/i.test(impact) ? "high" : ""}>{impact}</em></article>; })}</div>;
 }
 
 export function CalendarsView() {
   const fn = useServerFn(getMarketCalendar);
   const [kind, setKind] = useState<(typeof CALENDARS)[number]["key"]>("earnings");
   const [window, setWindow] = useState<(typeof CALENDAR_WINDOWS)[number]>("All events");
+  const [region, setRegion] = useState("ALL");
+  const [selectedDate, setSelectedDate] = useState("");
   const { data, isLoading } = useQuery({
-    queryKey: ["cal", kind],
-    queryFn: () => fn({ data: { kind } }),
+    queryKey: ["cal", kind, region, selectedDate],
+    queryFn: () => fn({ data: { kind, ...(region === "ALL" ? {} : { region }), ...(selectedDate ? { date: selectedDate } : {}) } }),
     staleTime: 300_000,
   });
   return (
     <div className="space-y-4">
-      <div className="calendar-toolbar"><div className="flex flex-wrap gap-2">{CALENDARS.map((c) => <Chip key={c.key} active={c.key === kind} onClick={() => setKind(c.key)}>{c.label}</Chip>)}</div><div className="calendar-window-control">{CALENDAR_WINDOWS.map(item => <button key={item} className={window === item ? "active" : ""} onClick={() => setWindow(item)}>{item}</button>)}</div></div>
+      <div className="rounded-2xl border border-border bg-card p-3 shadow-sm sm:p-4">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+          <div className="no-scrollbar flex gap-2 overflow-x-auto">{CALENDARS.map((c) => <Chip key={c.key} active={c.key === kind} onClick={() => setKind(c.key)}>{c.label}</Chip>)}</div>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="inline-flex items-center gap-1 rounded-xl border border-border bg-muted/20 p-1" aria-label="Economic event region"><Globe2 className="ml-1 h-3.5 w-3.5 text-muted-foreground" />{["ALL", "US", "IN", "GB", "DE", "JP"].map((code) => <button type="button" key={code} onClick={() => setRegion(code)} className={cn("rounded-lg px-2 py-1.5 text-[11px] font-medium transition-colors", region === code ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground")}>{code === "ALL" ? "Global" : code}</button>)}</div>
+            <label className="inline-flex h-9 items-center gap-2 rounded-xl border border-border bg-muted/20 px-3 text-xs text-muted-foreground"><CalendarDays className="h-3.5 w-3.5 text-primary" /><span className="sr-only">Filter by event date</span><input type="date" value={selectedDate} onChange={(event) => setSelectedDate(event.target.value)} className="min-w-28 bg-transparent text-xs text-foreground outline-none" /></label>
+            {selectedDate ? <button type="button" onClick={() => setSelectedDate("")} className="inline-flex h-9 items-center gap-1 rounded-xl border border-border px-2.5 text-xs text-muted-foreground transition-colors hover:border-primary/40 hover:text-foreground"><X className="h-3.5 w-3.5" />Clear date</button> : null}
+          </div>
+        </div>
+        <div className="mt-4 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-3"><p className="text-xs text-muted-foreground">{region === "ALL" ? "Global" : region} event feed{selectedDate ? ` · ${selectedDate}` : " · all available dates"}</p><div className="calendar-window-control">{CALENDAR_WINDOWS.map(item => <button key={item} className={window === item ? "active" : ""} onClick={() => setWindow(item)}>{item}</button>)}</div></div>
+      </div>
       <Panel title={`${CALENDARS.find((c) => c.key === kind)?.label} calendar`}>
         {isLoading ? (
           <DataLoading compact label="Loading market calendar" detail="Retrieving the next scheduled market events." />

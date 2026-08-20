@@ -55,3 +55,9 @@ After that retry completion, a full AI Analyst reload restored the active three-
 Desktop revalidation then loaded Technology through the live provider in the browser: the workspace showed its 849-company classification total, 12 industries, an explicit `Provider-ranked coverage` label explaining the 50-company returned subset, and 50 company cards with current INR price, market capitalization, and calculated market weight. The loading state remained visible until that classification and quote enrichment completed, rather than presenting a premature empty state.
 
 Mobile screenshots at 375px showed the same Technology metrics in stacked, readable cards and retained the mobile Analyst research workspace without horizontal layout breakage. Final code validation completed with strict TypeScript passing, 6 test files / 19 tests passing, and a successful production build.
+
+## Nifty Sector Benchmark Probe
+
+Source: direct `batch_snapshots` MCP probe, 2026-08-20.
+
+The provider returned current INR snapshots and prior closes for `^NSEI` (Nifty 50), `^CNXIT` (Nifty IT), `^NSEBANK` (Nifty Bank), `^CNXFMCG` (Nifty FMCG), `^CNXPHARMA` (Nifty Pharma), `^CNXENERGY` (Nifty Energy), `^CNXAUTO` (Nifty Auto), and `^CNXREALTY` (Nifty Realty). These symbols can be used only for their direct sector alignments. Sectors without a validated dedicated Nifty series will retain the provider-ranked company movement proxy rather than receiving an invented mapping.

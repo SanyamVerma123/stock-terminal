@@ -78,6 +78,20 @@ export const SECTOR_KEYS = [
   "utilities",
 ] as const;
 
+/** Direct sector benchmarks that were verified through the connected MCP price-snapshot provider. */
+export const INDIA_SECTOR_NIFTY_BENCHMARKS: Partial<Record<(typeof SECTOR_KEYS)[number], { symbol: string; label: string }>> = {
+  "basic-materials": { symbol: "^CNXMETAL", label: "Nifty Metal" },
+  "communication-services": { symbol: "^CNXMEDIA", label: "Nifty Media" },
+  "consumer-cyclical": { symbol: "^CNXAUTO", label: "Nifty Auto" },
+  "consumer-defensive": { symbol: "^CNXFMCG", label: "Nifty FMCG" },
+  energy: { symbol: "^CNXENERGY", label: "Nifty Energy" },
+  "financial-services": { symbol: "^NSEBANK", label: "Nifty Bank" },
+  healthcare: { symbol: "^CNXPHARMA", label: "Nifty Pharma" },
+  industrials: { symbol: "^CNXINFRA", label: "Nifty Infrastructure" },
+  "real-estate": { symbol: "^CNXREALTY", label: "Nifty Realty" },
+  technology: { symbol: "^CNXIT", label: "Nifty IT" },
+};
+
 export function sectorLabel(key: string) {
   return key
     .split("-")

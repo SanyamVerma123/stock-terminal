@@ -760,6 +760,76 @@ function filterScreenerRows(all: ScreenerRow[], input: EquityScreenInput) {
   });
 }
 
+function overviewCell(row: Record<string, string>, matcher: RegExp) {
+  return Object.entries(row).find(([key]) => matcher.test(key))?.[1];
+}
+
+function overviewNumber(value: string | undefined) {
+  if (!value || value === "—") return null;
+  const parsed = Number(value.replace(/[$₹,%\s,]/g, ""));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+/** Converts a provider sector/industry overview table into shared screener rows. */
+export function overviewTableToScreenerRows(table: GenericTable, input: EquityScreenInput): ScreenerRow[] {
+  const fallbackSector = input.sector ? canonicalSectorKey(input.sector) : null;
+  const fallbackIndustry = input.industry ? canonicalIndustryKey(input.industry) : null;
+  return table.rows.flatMap((row) => {
+    const symbol = overviewCell(row, /symbol|ticker|code/i)?.trim();
+    if (!symbol || symbol === "—") return [];
+    return [{
+      symbol,
+      name: displayNameForSymbol(symbol, overviewCell(row, /^name$|company.*name|name.*company/i)),
+      price: overviewNumber(overviewCell(row, /(^|_|\s)(price|last price|regular market price)(_|\s|$)/i)),
+      changePercent: overviewNumber(overviewCell(row, /change.*percent|percent.*change|1d.*change|day.*change/i)),
+      marketCap: overviewNumber(overviewCell(row, /market.*cap|cap.*market/i)),
+      volume: overviewNumber(overviewCell(row, /volume/i)),
+      peRatio: overviewNumber(overviewCell(row, /(^|\s)p\/?e|trailing.*pe|pe ratio/i)),
+      exchange: overviewCell(row, /exchange/i) ?? null,
+      sector: canonicalSectorKey(overviewCell(row, /^sector$/i) ?? fallbackSector ?? ""),
+      industry: canonicalIndustryKey(overviewCell(row, /^industry$/i) ?? fallbackIndustry ?? ""),
+      currency: overviewCell(row, /currency/i) ?? (input.region?.toLowerCase() === "in" ? "INR" : null),
+      rating: overviewCell(row, /rating/i) ?? null,
+    } satisfies ScreenerRow];
+  });
+}
+
+function sortScreenerRows(rowsToSort: ScreenerRow[], input: EquityScreenInput) {
+  const sortField = input.sortField ?? "intradaymarketcap";
+  const value = (row: ScreenerRow) => {
+    if (/percentchange/i.test(sortField)) return row.changePercent ?? Number.NEGATIVE_INFINITY;
+    if (/volume/i.test(sortField)) return row.volume ?? Number.NEGATIVE_INFINITY;
+    if (/peratio|trailingpe/i.test(sortField)) return row.peRatio ?? Number.NEGATIVE_INFINITY;
+    if (/price/i.test(sortField)) return row.price ?? Number.NEGATIVE_INFINITY;
+    return row.marketCap ?? Number.NEGATIVE_INFINITY;
+  };
+  const direction = input.sortAscending ? 1 : -1;
+  return [...rowsToSort].sort((left, right) => direction * (value(left) - value(right)));
+}
+
+async function enrichOverviewScreenerRows(rowsToEnrich: ScreenerRow[]) {
+  const quotes = await resolveWithin(
+    fetchQuotes(rowsToEnrich.slice(0, 50).map((row) => row.symbol)),
+    [],
+    2_000,
+  );
+  const quoteBySymbol = new Map(quotes.map((quote) => [quote.symbol, quote]));
+  return rowsToEnrich.map((row) => {
+    const quote = quoteBySymbol.get(row.symbol);
+    return quote
+      ? {
+          ...row,
+          name: displayNameForSymbol(row.symbol, quote.name || row.name),
+          price: quote.price ?? row.price,
+          changePercent: quote.changePercent ?? row.changePercent,
+          marketCap: quote.marketCap ?? row.marketCap,
+          exchange: quote.exchange ?? row.exchange,
+          currency: quote.currency ?? row.currency ?? null,
+        }
+      : row;
+  });
+}
+
 function screenerRequest(input: EquityScreenInput, includeClassification: boolean) {
   return {
     region: input.region ?? "us",
@@ -864,6 +934,19 @@ function immediateRegionRows(region: string, size: number): ScreenerRow[] {
 }
 
 export async function fetchScreenEquities(input: EquityScreenInput): Promise<ScreenerRow[]> {
+  if (input.industry || input.sector) {
+    const overview = input.industry
+      ? await fetchIndustryOverview(input.industry, input.region ?? "US")
+      : (await fetchSectorOverview(input.sector!, input.region ?? "US")).topCompanies;
+    const providerRows = await enrichOverviewScreenerRows(overviewTableToScreenerRows(overview, input));
+    const filteredOverviewRows = filterScreenerRows(providerRows, input);
+    if (filteredOverviewRows.length > 0) {
+      return sortScreenerRows(filteredOverviewRows, input).slice(
+        0,
+        Math.min(100, Math.max(1, input.size ?? 50)),
+      );
+    }
+  }
   const regionalFallback = () =>
     filterScreenerRows(immediateRegionRows(input.region ?? "us", input.size ?? 25), input);
   const [raw, broadRaw] = await Promise.all([
@@ -1275,15 +1358,35 @@ export async function fetchIndustryOverview(industryKey: string, region = "US") 
   for (const raw of providerResults) {
     const table = toGenericTable(pick(raw, "top_companies") ?? pick(raw, "data"), 100);
     if (table.rows.length > 0) {
-      return enhanceCompanyTable(table, profilesForRegion(region));
+      return { ...enhanceCompanyTable(table, profilesForRegion(region)), source: "provider" as const };
     }
   }
-  return immediateFallbackIndustryOverview(canonicalIndustry, region);
+  return { ...immediateFallbackIndustryOverview(canonicalIndustry, region), source: "representative" as const };
 }
 
 type CalendarKind = "earnings" | "ipo" | "splits" | "economic";
+type MarketCalendarInput = { region?: string; date?: string; limit?: number };
 
-export async function fetchMarketCalendar(kind: CalendarKind, limit = 40): Promise<GenericTable> {
+function calendarRowValue(row: Record<string, string>, matcher: RegExp) {
+  return Object.entries(row).find(([key]) => matcher.test(key))?.[1] ?? "";
+}
+
+/** Applies selected controls locally when an upstream calendar endpoint returns a global event feed. */
+export function filterMarketCalendar(table: GenericTable, input: MarketCalendarInput): GenericTable {
+  const requestedRegion = input.region?.trim().toUpperCase();
+  const requestedDate = input.date?.trim();
+  const rows = table.rows.filter((row) => {
+    const rowRegion = calendarRowValue(row, /^region$|country/i).toUpperCase();
+    const eventDate = calendarRowValue(row, /date|time/i).slice(0, 10);
+    if (requestedRegion && rowRegion !== requestedRegion) return false;
+    if (requestedDate && eventDate !== requestedDate) return false;
+    return true;
+  });
+  return { columns: table.columns, rows: rows.slice(0, input.limit ?? 40) };
+}
+
+export async function fetchMarketCalendar(kind: CalendarKind, input: MarketCalendarInput = {}): Promise<GenericTable> {
+  const limit = input.limit ?? 40;
   const tool =
     kind === "earnings"
       ? "get_earnings_calendar"
@@ -1292,8 +1395,16 @@ export async function fetchMarketCalendar(kind: CalendarKind, limit = 40): Promi
         : kind === "splits"
           ? "get_splits_calendar"
           : "get_economic_events_calendar";
-  const raw = await callMcpTool(tool, { limit });
-  return toGenericTable(pick(raw, "data") ?? pick(raw, "events"), limit);
+  const raw = await callMcpTool(tool, {
+    limit: Math.max(limit, 100),
+    region: input.region,
+    start_date: input.date,
+    end_date: input.date,
+  });
+  return filterMarketCalendar(
+    toGenericTable(pick(raw, "data") ?? pick(raw, "events"), Math.max(limit, 100)),
+    input,
+  );
 }
 
 /* ---------- Per-ticker deep tools ---------- */
