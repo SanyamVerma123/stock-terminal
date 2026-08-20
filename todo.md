@@ -130,3 +130,6 @@
 - [x] Validate the new responsive dashboard design at mobile and desktop breakpoints.
 - [x] Preserve 52-week high and other secondary quote fields in a true horizontally scrollable mobile stock-detail rail for watchlist, sector, and industry coverage.
 - [x] Verify populated deployed watchlist quotes retain all secondary fields; the mobile rail uses the same tested data contract with compact cards and horizontal access.
+- [x] Make heatmap tile areas proportionate to available live sector or industry market capitalization instead of fixed visual ranks.
+- [x] Standardize dashboard, sector, industry, and watchlist stock lists to the Pro Screener table/card presentation.
+- [x] Validate capitalization proportions and shared list behavior across mobile and desktop.
