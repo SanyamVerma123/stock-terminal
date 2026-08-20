@@ -789,7 +789,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
   useEffect(() => () => clearHistoryPress(), []);
 
   return (
-    <div className="relative flex h-full min-h-0 min-w-0 overflow-x-hidden">
+    <div className="ai-workspace relative flex h-full min-h-0 min-w-0 overflow-x-hidden">
       {historyOpen && (
         <button
           type="button"
@@ -800,7 +800,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
       )}
       <aside
         className={cn(
-          "absolute inset-y-0 left-0 z-30 flex w-[min(84vw,300px)] shrink-0 flex-col overflow-hidden border-r border-border/80 bg-card/95 backdrop-blur-xl transition-[width,transform,opacity] duration-200 lg:relative lg:z-0 lg:bg-card/35",
+          "ai-history absolute inset-y-0 left-0 z-30 flex w-[min(84vw,300px)] shrink-0 flex-col overflow-hidden border-r border-border/80 bg-card/95 backdrop-blur-xl transition-[width,transform,opacity] duration-200 lg:relative lg:z-0 lg:bg-card/35",
           historyOpen
             ? "translate-x-0 lg:w-[256px] lg:opacity-100"
             : "-translate-x-full lg:pointer-events-none lg:w-0 lg:-translate-x-0 lg:border-r-0 lg:opacity-0",
@@ -949,7 +949,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
         </div>
       </aside>
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex min-w-0 shrink-0 items-center gap-1.5 overflow-hidden border-b border-border/80 bg-card/30 px-2 py-1.5 sm:gap-2.5 sm:px-4 sm:py-2">
+        <div className="ai-toolbar flex min-w-0 shrink-0 items-center gap-1.5 overflow-hidden border-b border-border/80 bg-card/30 px-2 py-1.5 sm:gap-2.5 sm:px-4 sm:py-2">
           <button
             type="button"
             onClick={() => setHistoryOpen((open) => !open)}
@@ -963,7 +963,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
             )}
           </button>
           <div className="flex min-w-0 items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
+            <span className="ai-toolbar-mark flex h-7 w-7 items-center justify-center rounded-lg border border-primary/25 bg-primary/10 text-primary">
               <Sparkles className="h-3.5 w-3.5" />
             </span>
             <div className="min-w-0">
@@ -1040,13 +1040,13 @@ export function AIView({ visible = true }: { visible?: boolean }) {
             )}
           >
             {messages.length === 0 && (
-              <div className="relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-4 text-left shadow-2xl shadow-primary/5 sm:rounded-[1.5rem] sm:p-6">
-                <div className="absolute -right-20 -top-24 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
+              <div className="ai-research-welcome relative overflow-hidden rounded-2xl border border-primary/20 bg-gradient-to-br from-primary/10 via-card to-card p-4 text-left shadow-2xl shadow-primary/5 sm:rounded-[1.5rem] sm:p-6">
+                <div className="ai-welcome-glow absolute -right-20 -top-24 h-64 w-64 rounded-full bg-primary/10 blur-3xl" />
                 <div className="relative">
-                  <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary">
+                  <div className="ai-welcome-mark mb-5 flex h-11 w-11 items-center justify-center rounded-2xl border border-primary/25 bg-primary/10 text-primary">
                     <Sparkles className="h-5 w-5" />
                   </div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
+                  <p className="market-kicker">
                     Research copilot
                   </p>
                   <h1 className="mt-2 text-2xl font-semibold tracking-[-0.03em] text-foreground sm:text-3xl">
@@ -1062,7 +1062,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
                         key={s}
                         type="button"
                         onClick={() => void sendResearch(s)}
-                        className="group flex items-start justify-between gap-3 rounded-2xl border border-border/80 bg-background/35 p-3.5 text-left text-[13px] text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
+                        className="ai-suggestion-card group flex items-start justify-between gap-3 rounded-2xl border border-border/80 bg-background/35 p-3.5 text-left text-[13px] text-muted-foreground transition-all duration-200 hover:-translate-y-0.5 hover:border-primary/40 hover:bg-primary/5 hover:text-foreground"
                       >
                         <span>{s}</span>
                         <ArrowUpRight className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary/60 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
@@ -1089,8 +1089,8 @@ export function AIView({ visible = true }: { visible?: boolean }) {
                     className={cn(
                       "min-w-0 max-w-[88%] break-words",
                       m.role === "user"
-                        ? "rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-[15px] leading-6 text-primary-foreground shadow-lg shadow-primary/10"
-                        : "w-full rounded-2xl border border-border/70 bg-card/45 px-4 py-3 sm:px-5",
+                        ? "ai-message-user rounded-2xl rounded-br-md bg-primary px-4 py-2.5 text-[15px] leading-6 text-primary-foreground shadow-lg shadow-primary/10"
+                        : "ai-message-assistant w-full rounded-2xl border border-border/70 bg-card/45 px-4 py-3 sm:px-5",
                     )}
                   >
                     {m.role === "user"
@@ -1212,7 +1212,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
           </div>
         </div>
 
-        <div className="shrink-0 border-t border-border/70 bg-background/75 px-4 pb-4 pt-3 backdrop-blur-xl sm:px-6 sm:pb-6">
+        <div className="ai-composer shrink-0 border-t border-border/70 bg-background/75 px-4 pb-4 pt-3 backdrop-blur-xl sm:px-6 sm:pb-6">
           <div className="mx-auto flex w-full max-w-5xl justify-center">
             <PromptInput
               autoFocus={visible}

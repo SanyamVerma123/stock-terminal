@@ -162,7 +162,7 @@ function NavButton({
       onClick={item.children ? onToggle : onSelect}
       title={collapsed ? item.title : undefined}
       className={cn(
-        "group flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] transition-all duration-200",
+        "terminal-nav-button group flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-[13px] transition-all duration-200",
         active
           ? "bg-primary/10 font-medium text-primary"
           : "text-muted-foreground hover:bg-primary/5 hover:text-foreground",
@@ -381,24 +381,24 @@ export function DashboardShell({
   );
 
   return (
-    <div className="relative flex h-screen overflow-hidden bg-background">
+    <div className="terminal-shell relative flex h-screen overflow-hidden bg-background">
       <aside
         className={cn(
-          "absolute inset-y-0 left-0 z-40 flex shrink-0 flex-col border-r border-sidebar-border/60 bg-transparent p-3 shadow-none transition-[width,transform] duration-200 lg:relative lg:z-auto lg:shadow-none",
+          "terminal-sidebar absolute inset-y-0 left-0 z-40 flex shrink-0 flex-col border-r border-sidebar-border/60 bg-transparent p-3 shadow-none transition-[width,transform] duration-200 lg:relative lg:z-auto lg:shadow-none",
           mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
           collapsed ? "w-[288px] lg:w-[76px]" : "w-[288px] lg:w-[288px]",
         )}
       >
-        <div className="flex items-center gap-2.5 rounded-2xl border border-sidebar-border/60 bg-transparent p-2.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
+        <div className="terminal-brand flex items-center gap-2.5 rounded-2xl border border-sidebar-border/60 bg-transparent p-2.5">
+          <span className="terminal-brand-mark flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/15 text-primary">
             <LineChart className="h-4 w-4" />
           </span>
           {!collapsed && (
             <div className="min-w-0 flex-1">
-              <p className="truncate text-[13px] font-semibold text-foreground">
-                Screener Terminal
+              <p className="terminal-brand-name truncate font-semibold text-foreground">
+                Insightful Search
               </p>
-              <p className="text-[11px] text-muted-foreground">Pro • Live Data</p>
+              <p className="terminal-brand-subtitle text-muted-foreground">Market intelligence</p>
             </div>
           )}
         </div>
@@ -407,7 +407,7 @@ export function DashboardShell({
           {groups.map((g, gi) => (
             <div key={gi} className="flex flex-col gap-0.5">
               {g.heading && !collapsed && (
-                <span className="mb-1 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                <span className="terminal-nav-label mb-1 px-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
                   {g.heading}
                 </span>
               )}
@@ -431,7 +431,7 @@ export function DashboardShell({
       )}
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="flex h-16 min-w-0 shrink-0 items-center gap-1.5 overflow-hidden border-b border-border/60 bg-background/35 px-2.5 sm:gap-3 sm:px-5">
+        <header className="terminal-header flex h-16 min-w-0 shrink-0 items-center gap-1.5 overflow-hidden border-b border-border/60 bg-background/35 px-2.5 sm:gap-3 sm:px-5">
           <button
             type="button"
             aria-label="Open navigation"
@@ -453,14 +453,14 @@ export function DashboardShell({
               <PanelLeftClose className="h-4 w-4" />
             )}
           </button>
-          <nav className="flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden text-[12px] sm:gap-2 sm:text-[13px]">
+          <nav className="terminal-breadcrumb flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden text-[12px] sm:gap-2 sm:text-[13px]">
             <span className="hidden text-muted-foreground sm:inline">Personal Terminal</span>
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
             <span className="max-w-[112px] truncate font-semibold text-foreground sm:max-w-none">
               {PAGE_TITLES[page] ?? "Markets"}
             </span>
           </nav>
-          <div className="ml-auto hidden items-center gap-1 rounded-xl border border-border/60 bg-transparent p-1 sm:flex">
+          <div className="terminal-market-switch ml-auto hidden items-center gap-1 rounded-xl border border-border/60 bg-transparent p-1 sm:flex">
             {(Object.keys(MARKETS) as MarketId[]).map((id) => (
               <button
                 key={id}
@@ -480,7 +480,7 @@ export function DashboardShell({
           <button
             type="button"
             onClick={() => setPaletteOpen(true)}
-            className="flex h-9 w-[clamp(132px,44vw,300px)] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border/60 bg-transparent px-3 text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground sm:gap-2 sm:px-3 sm:text-xs"
+            className="terminal-search flex h-9 w-[clamp(132px,44vw,300px)] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border/60 bg-transparent px-3 text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground sm:gap-2 sm:px-3 sm:text-xs"
           >
             <Search className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">Search markets</span>
@@ -496,7 +496,7 @@ export function DashboardShell({
           >
             <RefreshCw className="h-4 w-4" />
           </button>
-          <span className="quiet-live-indicator hidden items-center gap-1.5 rounded-full border border-positive/25 bg-transparent px-2.5 py-1 text-[11px] text-positive sm:flex">
+          <span className="terminal-live quiet-live-indicator hidden items-center gap-1.5 rounded-full border border-positive/25 bg-transparent px-2.5 py-1 text-[11px] text-positive sm:flex">
             <span className="quiet-live-dot" aria-hidden="true" />
             <span className="sr-only">Live updates active</span>
           </span>

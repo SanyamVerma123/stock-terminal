@@ -45,20 +45,24 @@ function Chip({
   active,
   children,
   onClick,
+  className,
 }: {
   active: boolean;
   children: React.ReactNode;
   onClick: () => void;
+  className?: string;
 }) {
   return (
     <button
       type="button"
       onClick={onClick}
+      data-active={active ? "true" : "false"}
       className={cn(
         "shrink-0 rounded-full border px-3 py-1.5 text-xs transition-colors",
         active
           ? "border-primary/50 bg-primary/10 text-primary"
           : "border-border text-muted-foreground hover:text-foreground",
+        className,
       )}
     >
       {children}
@@ -173,10 +177,18 @@ export function MoversView({ initialName = "day_gainers" }: { initialName?: stri
   const isFetching = primaryName ? fetchingFastMovers : fetchingPreset;
 
   return (
-    <div className="space-y-4">
-      <div className="no-scrollbar flex gap-2 overflow-x-auto">
+    <div className="market-movers space-y-4">
+      <div className="market-mover-intro">
+        <div>
+          <p className="market-kicker">Live ranking desk</p>
+          <h2>{cfg.label} market movers</h2>
+          <p>Switch between fresh directional and activity-led screens.</p>
+        </div>
+        <span className="market-mover-count">{data?.length ?? 0} names</span>
+      </div>
+      <div className="market-mover-rail no-scrollbar">
         {availablePresets.map((n) => (
-          <Chip key={n} active={n === name} onClick={() => setName(n)}>
+          <Chip className="mover-tab" key={n} active={n === name} onClick={() => setName(n)}>
             {n.replace(/_/g, " ")}
           </Chip>
         ))}

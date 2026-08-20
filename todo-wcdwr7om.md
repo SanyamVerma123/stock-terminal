@@ -20,3 +20,12 @@
 - [x] Locate and inventory the uploaded 21st.dev ZIP component files.
 - [x] Review the relevant uploaded components and map them to the market terminal’s visual upgrade surfaces.
 - [x] Update the visual implementation recommendation using the uploaded components.
+- [x] Audit the current desktop and mobile visual system, preserving working data and navigation behavior.
+- [ ] Upgrade the global dashboard hierarchy, live-data presentation, and core interface styling.
+- [ ] Improve the Markets, Screeners, stock research, and AI Analyst visual experiences using safe local adaptations of selected 21st.dev patterns.
+- [ ] Verify the upgraded interface on desktop and mobile, including TypeScript and regression tests.
+- [ ] Save a checkpoint for the completed visual upgrade.
+- [ ] Integrate the latest shared treemap and quote-list update without losing the ongoing visual improvements.
+- [ ] Ensure sector heat-map tile areas accurately reflect provider-reported sector market capitalization and degrade clearly when weights are unavailable.
+- [ ] Restore a list-style watchlist organized by available industry, while retaining user watchlist symbols and useful quote information.
+- [ ] Verify the merged heat map and watchlist experience on desktop and mobile.

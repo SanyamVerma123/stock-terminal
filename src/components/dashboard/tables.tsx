@@ -16,8 +16,8 @@ export function Panel({
   children: React.ReactNode;
 }) {
   return (
-    <section className="premium-panel overflow-hidden rounded-2xl border border-border/70 bg-card/55">
-      <header className="border-b border-border/60 px-5 py-3">
+    <section className="intel-panel premium-panel overflow-hidden rounded-2xl border border-border/70 bg-card/55">
+      <header className="intel-panel-header border-b border-border/60 px-5 py-3">
         <h2 className="text-sm font-semibold text-foreground">{title}</h2>
         {subtitle && <p className="mt-0.5 text-xs text-muted-foreground">{subtitle}</p>}
       </header>

@@ -101,23 +101,19 @@ function Dashboard() {
         case "markets":
           return (
             <div className="space-y-6">
-              <div className="flex items-end justify-between gap-4 border-b border-border/60 pb-4">
-                <div>
-                  <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-                    Market intelligence
-                  </p>
-                  <h2 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
-                    Momentum, breadth, and activity
-                  </h2>
-                  <p className="mt-1 max-w-2xl text-sm leading-6 text-muted-foreground">
-                    Live market context for {cfg.label} equities, refreshed quietly in the
-                    background.
+              <div className="market-brief">
+                <div className="market-brief-copy">
+                  <p className="market-kicker">Market intelligence</p>
+                  <h2 className="market-brief-title">Momentum, breadth, and activity</h2>
+                  <p className="market-brief-description">
+                    A live research view of {cfg.label} equities, ranked and refreshed as market conditions change.
                   </p>
                 </div>
-                <span className="quiet-live-indicator hidden shrink-0 items-center gap-1.5 text-[11px] text-muted-foreground sm:flex">
-                  <span className="quiet-live-dot" aria-hidden="true" />
-                  Live context
-                </span>
+                <div className="market-brief-meta" aria-label="Market context">
+                  <span className="market-meta-chip"><span>Region</span><b>{cfg.label}</b></span>
+                  <span className="market-meta-chip"><span>Coverage</span><b>Provider ranked</b></span>
+                  <span className="market-meta-chip live"><span className="quiet-live-dot" aria-hidden="true" /><b>Live context</b></span>
+                </div>
               </div>
               <MarketStrip />
               <MoversView />
