@@ -236,7 +236,7 @@ export function SavedScreenerView({ screenerId, filters, name }: { screenerId: s
   });
   return <div className="space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-card/55 p-4">
-      <div><p className="text-sm font-medium text-foreground">Match alerts</p><p className="mt-1 text-xs text-muted-foreground">Check this saved screen in the terminal and with the periodic cloud monitor; changed results appear in your cloud-synced inbox.</p></div>
+      <div><p className="text-sm font-medium text-foreground">Match alerts</p><p className="mt-1 text-xs text-muted-foreground">Check this saved screen while the terminal is active; changed results appear in your cloud-synced inbox and can trigger a browser alert on this device.</p></div>
       <div className="flex flex-wrap items-center gap-2">
         <button type="button" onClick={() => setScreenerAlertRules(rule ? screenerAlertRules.filter((item) => item.id !== rule.id) : [...screenerAlertRules, { id: crypto.randomUUID(), screenerId, enabled: true, browserEnabled: true, emailEnabled: false }])} className={cn("h-9 rounded-lg border px-3 text-xs font-medium", rule?.enabled ? "border-positive/40 bg-positive/10 text-positive" : "border-primary/40 text-primary")}>{rule?.enabled ? "Alert enabled" : "Enable match alert"}</button>
         {rule?.enabled && <button type="button" onClick={() => setScreenerAlertRules(screenerAlertRules.map((item) => item.id === rule.id ? { ...item, browserEnabled: !item.browserEnabled } : item))} className="h-9 rounded-lg border border-border px-3 text-xs text-muted-foreground hover:text-foreground">Browser: {rule.browserEnabled ? "on" : "off"}</button>}
