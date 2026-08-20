@@ -113,3 +113,9 @@
 - [ ] Implement the scheduled/durable screener-match evaluator and connect it to browser notification delivery so alerts fire beyond a one-time foreground check.
 - [ ] Add optional screener-match email delivery using the existing Resend helper, including user controls for enabling/disabling those emails.
 - [ ] Add regression/integration coverage for recurring screener match notifications and email alert delivery paths.
+- [ ] Diagnose why the Vercel deployment serves generated server source instead of the Screener Terminal application.
+- [ ] Add Vercel-compatible build and routing configuration without disrupting the managed deployment output.
+- [ ] Validate the corrected Vercel deployment on desktop and mobile after the GitHub update.
+- [ ] Inspect the newly connected stock-terminal Vercel project and align it with the corrected build target.
+- [ ] Remove mandatory email-verification messaging from registration while keeping password-based cloud sign-in and email password recovery.
+- [ ] Verify and complete durable saved-screener notifications, including browser permission and the in-app inbox.

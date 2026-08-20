@@ -1,4 +1,4 @@
-import { createHash, timingSafeEqual } from "node:crypto";
+import { createHash, randomUUID, timingSafeEqual } from "node:crypto";
 import mysql from "mysql2/promise";
 import { fetchScreenEquities, type EquityScreenInput } from "./finance-data.server";
 
@@ -81,7 +81,7 @@ function asNotifications(value: unknown): StoredNotification[] {
 /** Runs in a cron callback. Initial runs establish a baseline; only later changes create an inbox record. */
 export async function evaluateSavedScreenerAlerts() {
   const [rows] = await db().execute<mysql.RowDataPacket[]>(
-    "SELECT account_id AS accountId, state_json AS stateJson FROM terminal_state WHERE state_json LIKE '%screenerAlertRules%' LIMIT 100",
+    "SELECT account_id AS accountId, state_json AS stateJson FROM terminal_state WHERE state_json LIKE '%screenerAlertRules%' ORDER BY updated_at ASC LIMIT 10",
   );
   let accountsChecked = 0;
   let notificationsCreated = 0;
@@ -107,7 +107,7 @@ export async function evaluateSavedScreenerAlerts() {
       const matchKey = symbols.join(",");
       if (rule.lastMatchKey && rule.lastMatchKey !== matchKey && symbols.length > 0) {
         notifications.unshift({
-          id: crypto.randomUUID(),
+          id: randomUUID(),
           screenerId: screener.id,
           screenerName: screener.name,
           symbols: symbols.slice(0, 8),

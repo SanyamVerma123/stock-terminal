@@ -10,8 +10,6 @@ import {
   registerCloudAccount,
   removeCloudSession,
   requestCloudPasswordReset,
-  sendCloudEmailVerification,
-  verifyCloudEmail,
 } from "@/lib/cloud-store.server";
 
 function cookieValue(request: Request, name: string) {
@@ -47,17 +45,6 @@ export const Route = createFileRoute("/api/cloud/auth")({
   server: {
     handlers: {
       GET: async ({ request }) => {
-        const url = new URL(request.url);
-        if (url.searchParams.get("action") === "verify_email") {
-          const token = url.searchParams.get("token");
-          if (!token) return json({ error: "The verification link is missing its token." }, 400);
-          try {
-            await verifyCloudEmail(token);
-            return Response.redirect(`${url.origin}/?emailVerified=1`, 303);
-          } catch (error) {
-            return json({ error: error instanceof Error ? error.message : "The verification link could not be used." }, 400);
-          }
-        }
         const account = await cloudAccountFromSession(cookieValue(request, CLOUD_SESSION_COOKIE));
         return json({ account });
       },
@@ -93,11 +80,6 @@ export const Route = createFileRoute("/api/cloud/auth")({
             return json({ account }, 200, { "set-cookie": sessionCookie(session) });
           }
           const activeAccount = await cloudAccountFromSession(cookieValue(request, CLOUD_SESSION_COOKIE));
-          if (body.action === "send_verification") {
-            if (!activeAccount) return json({ error: "Sign in to verify your email." }, 401);
-            const result = await sendCloudEmailVerification(activeAccount.id, origin);
-            return json({ account: activeAccount, verificationEmailSent: !result.alreadyVerified });
-          }
           if (body.action === "change_password") {
             if (!activeAccount) return json({ error: "Sign in to change your password." }, 401);
             if (typeof body.currentPassword !== "string" || typeof body.newPassword !== "string") {
@@ -120,16 +102,7 @@ export const Route = createFileRoute("/api/cloud/auth")({
                 })
               : await authenticateCloudAccount(body.email, body.password);
           const token = await createCloudSession(account.id);
-          let verificationEmailSent = false;
-          if (isRegistration) {
-            try {
-              await sendCloudEmailVerification(account.id, origin);
-              verificationEmailSent = true;
-            } catch {
-              // Registration succeeds even if the transactional provider is temporarily unavailable.
-            }
-          }
-          return json({ account, verificationEmailSent }, 200, { "set-cookie": sessionCookie(token) });
+          return json({ account }, 200, { "set-cookie": sessionCookie(token) });
         } catch (error) {
           return json({ error: error instanceof Error ? error.message : "Cloud sign-in failed." }, 400);
         }
