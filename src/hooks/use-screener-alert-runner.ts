@@ -23,7 +23,7 @@ function paramsFor(filters: ScreenerFilters) {
   return out as Parameters<typeof runEquityScreener>[0]["data"];
 }
 
-/** Performs an immediate foreground check; recurring checks are owned by the durable server schedule. */
+/** Checks enabled screeners on mount and whenever the active terminal tab regains focus. */
 export function useScreenerAlertRunner() {
   const run = useServerFn(runEquityScreener);
   const {
@@ -74,7 +74,7 @@ export function useScreenerAlertRunner() {
             changed = true;
           }
         } catch {
-          // The next scheduled check retries transient data-provider failures.
+          // A later active-session check retries transient data-provider failures.
         }
       }
       if (changed) setScreenerAlertRules(nextRules);
@@ -85,5 +85,17 @@ export function useScreenerAlertRunner() {
 
   useEffect(() => {
     void check();
+  }, [check]);
+
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void check();
+    };
+    window.addEventListener("focus", onVisibilityChange);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      window.removeEventListener("focus", onVisibilityChange);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [check]);
 }
