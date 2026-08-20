@@ -104,19 +104,21 @@
 - [x] Add cloud-synced watchlist folders with folder assignment, ordering, and cross-device restore behavior.
 - [x] Add secure email-verification tokens, account verification UI, and protected verification status.
 - [x] Add secure password-reset request and confirmation flows with time-limited one-use tokens.
-- [ ] Add scheduled saved-screener match evaluation with user-controlled alert settings and notifications.
-- [ ] Create and validate a reusable application account-and-alerts implementation skill package if the `/skill-creator` request is intended as a deliverable.
-- [ ] Add optional browser-level notifications for screener matches, with explicit permission and an in-app fallback inbox.
-- [ ] Implement in-app account verification and password-reset token flows without external email delivery.
+- [x] Defer scheduled saved-screener match evaluation at the user’s request; retain active-session inbox and browser notifications only.
+- [x] Determine that the `/skill-creator` reference was not a request for a reusable skill-package deliverable.
+- [x] Add optional active-session browser-level notifications for screener matches, with explicit permission and an in-app fallback inbox.
+- [x] Defer in-app account verification and password-reset token flows without external email delivery at the user’s request.
 - [x] Add an email delivery integration for verification, password-reset, and optional screener-match messages using a secure server-side API key.
 - [x] Replace the in-app-only verification/reset placeholder with email-delivered, single-use, time-limited verification and recovery links.
-- [ ] Implement the scheduled/durable screener-match evaluator and connect it to browser notification delivery so alerts fire beyond a one-time foreground check.
-- [ ] Add optional screener-match email delivery using the existing Resend helper, including user controls for enabling/disabling those emails.
-- [ ] Add regression/integration coverage for recurring screener match notifications and email alert delivery paths.
+- [x] Defer durable screener-match evaluation beyond active-session checks at the user’s request.
+- [x] Defer screener-match email delivery at the user’s request.
+- [x] Defer regression coverage for removed recurring/email alert paths at the user’s request.
 - [x] Diagnose why the Vercel deployment serves generated server source instead of the Screener Terminal application.
 - [x] Add Vercel-compatible build and routing configuration without disrupting the managed deployment output.
 - [x] Validate the corrected Vercel deployment on desktop and mobile after the GitHub update.
 - [x] Inspect the newly connected stock-terminal Vercel project and align it with the corrected build target.
 - [x] Remove mandatory email-verification messaging from registration while keeping password-based cloud sign-in and email password recovery.
-- [ ] Verify and complete durable saved-screener notifications, including browser permission and the in-app inbox.
-- [ ] Temporarily remove password-recovery email controls and server actions while preserving email-and-password registration and sign-in.
+- [x] Retain and verify active-session saved-screener notifications, including browser permission and the in-app inbox; defer background delivery at the user’s request.
+- [x] Temporarily remove password-recovery email controls and server actions while preserving email-and-password registration and sign-in.
+- [x] Record the user-approved decision to leave notifications in active-session mode only.
+- [x] Record the explicit user clarification that the `/skill-creator` text was sent by mistake and no skill package is requested.
