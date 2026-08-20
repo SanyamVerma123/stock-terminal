@@ -56,8 +56,8 @@ function Card({
   action?: React.ReactNode;
 }) {
   return (
-    <section className="overflow-hidden rounded-2xl border border-border bg-card">
-      <div className="flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+    <section className="research-sheet-card overflow-hidden rounded-2xl border border-border bg-card">
+      <div className="research-sheet-card-header flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <h2 className="text-sm font-medium text-foreground">{title}</h2>
         {action}
       </div>
@@ -68,8 +68,8 @@ function Card({
 
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-xl border border-border bg-surface px-3 py-2.5">
-      <p className="text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
+    <div className="research-metric rounded-xl border border-border bg-surface px-3 py-2.5">
+      <p className="research-metric-label text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
       <p className="tabular mt-0.5 text-sm font-medium text-foreground">{value}</p>
     </div>
   );
@@ -180,12 +180,12 @@ function StockPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="stock-research-shell min-h-screen bg-background">
       <SiteHeader />
 
-      <main className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        <div className="flex flex-wrap items-end justify-between gap-6">
-          <div>
+      <main className="stock-research-main mx-auto max-w-7xl px-4 py-8 sm:px-6">
+        <div className="stock-research-hero flex flex-wrap items-end justify-between gap-6">
+          <div className="stock-research-heading">
             <div className="flex items-center gap-2">
               <span className="tabular rounded-md border border-border px-2 py-0.5 text-xs text-muted-foreground">
                 {q?.exchange ?? "—"}
@@ -193,10 +193,10 @@ function StockPage() {
               <span className="tabular text-xs text-muted-foreground">{symbol}</span>
               <button className={cn("watch-stock-button", isWatched(symbol) && "is-watched")} onClick={() => toggleWatchlist(symbol, q?.name ?? symbol)} title={isWatched(symbol) ? "Remove from watchlist" : "Add to watchlist"}><Star size={14} fill={isWatched(symbol) ? "currentColor" : "none"}/>{isWatched(symbol) ? "Watching" : "Watch"}</button>
             </div>
-            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground">
+            <h1 className="stock-research-title mt-2 text-3xl font-semibold tracking-tight text-foreground">
               {loadingSummary ? <TextShimmerLoader text={`Loading ${symbol} overview`} /> : (q?.name ?? symbol)}
             </h1>
-            <div className="mt-3 flex items-end gap-3">
+            <div className="stock-research-price mt-3 flex items-end gap-3">
               <span className="tabular text-4xl font-semibold text-foreground">
                 {fmtPrice(q?.price, q?.currency)}
               </span>
@@ -208,7 +208,7 @@ function StockPage() {
               />
             </div>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+          <div className="stock-research-metrics grid grid-cols-2 gap-2 sm:grid-cols-4">
             <Stat label="Open" value={fmtPrice(q?.open, q?.currency)} />
             <Stat label="Prev close" value={fmtPrice(q?.previousClose, q?.currency)} />
             <Stat label="Day range" value={`${fmtNumber(q?.dayLow)} – ${fmtNumber(q?.dayHigh)}`} />

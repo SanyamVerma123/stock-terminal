@@ -3,12 +3,12 @@ import { useQueries, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { Bell, BellRing, Inbox, KeyRound, Star, Trash2 } from "lucide-react";
-import { getMarketStrip, getNews, getRankedNews, getWatchlistNews } from "@/lib/finance.functions";
+import { getMarketStrip, getNews, getQuotes, getRankedNews, getSummary, getWatchlistNews } from "@/lib/finance.functions";
 import { Sparkline } from "@/components/finance/Sparkline";
 import { DeltaBadge } from "@/components/finance/DeltaBadge";
 import { TickerAutocomplete } from "@/components/finance/TickerAutocomplete";
-import { QuoteTable } from "@/components/dashboard/QuoteTable";
-import { timeAgo } from "@/lib/format";
+import { fmtCompact, fmtPrice, timeAgo } from "@/lib/format";
+import type { Quote } from "@/lib/finance-types";
 import { useAppState, useMarketConfig } from "@/lib/app-state";
 import { MARKETS, type MarketId } from "@/lib/markets";
 import { cn } from "@/lib/utils";
@@ -50,6 +50,24 @@ export function MarketStrip() {
 
 /* ---------------- Watchlist ---------------- */
 
+export function groupWatchlistByIndustry<T extends { industry?: string | null; symbol: string }>(items: T[]) {
+  const groups = new Map<string, T[]>();
+  for (const item of items) {
+    const industry = item.industry?.trim() || "Unclassified";
+    groups.set(industry, [...(groups.get(industry) ?? []), item]);
+  }
+  return [...groups.entries()]
+    .map(([industry, entries]) => ({
+      industry,
+      items: [...entries].sort((left, right) => left.symbol.localeCompare(right.symbol)),
+    }))
+    .sort((left, right) => {
+      if (left.industry === "Unclassified") return 1;
+      if (right.industry === "Unclassified") return -1;
+      return left.industry.localeCompare(right.industry);
+    });
+}
+
 export function WatchlistView() {
   const {
     watchlist,
@@ -57,21 +75,46 @@ export function WatchlistView() {
     removeFromWatchlist,
     watchSymbols,
   } = useAppState();
+  const quotesFn = useServerFn(getQuotes);
+  const summaryFn = useServerFn(getSummary);
+  const { data: quotes, isLoading: loadingQuotes } = useQuery({
+    queryKey: ["watchlist-list-quotes", watchSymbols.join(",")],
+    queryFn: () => quotesFn({ data: { symbols: watchSymbols.join(",") } }),
+    enabled: watchSymbols.length > 0,
+    staleTime: 30_000,
+    refetchOnWindowFocus: true,
+  });
+  const industryQueries = useQueries({
+    queries: watchSymbols.map((symbol) => ({
+      queryKey: ["watchlist-industry", symbol],
+      queryFn: () => summaryFn({ data: { symbol } }),
+      staleTime: 3_600_000,
+      refetchOnWindowFocus: false,
+    })),
+  });
+  const quoteBySymbol = new Map<string, Quote>((quotes ?? []).map((quote) => [quote.symbol, quote]));
+  const industryBySymbol = new Map(
+    watchSymbols.map((symbol, index) => [symbol, industryQueries[index]?.data?.ratios.industry ?? null]),
+  );
+  const groupedWatchlist = groupWatchlistByIndustry(
+    watchlist.map((item) => ({ ...item, industry: industryBySymbol.get(item.symbol) ?? null })),
+  );
 
   return (
     <div className="space-y-4 sm:space-y-5">
-      <div className="flex items-end justify-between gap-4 border-b border-border/60 pb-3 sm:pb-4">
-        <div>
-          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Cloud watchlist</p>
-          <h2 className="mt-1 text-lg font-semibold tracking-tight text-foreground sm:text-xl">Your tracked symbols</h2>
-          <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm">One cloud-synced list across your devices. Provider keys stay on this device.</p>
+      <div className="market-brief watchlist-brief">
+        <div className="market-brief-copy">
+          <p className="market-kicker">Cloud watchlist</p>
+          <h2 className="market-brief-title">Your industry research list</h2>
+          <p className="market-brief-description">A cloud-synced list of tracked symbols, organized by the latest available company industry classification.</p>
         </div>
-        <span className="quiet-live-indicator hidden shrink-0 items-center gap-1.5 text-[11px] text-muted-foreground sm:flex">
-          <span className="quiet-live-dot" aria-hidden="true" />
-          Silent sync
-        </span>
+        <div className="market-brief-meta">
+          <span className="market-meta-chip"><span>Symbols</span><b>{watchlist.length}</b></span>
+          <span className="market-meta-chip"><span>Industries</span><b>{groupedWatchlist.length}</b></span>
+          <span className="market-meta-chip live"><span className="quiet-live-dot" aria-hidden="true" /><b>Live quotes</b></span>
+        </div>
       </div>
-      <section className="rounded-2xl border border-border/70 bg-card/55 p-4 shadow-none sm:rounded-3xl sm:p-6">
+      <section className="intel-panel premium-panel rounded-2xl border border-border/70 bg-card/55 p-4 shadow-none sm:rounded-3xl sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h3 className="text-sm font-semibold text-foreground sm:text-base">Add a symbol</h3>
@@ -88,9 +131,52 @@ export function WatchlistView() {
         />
       </section>
       {watchlist.length > 0 && (
-        <section>
-          <div className="flex items-baseline justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Tracked companies</p><h3 className="mt-1 text-lg font-semibold text-foreground sm:text-xl">All symbols</h3></div><span className="rounded-full border border-border bg-muted/30 px-2.5 py-1 text-[10px] text-muted-foreground">{watchlist.length} tracked</span></div>
-          <div className="mt-3"><QuoteTable symbols={watchSymbols} watchlist={watchSymbols} onToggleWatch={(symbol) => removeFromWatchlist(symbol)} /></div>
+        <section className="space-y-4">
+          <div className="watchlist-section-heading flex items-baseline justify-between gap-3">
+            <div><p className="market-kicker">Tracked companies</p><h3 className="mt-1 text-lg font-semibold text-foreground sm:text-xl">Industry coverage</h3></div>
+            <span className="rounded-full border border-border bg-muted/30 px-2.5 py-1 text-[10px] text-muted-foreground">{watchlist.length} tracked</span>
+          </div>
+          {loadingQuotes && (
+            <div className="watchlist-loading rounded-2xl border border-border/70 bg-card/55">
+              <DataLoading compact label="Refreshing watchlist quotes" detail="Loading the latest price, movement, and market capitalization." />
+            </div>
+          )}
+          {!loadingQuotes && (
+            <div className="watchlist-industry-stack">
+              {groupedWatchlist.map((group) => (
+                <section key={group.industry} className="watchlist-industry-group">
+                  <header className="watchlist-industry-header">
+                    <div>
+                      <p className="watchlist-industry-label">Industry</p>
+                      <h4>{group.industry}</h4>
+                    </div>
+                    <span>{group.items.length} symbol{group.items.length === 1 ? "" : "s"}</span>
+                  </header>
+                  <div className="watchlist-list" role="list" aria-label={`${group.industry} watchlist symbols`}>
+                    {group.items.map((item) => {
+                      const quote = quoteBySymbol.get(item.symbol);
+                      return (
+                        <div className="watchlist-list-row" key={item.symbol} role="listitem">
+                          <Link to="/stock/$symbol" params={{ symbol: item.symbol }} className="watchlist-symbol-link">
+                            <span className="watchlist-symbol-mark">{item.symbol.slice(0, 1)}</span>
+                            <span className="min-w-0"><b>{item.symbol}</b><small>{item.name || quote?.name || "Company"}</small></span>
+                          </Link>
+                          <div className="watchlist-list-metrics">
+                            <span><small>Price</small><b>{fmtPrice(quote?.price ?? null, quote?.currency)}</b></span>
+                            <span><small>Today</small><DeltaBadge value={quote?.changePercent ?? null} size="sm" /></span>
+                            <span className="hidden sm:block"><small>Market cap</small><b>{fmtCompact(quote?.marketCap ?? null)}</b></span>
+                          </div>
+                          <button type="button" onClick={() => removeFromWatchlist(item.symbol)} className="watchlist-remove" aria-label={`Remove ${item.symbol} from watchlist`} title="Remove from watchlist">
+                            <Trash2 className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </section>
+              ))}
+            </div>
+          )}
         </section>
       )}
       {watchlist.length === 0 && (
