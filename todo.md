@@ -122,3 +122,11 @@
 - [x] Temporarily remove password-recovery email controls and server actions while preserving email-and-password registration and sign-in.
 - [x] Record the user-approved decision to leave notifications in active-session mode only.
 - [x] Record the explicit user clarification that the `/skill-creator` text was sent by mistake and no skill package is requested.
+- [x] Redesign mobile market and index cards as compact 2-by-2 blocks with concise text and readable value hierarchy.
+- [x] Convert the sector performance heatmap into a fully packed square layout without unused space.
+- [x] Simplify the watchlist back to normal cloud-synced tracked symbols without folder-management controls.
+- [x] Make stock detail rows horizontally movable on small screens so secondary fields remain available.
+- [x] Render sector and industry stock coverage on mobile as compact two-column cards through 50 names without text overlap.
+- [x] Validate the new responsive dashboard design at mobile and desktop breakpoints.
+- [x] Preserve 52-week high and other secondary quote fields in a true horizontally scrollable mobile stock-detail rail for watchlist, sector, and industry coverage.
+- [ ] Visually verify the mobile horizontal stock-detail interaction with populated sector, industry, or watchlist quotes.

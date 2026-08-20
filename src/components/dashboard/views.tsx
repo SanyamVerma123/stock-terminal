@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
-import { ArrowDown, ArrowUp, Bell, BellRing, FolderPlus, Inbox, KeyRound, Star, Trash2 } from "lucide-react";
+import { Bell, BellRing, Inbox, KeyRound, Star, Trash2 } from "lucide-react";
 import { getMarketStrip, getNews, getRankedNews, getWatchlistNews } from "@/lib/finance.functions";
 import { Sparkline } from "@/components/finance/Sparkline";
 import { DeltaBadge } from "@/components/finance/DeltaBadge";
@@ -28,20 +28,20 @@ export function MarketStrip() {
     staleTime: 60_000,
   });
   return (
-    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+    <div className="grid grid-cols-2 gap-2 sm:gap-3 xl:grid-cols-4">
       {(data ?? []).map((ix) => (
-        <div key={ix.key} className="index-card rounded-2xl border border-border/70 bg-card/55 p-4 shadow-sm">
-          <div className="flex items-center justify-between gap-3"><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{ix.label}</p><span className="index-card-live">Live</span></div>
-          <p className="tabular mt-2 text-2xl font-semibold tracking-tight text-foreground">
+        <div key={ix.key} className="index-card min-w-0 rounded-xl border border-border/70 bg-card/55 p-3 shadow-sm sm:rounded-2xl sm:p-4">
+          <div className="flex items-center justify-between gap-2"><p className="truncate text-[10px] font-medium uppercase tracking-[0.12em] text-muted-foreground sm:text-xs sm:tracking-wider">{ix.label}</p><span className="index-card-live hidden sm:inline-flex">Live</span></div>
+          <p className="tabular mt-1.5 truncate text-base font-semibold tracking-tight text-foreground sm:mt-2 sm:text-2xl">
             {ix.last === null
               ? "—"
               : ix.last.toLocaleString(undefined, { maximumFractionDigits: 2 })}
           </p>
-          <div className="mt-1 flex items-center justify-between"><DeltaBadge value={ix.changePercent} size="sm" /><span className="text-[10px] text-muted-foreground">Today</span></div>
-          <div className="mt-3">
+          <div className="mt-1 flex min-w-0 items-center justify-between gap-1"><DeltaBadge value={ix.changePercent} size="sm" /><span className="hidden text-[10px] text-muted-foreground sm:inline">Today</span></div>
+          <div className="mt-2 sm:mt-3">
             <Sparkline points={ix.points} up={(ix.changePercent ?? 0) >= 0} />
           </div>
-          {(() => { const values = ix.points.map((point) => point.c).filter((value): value is number => value !== null); const low = Math.min(...values); const high = Math.max(...values); const position = ix.last !== null && high > low ? ((ix.last - low) / (high - low)) * 100 : 50; return values.length ? <div className="mt-3 border-t border-border/60 pt-2"><div className="flex items-center justify-between text-[10px] text-muted-foreground"><span>1M low {low.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span><span>High {high.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div><span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-muted"><i className={cn("block h-full rounded-full", (ix.changePercent ?? 0) >= 0 ? "bg-positive" : "bg-negative")} style={{ width: `${Math.max(4, Math.min(100, position))}%` }} /></span></div> : null; })()}
+          {(() => { const values = ix.points.map((point) => point.c).filter((value): value is number => value !== null); const low = Math.min(...values); const high = Math.max(...values); const position = ix.last !== null && high > low ? ((ix.last - low) / (high - low)) * 100 : 50; return values.length ? <div className="mt-2 hidden border-t border-border/60 pt-2 sm:block"><div className="flex items-center justify-between text-[10px] text-muted-foreground"><span>1M low {low.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span><span>High {high.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div><span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-muted"><i className={cn("block h-full rounded-full", (ix.changePercent ?? 0) >= 0 ? "bg-positive" : "bg-negative")} style={{ width: `${Math.max(4, Math.min(100, position))}%` }} /></span></div> : null; })()}
         </div>
       ))}
     </div>
@@ -53,57 +53,29 @@ export function MarketStrip() {
 export function WatchlistView() {
   const {
     watchlist,
-    watchFolders,
     addToWatchlist,
     removeFromWatchlist,
-    moveWatchToFolder,
-    createWatchFolder,
-    reorderWatchFolder,
-    deleteWatchFolder,
     watchSymbols,
   } = useAppState();
-  const [selectedFolder, setSelectedFolder] = useState("all");
-  const [folderName, setFolderName] = useState("");
-  const activeFolder = selectedFolder === "all" ? null : watchFolders.find((folder) => folder.id === selectedFolder);
-  const activeItems = selectedFolder === "all"
-    ? watchlist
-    : selectedFolder === "unfiled"
-      ? watchlist.filter((item) => !item.folderId)
-      : watchlist.filter((item) => item.folderId === selectedFolder);
-  const folderColors = {
-    emerald: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-    sky: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
-    violet: "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300",
-    amber: "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300",
-    rose: "border-rose-500/30 bg-rose-500/10 text-rose-700 dark:text-rose-300",
-  } as const;
 
   return (
-    <div className="space-y-5">
-      <div className="flex items-end justify-between gap-4 border-b border-border/60 pb-4">
+    <div className="space-y-4 sm:space-y-5">
+      <div className="flex items-end justify-between gap-4 border-b border-border/60 pb-3 sm:pb-4">
         <div>
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">
-            Watchlist intelligence
-          </p>
-          <h2 className="mt-1 text-xl font-semibold tracking-tight text-foreground">
-            Keep the important names close
-          </h2>
-            <p className="mt-1 text-sm leading-6 text-muted-foreground">
-            Organize selected names into folders that stay with your cloud account while provider keys remain local.
-          </p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Cloud watchlist</p>
+          <h2 className="mt-1 text-lg font-semibold tracking-tight text-foreground sm:text-xl">Your tracked symbols</h2>
+          <p className="mt-1 text-xs leading-5 text-muted-foreground sm:text-sm">One cloud-synced list across your devices. Provider keys stay on this device.</p>
         </div>
         <span className="quiet-live-indicator hidden shrink-0 items-center gap-1.5 text-[11px] text-muted-foreground sm:flex">
           <span className="quiet-live-dot" aria-hidden="true" />
           Silent sync
         </span>
       </div>
-      <section className="rounded-3xl border border-border/70 bg-card/55 p-6 shadow-none">
+      <section className="rounded-2xl border border-border/70 bg-card/55 p-4 shadow-none sm:rounded-3xl sm:p-6">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <h3 className="text-base font-semibold text-foreground">Build your watchlist</h3>
-            <p className="mt-1 text-sm text-muted-foreground">
-              Track the companies that matter to your next decision.
-            </p>
+            <h3 className="text-sm font-semibold text-foreground sm:text-base">Add a symbol</h3>
+            <p className="mt-1 text-xs text-muted-foreground sm:text-sm">Track companies that matter to your next decision.</p>
           </div>
           <span className="rounded-full border border-positive/30 bg-positive/10 px-2.5 py-1 text-[10px] text-positive">
             Live data
@@ -114,60 +86,12 @@ export function WatchlistView() {
           onSelect={(symbol, name) => addToWatchlist(symbol, name)}
           placeholder="Search any company or ticker…"
         />
-        <p className="mt-2 text-xs text-muted-foreground">
-          New tickers are auto-categorised by sector and industry from live company data.
-        </p>
-      </section>
-      <section className="rounded-3xl border border-border/70 bg-card/55 p-5">
-        <div className="flex flex-wrap items-end justify-between gap-3">
-          <div>
-            <p className="text-sm font-medium text-foreground">Folders</p>
-            <p className="mt-1 text-xs text-muted-foreground">Create a concise group, then assign tracked symbols to it below.</p>
-          </div>
-          <form onSubmit={(event) => { event.preventDefault(); createWatchFolder(folderName); setFolderName(""); }} className="flex w-full gap-2 sm:w-auto">
-            <input value={folderName} onChange={(event) => setFolderName(event.target.value)} maxLength={48} placeholder="e.g. Long-term ideas" className="h-9 min-w-0 flex-1 rounded-lg border border-border bg-background px-3 text-xs text-foreground outline-none focus:border-primary/60 sm:w-48" />
-            <button type="submit" disabled={!folderName.trim()} className="inline-flex h-9 shrink-0 items-center gap-1.5 rounded-lg border border-primary/40 px-3 text-xs font-medium text-primary disabled:opacity-50"><FolderPlus className="h-3.5 w-3.5" /> Add</button>
-          </form>
-        </div>
-        <div className="no-scrollbar mt-4 flex gap-2 overflow-x-auto pb-1">
-          <button type="button" onClick={() => setSelectedFolder("all")} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs", selectedFolder === "all" ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground")}>All tracked <span className="ml-1 opacity-60">{watchlist.length}</span></button>
-          <button type="button" onClick={() => setSelectedFolder("unfiled")} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs", selectedFolder === "unfiled" ? "border-primary/40 bg-primary/10 text-primary" : "border-border text-muted-foreground hover:text-foreground")}>Unfiled <span className="ml-1 opacity-60">{watchlist.filter((item) => !item.folderId).length}</span></button>
-          {watchFolders.map((folder) => <button key={folder.id} type="button" onClick={() => setSelectedFolder(folder.id)} className={cn("shrink-0 rounded-full border px-3 py-1.5 text-xs", selectedFolder === folder.id ? folderColors[folder.color] : "border-border text-muted-foreground hover:text-foreground")}>{folder.name} <span className="ml-1 opacity-60">{watchlist.filter((item) => item.folderId === folder.id).length}</span></button>)}
-        </div>
       </section>
       {watchlist.length > 0 && (
-        <>
-          <section>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-primary">Watchlist folder</p>
-            <div className="mt-1 flex items-baseline gap-2">
-              <h3 className="text-xl font-semibold text-foreground">{selectedFolder === "all" ? "All tracked names" : selectedFolder === "unfiled" ? "Unfiled names" : activeFolder?.name ?? "Folder"}</h3>
-              <span className="text-xs text-muted-foreground">
-                {activeItems.length} tracked name{activeItems.length === 1 ? "" : "s"}
-              </span>
-              {activeFolder ? <div className="ml-auto flex items-center gap-1"><button type="button" onClick={() => reorderWatchFolder(activeFolder.id, "up")} className="rounded-md p-1 text-muted-foreground hover:text-foreground" aria-label="Move folder up"><ArrowUp className="h-3.5 w-3.5" /></button><button type="button" onClick={() => reorderWatchFolder(activeFolder.id, "down")} className="rounded-md p-1 text-muted-foreground hover:text-foreground" aria-label="Move folder down"><ArrowDown className="h-3.5 w-3.5" /></button><button type="button" onClick={() => { deleteWatchFolder(activeFolder.id); setSelectedFolder("all"); }} className="inline-flex items-center gap-1 text-xs text-muted-foreground hover:text-negative"><Trash2 className="h-3.5 w-3.5" /> Delete folder</button></div> : null}
-            </div>
-            <div className="mt-3 grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-              {activeItems.map((item) => <label key={item.symbol} className="flex items-center justify-between gap-2 rounded-lg border border-border/60 bg-card/45 px-3 py-2 text-xs"><span className="min-w-0 truncate font-medium text-foreground">{item.symbol}</span><select value={item.folderId ?? ""} onChange={(event) => moveWatchToFolder(item.symbol, event.target.value || undefined)} className="max-w-[145px] rounded-md border border-border bg-background px-2 py-1 text-[11px] text-muted-foreground"><option value="">Unfiled</option>{watchFolders.map((folder) => <option key={folder.id} value={folder.id}>{folder.name}</option>)}</select></label>)}
-            </div>
-            <div className="mt-3 flex items-center justify-end text-[11px] text-muted-foreground">
-              <span className="quiet-live-dot mr-1.5" aria-hidden="true" />
-              <span className="sr-only">Live updates active</span>
-            </div>
-            <div className="mt-1">
-              {activeItems.length > 0 ? (
-                <QuoteTable
-                  symbols={activeItems.map((item) => item.symbol)}
-                  watchlist={watchSymbols}
-                  onToggleWatch={(symbol) => removeFromWatchlist(symbol)}
-                />
-              ) : (
-                <p className="rounded-2xl border border-border/70 bg-card/55 p-8 text-sm text-muted-foreground">
-                  No tracked names in this folder.
-                </p>
-              )}
-            </div>
-          </section>
-        </>
+        <section>
+          <div className="flex items-baseline justify-between gap-3"><div><p className="text-[10px] font-semibold uppercase tracking-[0.18em] text-primary">Tracked companies</p><h3 className="mt-1 text-lg font-semibold text-foreground sm:text-xl">All symbols</h3></div><span className="rounded-full border border-border bg-muted/30 px-2.5 py-1 text-[10px] text-muted-foreground">{watchlist.length} tracked</span></div>
+          <div className="mt-3"><QuoteTable symbols={watchSymbols} watchlist={watchSymbols} onToggleWatch={(symbol) => removeFromWatchlist(symbol)} /></div>
+        </section>
       )}
       {watchlist.length === 0 && (
         <p className="rounded-2xl border border-border/70 bg-card/55 p-8 text-sm text-muted-foreground">
