@@ -14,6 +14,8 @@ import { MARKETS, type MarketId } from "@/lib/markets";
 import { cn } from "@/lib/utils";
 import { listChatModels, type ChatModel } from "@/lib/models.functions";
 import { DataLoading } from "@/components/ui/loading-state";
+import { NewsTimeline } from "@/components/research/NewsTimeline";
+import { ResearchWithAIButton } from "@/components/research/ResearchWithAIButton";
 
 export type Alert = { id: string; symbol: string; above: boolean; price: number; enabled: boolean };
 
@@ -213,35 +215,10 @@ export function NewsView() {
         )}
       </div>
 
-      <div className="divide-y divide-border overflow-hidden rounded-2xl border border-border/70 bg-card/55">
+      <div className="rounded-2xl border border-border/70 bg-card/55 p-4">
         {busy && <DataLoading compact label="Loading market headlines" detail="Collecting the latest research and company coverage." />}
-        {items.map((n) => (
-          <a
-            key={`${n.symbol}-${n.link}`}
-            href={n.link}
-            target="_blank"
-            rel="noreferrer"
-            className="block px-5 py-4 transition-colors hover:bg-accent/40"
-          >
-            <p className="text-sm font-medium text-foreground">
-              <span className="mr-2 rounded bg-accent px-1.5 py-0.5 text-[10px] text-muted-foreground">
-                {n.symbol}
-              </span>
-              {n.title}
-            </p>
-            <p className="mt-1 line-clamp-2 text-xs text-muted-foreground">{n.summary}</p>
-            <p className="mt-2 flex items-center gap-2 text-[11px] text-muted-foreground">
-              {n.publisher} · {timeAgo(n.pubDate)} <ExternalLink className="h-3 w-3" />
-            </p>
-          </a>
-        ))}
-        {!busy && items.length === 0 && (
-          <p className="p-6 text-sm text-muted-foreground">
-            {watchSymbols.length === 0 && !symbol
-              ? "Add tickers to your watchlist to build a news feed."
-              : "No headlines right now."}
-          </p>
-        )}
+        {!busy && <NewsTimeline items={items} empty={watchSymbols.length === 0 && !symbol ? "Add tickers to your watchlist to build a news feed." : "No headlines right now."} />}
+        {!busy && items.length > 0 ? <div className="mt-4 border-t border-border pt-4"><ResearchWithAIButton prompt={`Research the most important recent ${symbol ? `${symbol} ` : "watchlist "}news. Explain verified facts, likely market relevance, and uncertainty.`} /></div> : null}
       </div>
     </div>
   );

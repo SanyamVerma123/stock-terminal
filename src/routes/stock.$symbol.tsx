@@ -11,17 +11,21 @@ import {
   getCorporateActions,
   getFinancials,
   getHistory,
+  getIndustryOverview,
   getNews,
+  getQuotes,
   getSummary,
   getUpgrades,
 } from "@/lib/finance.functions";
 import { RANGES, type RangeKey } from "@/lib/finance-types";
-import { fmtCompact, fmtDate, fmtNumber, fmtPercent, fmtPrice, timeAgo } from "@/lib/format";
+import { fmtCompact, fmtDate, fmtNumber, fmtPercent, fmtPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { DataLoading } from "@/components/ui/loading-state";
 import { TextShimmerLoader } from "@/components/ui/loader";
 import { useAppState } from "@/lib/app-state";
 import { Star } from "lucide-react";
+import { NewsTimeline } from "@/components/research/NewsTimeline";
+import { ResearchWithAIButton } from "@/components/research/ResearchWithAIButton";
 
 export const Route = createFileRoute("/stock/$symbol")({
   head: ({ params }) => ({
@@ -85,6 +89,8 @@ function StockPage() {
   const upgradesFn = useServerFn(getUpgrades);
   const calFn = useServerFn(getCalendar);
   const caFn = useServerFn(getCorporateActions);
+  const industryFn = useServerFn(getIndustryOverview);
+  const quotesFn = useServerFn(getQuotes);
 
   const cfg = RANGES.find((r) => r.key === range)!;
 
@@ -135,6 +141,21 @@ function StockPage() {
 
   const q = summary?.quote;
   const r = summary?.ratios;
+  const { data: industryPeers } = useQuery({
+    queryKey: ["industry-peers", r?.industry, q?.currency],
+    queryFn: () => industryFn({ data: { industryKey: r?.industry ?? "", region: q?.currency === "INR" ? "in" : "us" } }),
+    enabled: Boolean(r?.industry),
+    staleTime: 300_000,
+  });
+  const peerSymbolColumn = industryPeers?.columns.find((column) => /symbol|ticker|code/i.test(column)) ?? "Symbol";
+  const peerSymbols = (industryPeers?.rows ?? []).map((row) => row[peerSymbolColumn]).filter((value): value is string => Boolean(value)).filter((value) => value !== symbol).slice(0, 10);
+  const { data: peerQuotes } = useQuery({
+    queryKey: ["industry-peer-quotes", peerSymbols.join(",")],
+    queryFn: () => quotesFn({ data: { symbols: peerSymbols.join(",") } }),
+    enabled: peerSymbols.length > 0,
+    staleTime: 60_000,
+  });
+  const peerBenchmark = (peerQuotes ?? []).filter((quote) => quote.changePercent !== null).reduce((total, quote, _, all) => total + (quote.changePercent ?? 0) / Math.max(all.length, 1), 0);
 
   if (error) {
     return (
@@ -364,6 +385,12 @@ function StockPage() {
               )}
             </Card>
 
+            <Card title="Industry peers">
+              <p className="text-xs text-muted-foreground">{r?.industry ?? "Industry classification loading"} · equal-weight 1D peer benchmark</p>
+              <div className="mt-3 grid grid-cols-2 gap-2"><Stat label="Peer benchmark" value={peerQuotes?.length ? `${peerBenchmark >= 0 ? "+" : ""}${peerBenchmark.toFixed(2)}%` : "Loading"} /><Stat label="Peers quoted" value={String(peerQuotes?.length ?? 0)} /></div>
+              <div className="mt-3 space-y-1.5">{(peerQuotes ?? []).slice(0, 8).map((peer) => <a key={peer.symbol} href={`/stock/${encodeURIComponent(peer.symbol)}`} className="flex items-center justify-between rounded-lg border border-border bg-surface px-2.5 py-2 text-xs hover:border-primary/40"><span className="font-medium text-foreground">{peer.symbol}</span><span className={(peer.changePercent ?? 0) >= 0 ? "text-positive" : "text-negative"}>{peer.changePercent === null ? "—" : `${peer.changePercent >= 0 ? "+" : ""}${peer.changePercent.toFixed(2)}%`}</span></a>)}{peerSymbols.length === 0 ? <p className="text-xs text-muted-foreground">Provider peers will appear when industry coverage is available.</p> : null}</div>
+            </Card>
+
             <Card title="Events">
               <div className="space-y-2">
                 <Stat label="Next earnings" value={fmtDate(calendar?.earningsDate)} />
@@ -393,27 +420,7 @@ function StockPage() {
               )}
             </Card>
 
-            <Card title="News">
-              <div className="space-y-3">
-                {(news ?? []).slice(0, 10).map((n, i) => (
-                  <a
-                    key={i}
-                    href={n.link}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block rounded-xl border border-border bg-surface p-3 transition-colors hover:border-primary/40"
-                  >
-                    <p className="text-sm font-medium leading-snug text-foreground">{n.title}</p>
-                    <p className="mt-1 text-xs text-muted-foreground">
-                      {n.publisher ?? "Source"} · {timeAgo(n.pubDate)}
-                    </p>
-                  </a>
-                ))}
-                {!news?.length && (
-                  <p className="text-sm text-muted-foreground">No recent headlines.</p>
-                )}
-              </div>
-            </Card>
+            <Card title="News"><NewsTimeline items={(news ?? []).map((item) => ({ ...item, symbol }))} empty="No recent headlines." /><div className="mt-4 border-t border-border pt-4"><ResearchWithAIButton prompt={`Research ${symbol} using the latest available news. Prioritize the highest-importance headlines, explain likely business relevance, identify industry-peer context for ${r?.industry ?? "its industry"}, and distinguish verified facts from uncertainty.`} /></div></Card>
           </div>
         </div>
       </main>
