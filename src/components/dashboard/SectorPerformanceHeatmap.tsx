@@ -19,9 +19,8 @@ type CapitalizationTile = { key: string; value: number };
 type TreemapRect = { key: string; left: number; top: number; width: number; height: number };
 
 /**
- * Squarified treemap: each rectangle keeps its exact area share while the next tile is only
- * added to a strip when it improves the worst aspect ratio. This avoids the old equal-looking,
- * thin rows and keeps the overall map square and readable.
+ * Each output rectangle retains its sector's exact share of total mapped area.
+ * Rows are balanced only for readability; width × height remains proportional to market cap.
  */
 export function capitalizationTreemap(tiles: CapitalizationTile[]): TreemapRect[] {
   const normalized = tiles
@@ -29,53 +28,37 @@ export function capitalizationTreemap(tiles: CapitalizationTile[]): TreemapRect[
     .map((tile) => ({ ...tile, value: tile.value }));
   const total = normalized.reduce((sum, tile) => sum + tile.value, 0) || 1;
   const ordered = [...normalized].sort((a, b) => b.value - a.value);
-  const areas = ordered.map((tile) => ({ ...tile, area: (tile.value / total) * 10_000 }));
-  const rectangles: TreemapRect[] = [];
-  let remaining = { left: 0, top: 0, width: 100, height: 100 };
-  let cursor = 0;
+  const target = total / 2;
+  const firstRow: CapitalizationTile[] = [];
+  const secondRow: CapitalizationTile[] = [];
+  let firstTotal = 0;
 
-  const worstAspect = (row: typeof areas, shortSide: number) => {
-    const totalArea = row.reduce((sum, tile) => sum + tile.area, 0);
-    const smallest = Math.min(...row.map((tile) => tile.area));
-    const largest = Math.max(...row.map((tile) => tile.area));
-    return Math.max(
-      (shortSide * shortSide * largest) / (totalArea * totalArea),
-      (totalArea * totalArea) / (shortSide * shortSide * smallest),
-    );
-  };
-
-  while (cursor < areas.length && remaining.width > 0 && remaining.height > 0) {
-    const row = [areas[cursor++]!];
-    const shortSide = Math.min(remaining.width, remaining.height);
-    while (cursor < areas.length) {
-      const candidate = areas[cursor]!;
-      if (worstAspect([...row, candidate], shortSide) > worstAspect(row, shortSide)) break;
-      row.push(candidate);
-      cursor += 1;
-    }
-
-    const rowArea = row.reduce((sum, tile) => sum + tile.area, 0);
-    if (remaining.width >= remaining.height) {
-      const stripWidth = rowArea / remaining.height;
-      let top = remaining.top;
-      row.forEach((tile) => {
-        const height = tile.area / stripWidth;
-        rectangles.push({ key: tile.key, left: remaining.left, top, width: stripWidth, height });
-        top += height;
-      });
-      remaining = { ...remaining, left: remaining.left + stripWidth, width: remaining.width - stripWidth };
+  ordered.forEach((tile) => {
+    if (firstTotal < target || secondRow.length === 0) {
+      firstRow.push(tile);
+      firstTotal += tile.value;
     } else {
-      const stripHeight = rowArea / remaining.width;
-      let left = remaining.left;
-      row.forEach((tile) => {
-        const width = tile.area / stripHeight;
-        rectangles.push({ key: tile.key, left, top: remaining.top, width, height: stripHeight });
-        left += width;
-      });
-      remaining = { ...remaining, top: remaining.top + stripHeight, height: remaining.height - stripHeight };
+      secondRow.push(tile);
     }
-  }
-  return rectangles;
+  });
+  if (!secondRow.length && firstRow.length > 1) secondRow.push(firstRow.pop()!);
+
+  let top = 0;
+  return [firstRow, secondRow]
+    .filter((row) => row.length > 0)
+    .flatMap((row) => {
+      const rowTotal = row.reduce((sum, tile) => sum + tile.value, 0) || 1;
+      const height = (rowTotal / total) * 100;
+      let left = 0;
+      const rects = row.map((tile) => {
+        const width = (tile.value / rowTotal) * 100;
+        const rect = { key: tile.key, left, top, width, height };
+        left += width;
+        return rect;
+      });
+      top += height;
+      return rects;
+    });
 }
 
 export function SectorPerformanceHeatmap() {
@@ -121,7 +104,6 @@ export function SectorPerformanceHeatmap() {
   const rectangleByKey = new Map(rectangles.map((rectangle) => [rectangle.key, rectangle]));
   const coverage = weightedSectors.length;
   const canDrawWeightedMap = coverage >= 2;
-  const totalWeightedCap = weightedSectors.reduce((sum, { value }) => sum + value!.marketCap!, 0);
 
   return (
     <section className="heatmap-intelligence rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
@@ -155,10 +137,8 @@ export function SectorPerformanceHeatmap() {
             const move = signal?.symbol ? quoteBySymbol.get(signal.symbol)?.changePercent ?? null : null;
             const rect = rectangleByKey.get(sectorKey)!;
             const area = rect.width * rect.height;
-            const compact = area < 650;
-            const emphasis = area > 2_400 ? "heatmap-cell-large" : area > 1_000 ? "heatmap-cell-medium" : "heatmap-cell-small";
+            const compact = area < 800;
             const detail = signal?.label ?? (signal?.symbol ? "Lead-company proxy" : fmtCompact(value!.marketCap));
-            const weight = (value!.marketCap! / totalWeightedCap) * 100;
             return (
               <article
                 key={sectorKey}
@@ -169,7 +149,7 @@ export function SectorPerformanceHeatmap() {
                   width: `${rect.width}%`,
                   height: `${rect.height}%`,
                 }}
-                className={`heatmap-cell ${emphasis} absolute overflow-hidden rounded-[12px] border border-background/60 p-1.5 sm:rounded-[14px] sm:p-2 ${movementClass(move)}`}
+                className={`heatmap-cell absolute overflow-hidden border border-background/60 p-1.5 sm:p-2 ${movementClass(move)}`}
               >
                 <p className={`truncate font-semibold leading-tight ${compact ? "text-[7px] sm:text-[9px]" : "text-[9px] sm:text-[11px]"}`}>
                   {sectorLabel(sectorKey)}
@@ -178,7 +158,6 @@ export function SectorPerformanceHeatmap() {
                   {move === null ? "—" : `${move >= 0 ? "+" : ""}${move.toFixed(2)}%`}
                 </p>
                 {!compact && <p className="mt-1 truncate text-[8px] opacity-75 sm:text-[10px]">{detail}</p>}
-                {!compact && <p className="heatmap-weight-label">{weight.toFixed(1)}% weight</p>}
               </article>
             );
           })}

@@ -34,7 +34,3 @@
 - [x] Verify the final stock research refinement on desktop and record the result.
 - [x] Recorded desktop verification: `/stock/TCS.NS` renders the refined research-sheet hero, metric tiles, chart, fundamentals, analyst coverage, and supporting cards without layout breakage.
 - [x] Save a final checkpoint for the merged visual upgrade after all final checks pass.
-- [x] Define balanced square-treemap rules that preserve real sector market-capitalization proportions.
-- [x] Redesign sector heat-map tiles to remain visually balanced, readable, and distinctly sized by market weight.
-- [x] Verify the refined heat map with unit coverage and desktop/mobile visual checks.
-- [x] Save a checkpoint for the refined heat map.
