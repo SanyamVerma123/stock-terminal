@@ -5,11 +5,9 @@ import {
   CLOUD_SESSION_MAX_AGE,
   cloudAccountFromSession,
   changeCloudPassword,
-  confirmCloudPasswordReset,
   createCloudSession,
   registerCloudAccount,
   removeCloudSession,
-  requestCloudPasswordReset,
 } from "@/lib/cloud-store.server";
 
 function cookieValue(request: Request, name: string) {
@@ -56,28 +54,12 @@ export const Route = createFileRoute("/api/cloud/auth")({
             email?: string;
             password?: string;
             displayName?: string;
-            token?: string;
             currentPassword?: string;
             newPassword?: string;
           };
-          const origin = new URL(request.url).origin;
           if (body.action === "logout") {
             await removeCloudSession(cookieValue(request, CLOUD_SESSION_COOKIE));
             return json({ account: null }, 200, { "set-cookie": expiredSessionCookie() });
-          }
-          if (body.action === "request_reset") {
-            if (typeof body.email !== "string") return json({ error: "Email is required." }, 400);
-            await requestCloudPasswordReset(body.email, origin);
-            return json({ accepted: true, message: "If this email has an account, a reset link has been sent." });
-          }
-          if (body.action === "confirm_reset") {
-            if (typeof body.token !== "string" || typeof body.password !== "string") {
-              return json({ error: "A reset token and new password are required." }, 400);
-            }
-            const account = await confirmCloudPasswordReset(body.token, body.password);
-            if (!account) return json({ error: "Your account could not be loaded." }, 400);
-            const session = await createCloudSession(account.id);
-            return json({ account }, 200, { "set-cookie": sessionCookie(session) });
           }
           const activeAccount = await cloudAccountFromSession(cookieValue(request, CLOUD_SESSION_COOKIE));
           if (body.action === "change_password") {

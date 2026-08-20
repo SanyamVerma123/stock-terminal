@@ -133,3 +133,26 @@ export async function evaluateSavedScreenerAlerts() {
   }
   return { accountsChecked, notificationsCreated };
 }
+
+function callbackJson(payload: unknown, status = 200) {
+  return new Response(JSON.stringify(payload), {
+    status,
+    headers: { "content-type": "application/json; charset=utf-8" },
+  });
+}
+
+/** Handles the protected Heartbeat request before TanStack Start's cron-cookie middleware. */
+export async function handleScreenerAlertCallback(request: Request) {
+  try {
+    const body = (await request.json()) as { token?: unknown };
+    if (typeof body.token !== "string" || !(await authorizeScreenerAlertSchedule(body.token))) {
+      return callbackJson({ error: "scheduled-task authorization failed" }, 403);
+    }
+    return callbackJson({ ok: true, ...(await evaluateSavedScreenerAlerts()) });
+  } catch (error) {
+    return callbackJson({
+      error: error instanceof Error ? error.message : "scheduled screener evaluation failed",
+      timestamp: new Date().toISOString(),
+    }, 500);
+  }
+}

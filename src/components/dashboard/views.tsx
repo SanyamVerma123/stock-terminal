@@ -443,8 +443,6 @@ export function SettingsView() {
   const [accountPassword, setAccountPassword] = useState("");
   const [accountName, setAccountName] = useState("");
   const [accountMessage, setAccountMessage] = useState("");
-  const [showResetRequest, setShowResetRequest] = useState(false);
-  const [resetToken] = useState(() => typeof window === "undefined" ? "" : new URLSearchParams(window.location.search).get("resetToken") ?? "");
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const field =
@@ -571,15 +569,7 @@ export function SettingsView() {
             </form>
           </div>
         ) : (
-          resetToken ? <form onSubmit={(event) => { event.preventDefault(); void postCloudAuth({ action: "confirm_reset", token: resetToken, password: accountPassword }).then(() => { setAccountMessage("Password reset. You are now signed in."); window.history.replaceState({}, "", window.location.pathname); window.location.reload(); }, (error: unknown) => setAccountMessage(error instanceof Error ? error.message : "Unable to reset password.")); }} className="mt-4 grid gap-2 md:grid-cols-2">
-            <p className="text-xs leading-5 text-muted-foreground md:col-span-2">Set a new password for your cloud account. This one-time link expires after 30 minutes.</p>
-            <input value={accountPassword} onChange={(event) => setAccountPassword(event.target.value)} placeholder="New password (10+ characters)" type="password" autoComplete="new-password" minLength={10} required className={field.replace("mt-1 ", "")} />
-            <button type="submit" disabled={accountPassword.length < 10} className="h-9 rounded-lg bg-primary px-4 text-xs font-medium text-primary-foreground disabled:opacity-60">Reset password</button>
-          </form> : showResetRequest ? <form onSubmit={(event) => { event.preventDefault(); void postCloudAuth({ action: "request_reset", email: accountEmail }).then((result) => setAccountMessage(result.message ?? "If an account exists, a reset link has been sent."), (error: unknown) => setAccountMessage(error instanceof Error ? error.message : "Unable to request reset.")); }} className="mt-4 grid gap-2 md:grid-cols-[1fr_auto]">
-            <input value={accountEmail} onChange={(event) => setAccountEmail(event.target.value)} placeholder="Email address" type="email" autoComplete="email" required className={field.replace("mt-1 ", "")} />
-            <button type="submit" className="h-9 rounded-lg bg-primary px-4 text-xs font-medium text-primary-foreground">Email reset link</button>
-            <button type="button" onClick={() => setShowResetRequest(false)} className="text-left text-xs text-muted-foreground hover:text-foreground md:col-span-2">Back to sign in</button>
-          </form> : <form onSubmit={(event) => { event.preventDefault(); void signIntoCloud({ mode: accountMode, email: accountEmail, password: accountPassword, ...(accountMode === "register" && accountName.trim() ? { displayName: accountName } : {}) }).then((success) => { if (success) { setAccountPassword(""); if (accountMode === "register") setAccountMessage("Account created. You can now sign in with this email and password."); } }); }} className="mt-4 grid gap-2 md:grid-cols-2">
+          <form onSubmit={(event) => { event.preventDefault(); void signIntoCloud({ mode: accountMode, email: accountEmail, password: accountPassword, ...(accountMode === "register" && accountName.trim() ? { displayName: accountName } : {}) }).then((success) => { if (success) { setAccountPassword(""); if (accountMode === "register") setAccountMessage("Account created. You can now sign in with this email and password."); } }); }} className="mt-4 grid gap-2 md:grid-cols-2">
             <div className="flex gap-1 rounded-lg border border-border/70 bg-background/25 p-1 md:col-span-2">
               <button type="button" onClick={() => setAccountMode("login")} className={cn("flex-1 rounded-md px-3 py-1.5 text-xs font-medium", accountMode === "login" ? "bg-primary/10 text-primary" : "text-muted-foreground")}>Sign in</button>
               <button type="button" onClick={() => setAccountMode("register")} className={cn("flex-1 rounded-md px-3 py-1.5 text-xs font-medium", accountMode === "register" ? "bg-primary/10 text-primary" : "text-muted-foreground")}>Create account</button>
@@ -588,7 +578,6 @@ export function SettingsView() {
             <input value={accountEmail} onChange={(event) => setAccountEmail(event.target.value)} placeholder="Email address" type="email" autoComplete="email" required className={field.replace("mt-1 ", "")} />
             <input value={accountPassword} onChange={(event) => setAccountPassword(event.target.value)} placeholder={accountMode === "register" ? "Password (10+ characters)" : "Password"} type="password" autoComplete={accountMode === "register" ? "new-password" : "current-password"} minLength={10} required className={field.replace("mt-1 ", "")} />
             <button type="submit" disabled={cloudStatus === "syncing" || cloudStatus === "checking"} className="h-9 rounded-lg bg-primary px-4 text-xs font-medium text-primary-foreground disabled:opacity-60 md:col-span-2">{cloudStatus === "syncing" ? "Working…" : accountMode === "register" ? "Create account & sync" : "Sign in & sync"}</button>
-            {accountMode === "login" ? <button type="button" onClick={() => setShowResetRequest(true)} className="text-left text-xs text-muted-foreground hover:text-foreground md:col-span-2">Forgot password?</button> : null}
           </form>
         )}
         {accountMessage ? <p role="status" className="mt-3 rounded-lg border border-primary/20 bg-primary/5 px-3 py-2 text-xs text-foreground">{accountMessage}</p> : null}
