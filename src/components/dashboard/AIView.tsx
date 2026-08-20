@@ -172,7 +172,7 @@ function screenerFiltersFromUnknown(value: unknown): ScreenerFilters | null {
   };
 }
 
-function screenerToolResultFromPart(part: unknown, id: string): ScreenerToolResult | null {
+export function screenerToolResultFromPart(part: unknown, id: string): ScreenerToolResult | null {
   if (!part || typeof part !== "object") return null;
   const candidate = part as Record<string, unknown>;
   if (candidate["type"] !== "tool-create_screener") return null;
@@ -190,6 +190,14 @@ function screenerToolResultFromPart(part: unknown, id: string): ScreenerToolResu
     rows: (result["rows"] as unknown[]).filter((row): row is Record<string, unknown> =>
       Boolean(row && typeof row === "object"),
     ),
+  };
+}
+
+export function savedScreenerFromToolResult(result: ScreenerToolResult): SavedScreener {
+  return {
+    id: `ai-${result.id}`,
+    name: result.name,
+    filters: result.filters,
   };
 }
 
@@ -313,6 +321,7 @@ const SUGGESTIONS = [
   "Compare TCS and Infosys on margins and valuation",
   "Draw a mermaid flowchart of NVIDIA's revenue drivers",
   "Build a table of the Magnificent 7 with P/E and 1Y growth",
+  "Create a reusable India large-cap value screener with P/E below 20",
   "What moved Reliance today and why?",
 ];
 
@@ -348,12 +357,14 @@ export function AIView({ visible = true }: { visible?: boolean }) {
   const [editingTitle, setEditingTitle] = useState("");
   const historyPressTimer = useRef<number | null>(null);
   const suppressHistoryClick = useRef(false);
+  const consumedPrefill = useRef<string | null>(null);
   const [sessions, setSessions] = useState<ChatSession[]>(loadChatSessions);
   const [activeChatId, setActiveChatId] = useState(() => {
     if (typeof window === "undefined") return "";
     return window.localStorage.getItem("sc:active-chat") ?? "";
   });
-  const { apiKeys, aiPrefill, setAiPrefill, saveScreener } = useAppState();
+  const [cloudChatReady, setCloudChatReady] = useState(false);
+  const { apiKeys, aiPrefill, setAiPrefill, saveScreener, cloudAccount } = useAppState();
   const savedScreenerIds = useRef(new Set<string>());
   const modelsFn = useServerFn(listChatModels);
   const { data: catalog } = useQuery({
@@ -430,6 +441,77 @@ export function AIView({ visible = true }: { visible?: boolean }) {
     window.localStorage.setItem("sc:chat-sessions", JSON.stringify(sessions.slice(0, 20)));
     if (currentChatId) window.localStorage.setItem("sc:active-chat", currentChatId);
   }, [sessions, currentChatId]);
+
+  useEffect(() => {
+    let cancelled = false;
+    setCloudChatReady(false);
+    if (!cloudAccount) {
+      setCloudChatReady(true);
+      return;
+    }
+    void fetch("/api/cloud/state", { credentials: "same-origin" })
+      .then(async (response) => {
+        if (!response.ok) throw new Error("Cloud chat history is unavailable.");
+        return response.json() as Promise<{ state?: { chatSessions?: unknown[]; activeChatId?: string } | null }>;
+      })
+      .then((payload) => {
+        if (cancelled) return;
+        const restored = payload.state?.chatSessions;
+        if (Array.isArray(restored) && restored.length > 0) {
+          const safeSessions = restored.flatMap((item) => {
+            if (!item || typeof item !== "object") return [];
+            const candidate = item as Record<string, unknown>;
+            if (
+              typeof candidate["id"] !== "string" ||
+              typeof candidate["title"] !== "string" ||
+              typeof candidate["createdAt"] !== "number" ||
+              typeof candidate["updatedAt"] !== "number" ||
+              !Array.isArray(candidate["messages"])
+            ) return [];
+            return [{
+              id: candidate["id"],
+              title: candidate["title"],
+              createdAt: candidate["createdAt"],
+              updatedAt: candidate["updatedAt"],
+              messages: candidate["messages"] as UIMessage[],
+            } satisfies ChatSession];
+          });
+          if (safeSessions.length > 0) {
+            setSessions(safeSessions.slice(0, 20));
+            setActiveChatId(
+              typeof payload.state?.activeChatId === "string" && safeSessions.some((item) => item.id === payload.state?.activeChatId)
+                ? payload.state.activeChatId
+                : safeSessions[0]!.id,
+            );
+          }
+        }
+      })
+      .catch(() => undefined)
+      .finally(() => {
+        if (!cancelled) setCloudChatReady(true);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [cloudAccount]);
+
+  useEffect(() => {
+    if (!cloudAccount || !cloudChatReady) return;
+    const timer = window.setTimeout(() => {
+      void fetch("/api/cloud/state", {
+        method: "PUT",
+        credentials: "same-origin",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          state: {
+            chatSessions: sessions.slice(0, 20),
+            ...(currentChatId ? { activeChatId: currentChatId } : {}),
+          },
+        }),
+      }).catch(() => undefined);
+    }, 1_000);
+    return () => window.clearTimeout(timer);
+  }, [cloudAccount, cloudChatReady, currentChatId, sessions]);
 
   const runtimeId = currentChatId || "chat-default";
   const runtime = getChatRuntime(runtimeId, activeSession?.messages ?? []);
@@ -537,12 +619,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
       message.parts.forEach((part, index) => {
         const result = screenerToolResultFromPart(part, `${message.id}-${index}`);
         if (!result || savedScreenerIds.current.has(result.id)) return;
-        const preset: SavedScreener = {
-          id: `ai-${result.id}`,
-          name: result.name,
-          filters: result.filters,
-        };
-        saveScreener(preset);
+        saveScreener(savedScreenerFromToolResult(result));
         savedScreenerIds.current.add(result.id);
       });
     });
@@ -590,6 +667,8 @@ export function AIView({ visible = true }: { visible?: boolean }) {
 
   useEffect(() => {
     if (!aiPrefill || messages.length > 0 || busy) return;
+    if (consumedPrefill.current === aiPrefill) return;
+    consumedPrefill.current = aiPrefill;
     setAiPrefill(null);
     void sendResearch(aiPrefill);
   }, [aiPrefill, busy, messages.length, sendResearch, setAiPrefill]);

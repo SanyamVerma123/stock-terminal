@@ -10,6 +10,7 @@ import {
 import { useServerFn } from "@tanstack/react-start";
 import { classifySymbols } from "@/lib/finance.functions";
 import { MARKETS, type MarketId } from "@/lib/markets";
+import type { CloudAccount, CloudSyncState } from "@/lib/cloud-types";
 
 export type AssetClass = "equities" | "etfs" | "crypto" | "forex";
 export type Theme = "terminal" | "light" | "paper" | "neuborder";
@@ -104,6 +105,15 @@ export type ApiKeys = {
   customModels?: CustomAIModel[];
 };
 
+export type CloudStatus = "checking" | "anonymous" | "syncing" | "ready" | "error";
+
+export type CloudCredentials = {
+  mode: "login" | "register";
+  email: string;
+  password: string;
+  displayName?: string;
+};
+
 type State = {
   market: MarketId;
   setMarket: (m: MarketId) => void;
@@ -122,6 +132,11 @@ type State = {
   deleteScreener: (id: string) => void;
   apiKeys: ApiKeys;
   setApiKeys: (k: ApiKeys) => void;
+  cloudAccount: CloudAccount | null;
+  cloudStatus: CloudStatus;
+  cloudError: string | null;
+  signIntoCloud: (credentials: CloudCredentials) => Promise<boolean>;
+  signOutOfCloud: () => Promise<void>;
   refreshSeconds: number;
   setRefreshSeconds: (n: number) => void;
   theme: Theme;
@@ -132,7 +147,7 @@ type State = {
 
 const Ctx = createContext<State | null>(null);
 
-function load<T>(key: string, fallback: T): T {
+export function loadLocalState<T>(key: string, fallback: T): T {
   try {
     const raw = window.localStorage.getItem(key);
     return raw ? (JSON.parse(raw) as T) : fallback;
@@ -141,7 +156,7 @@ function load<T>(key: string, fallback: T): T {
   }
 }
 
-function save<T>(key: string, value: T) {
+export function saveLocalState<T>(key: string, value: T) {
   try {
     window.localStorage.setItem(key, JSON.stringify(value));
   } catch {
@@ -198,6 +213,17 @@ function normalizeApiKeys(raw: unknown): ApiKeys {
         : "openrouter:openrouter/free",
     customModels,
   };
+}
+
+async function cloudRequest<T>(url: string, init?: RequestInit): Promise<T> {
+  const response = await fetch(url, {
+    credentials: "same-origin",
+    headers: { "content-type": "application/json", ...(init?.headers ?? {}) },
+    ...init,
+  });
+  const payload = (await response.json()) as T & { error?: string };
+  if (!response.ok) throw new Error(payload.error ?? "Cloud sync failed.");
+  return payload;
 }
 
 function inferScope(symbol: string): { marketId: MarketId; assetClass: AssetClass } {
@@ -281,25 +307,141 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [refreshSeconds, setRefreshState] = useState(60);
   const [theme, setThemeState] = useState<Theme>("paper");
   const [aiPrefill, setAiPrefillState] = useState<string | null>(null);
+  const [cloudAccount, setCloudAccount] = useState<CloudAccount | null>(null);
+  const [cloudStatus, setCloudStatus] = useState<CloudStatus>("checking");
+  const [cloudError, setCloudError] = useState<string | null>(null);
+  const [cloudReady, setCloudReady] = useState(false);
   const classify = useServerFn(classifySymbols);
 
   useEffect(() => {
-    const storedMarket = load<MarketId>("sc:market", "US");
-    const storedAssetClass = load<AssetClass>("sc:asset-class", "equities");
+    const storedMarket = loadLocalState<MarketId>("sc:market", "US");
+    const storedAssetClass = loadLocalState<AssetClass>("sc:asset-class", "equities");
     setMarketState(storedMarket);
     setAssetClassState(storedMarket === "IN" ? "equities" : storedAssetClass);
-    setAllWatchlist(normalizeWatchlist(load<unknown>("sc:watchlist2", DEFAULT_WATCH)));
-    setAlertsState(load<Alert[]>("sc:alerts", []));
-    setAllScreeners(load<SavedScreener[]>("sc:screeners", []));
-    setApiKeysState(normalizeApiKeys(load<unknown>("sc:apikeys", null)));
-    setRefreshState(load<number>("sc:refresh", 60));
-    const storedTheme = load<Theme>("sc:theme", "paper");
+    setAllWatchlist(normalizeWatchlist(loadLocalState<unknown>("sc:watchlist2", DEFAULT_WATCH)));
+    setAlertsState(loadLocalState<Alert[]>("sc:alerts", []));
+    setAllScreeners(loadLocalState<SavedScreener[]>("sc:screeners", []));
+    setApiKeysState(normalizeApiKeys(loadLocalState<unknown>("sc:apikeys", null)));
+    setRefreshState(loadLocalState<number>("sc:refresh", 60));
+    const storedTheme = loadLocalState<Theme>("sc:theme", "paper");
     setThemeState(
       (["terminal", "light", "paper", "neuborder"] as Theme[]).includes(storedTheme)
         ? storedTheme
         : "paper",
     );
   }, []);
+
+  const applyCloudState = useCallback((state: CloudSyncState) => {
+    if (state.market) {
+      setMarketState(state.market);
+      saveLocalState("sc:market", state.market);
+    }
+    if (state.assetClass) {
+      setAssetClassState(state.assetClass);
+      saveLocalState("sc:asset-class", state.assetClass);
+    }
+    if (state.watchlist) {
+      const next = normalizeWatchlist(state.watchlist);
+      setAllWatchlist(next);
+      saveLocalState("sc:watchlist2", next);
+    }
+    if (state.alerts) {
+      const next = state.alerts.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const candidate = item as Record<string, unknown>;
+        if (
+          typeof candidate["id"] !== "string" ||
+          typeof candidate["symbol"] !== "string" ||
+          typeof candidate["above"] !== "boolean" ||
+          typeof candidate["price"] !== "number" ||
+          typeof candidate["enabled"] !== "boolean"
+        ) return [];
+        return [{
+          id: candidate["id"],
+          symbol: candidate["symbol"],
+          above: candidate["above"],
+          price: candidate["price"],
+          enabled: candidate["enabled"],
+        } satisfies Alert];
+      });
+      setAlertsState(next);
+      saveLocalState("sc:alerts", next);
+    }
+    if (state.screeners) {
+      const next = state.screeners.flatMap((item) => {
+        if (!item || typeof item !== "object") return [];
+        const candidate = item as Record<string, unknown>;
+        if (
+          typeof candidate["id"] !== "string" ||
+          typeof candidate["name"] !== "string" ||
+          !candidate["filters"] ||
+          typeof candidate["filters"] !== "object"
+        ) return [];
+        return [{
+          id: candidate["id"],
+          name: candidate["name"],
+          filters: candidate["filters"] as ScreenerFilters,
+          ...(candidate["marketId"] === "US" || candidate["marketId"] === "IN"
+            ? { marketId: candidate["marketId"] }
+            : {}),
+          ...(candidate["assetClass"] === "equities" || candidate["assetClass"] === "etfs" || candidate["assetClass"] === "crypto" || candidate["assetClass"] === "forex"
+            ? { assetClass: candidate["assetClass"] }
+            : {}),
+        } satisfies SavedScreener];
+      });
+      setAllScreeners(next);
+      saveLocalState("sc:screeners", next);
+    }
+    if (state.refreshSeconds) {
+      setRefreshState(state.refreshSeconds);
+      saveLocalState("sc:refresh", state.refreshSeconds);
+    }
+    if (state.theme) {
+      setThemeState(state.theme);
+      saveLocalState("sc:theme", state.theme);
+    }
+    if (state.aiPreferences) {
+      setApiKeysState((previous) => {
+        const next = normalizeApiKeys({
+          ...previous,
+          ...(state.aiPreferences?.preferredModel
+            ? { preferredModel: state.aiPreferences.preferredModel }
+            : {}),
+          ...(state.aiPreferences?.customModels ? { customModels: state.aiPreferences.customModels } : {}),
+        });
+        saveLocalState("sc:apikeys", next);
+        return next;
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      try {
+        const auth = await cloudRequest<{ account: CloudAccount | null }>("/api/cloud/auth");
+        if (cancelled) return;
+        setCloudAccount(auth.account);
+        if (!auth.account) {
+          setCloudStatus("anonymous");
+          return;
+        }
+        const cloud = await cloudRequest<{ state: CloudSyncState | null }>("/api/cloud/state");
+        if (cancelled) return;
+        if (cloud.state) applyCloudState(cloud.state);
+        setCloudStatus("ready");
+      } catch (error) {
+        if (cancelled) return;
+        setCloudStatus("error");
+        setCloudError(error instanceof Error ? error.message : "Cloud sync is unavailable.");
+      } finally {
+        if (!cancelled) setCloudReady(true);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [applyCloudState]);
 
   useEffect(() => {
     document.documentElement.dataset["theme"] = theme;
@@ -329,7 +471,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
               industry: m.industry || "Other",
             };
           });
-          save("sc:watchlist2", next);
+          saveLocalState("sc:watchlist2", next);
           return next;
         });
       })
@@ -341,8 +483,89 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
 
   const persistWatch = useCallback((next: WatchItem[]) => {
     setAllWatchlist(next);
-    save("sc:watchlist2", next);
+    saveLocalState("sc:watchlist2", next);
   }, []);
+
+  const signIntoCloud = useCallback(async (credentials: CloudCredentials) => {
+    setCloudStatus("syncing");
+    setCloudError(null);
+    try {
+      const auth = await cloudRequest<{ account: CloudAccount }>("/api/cloud/auth", {
+        method: "POST",
+        body: JSON.stringify({
+          action: credentials.mode,
+          email: credentials.email,
+          password: credentials.password,
+          ...(credentials.displayName ? { displayName: credentials.displayName } : {}),
+        }),
+      });
+      setCloudAccount(auth.account);
+      const cloud = await cloudRequest<{ state: CloudSyncState | null }>("/api/cloud/state");
+      if (cloud.state) applyCloudState(cloud.state);
+      setCloudReady(true);
+      setCloudStatus("ready");
+      return true;
+    } catch (error) {
+      setCloudStatus("error");
+      setCloudError(error instanceof Error ? error.message : "Cloud sign-in failed.");
+      return false;
+    }
+  }, [applyCloudState]);
+
+  const signOutOfCloud = useCallback(async () => {
+    try {
+      await cloudRequest("/api/cloud/auth", {
+        method: "POST",
+        body: JSON.stringify({ action: "logout" }),
+      });
+    } finally {
+      setCloudAccount(null);
+      setCloudStatus("anonymous");
+      setCloudError(null);
+      setCloudReady(true);
+    }
+  }, []);
+
+  const cloudSnapshot = useMemo(() => JSON.stringify({
+    market,
+    assetClass,
+    watchlist: allWatchlist,
+    alerts,
+    screeners: allScreeners,
+    refreshSeconds,
+    theme,
+    aiPreferences: {
+      ...(apiKeys.preferredModel ? { preferredModel: apiKeys.preferredModel } : {}),
+      ...(apiKeys.customModels ? { customModels: apiKeys.customModels } : {}),
+    },
+  } satisfies CloudSyncState), [
+    alerts,
+    allScreeners,
+    allWatchlist,
+    apiKeys.customModels,
+    apiKeys.preferredModel,
+    assetClass,
+    market,
+    refreshSeconds,
+    theme,
+  ]);
+
+  useEffect(() => {
+    if (!cloudReady || !cloudAccount) return;
+    const timeout = window.setTimeout(() => {
+      setCloudStatus("syncing");
+      void cloudRequest("/api/cloud/state", {
+        method: "PUT",
+        body: JSON.stringify({ state: JSON.parse(cloudSnapshot) }),
+      })
+        .then(() => setCloudStatus("ready"))
+        .catch((error) => {
+          setCloudStatus("error");
+          setCloudError(error instanceof Error ? error.message : "Cloud save failed.");
+        });
+    }, 900);
+    return () => window.clearTimeout(timeout);
+  }, [cloudAccount, cloudReady, cloudSnapshot]);
 
   const value = useMemo<State>(() => {
     const scopedWatchlist = allWatchlist.filter(
@@ -357,13 +580,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       setMarket: (m) => {
         setMarketState(m);
         setAssetClassState("equities");
-        save("sc:market", m);
-        save("sc:asset-class", "equities");
+        saveLocalState("sc:market", m);
+        saveLocalState("sc:asset-class", "equities");
       },
       assetClass,
       setAssetClass: (next) => {
         setAssetClassState(next);
-        save("sc:asset-class", next);
+        saveLocalState("sc:asset-class", next);
       },
       watchlist: scopedWatchlist,
       watchSymbols: symbols,
@@ -425,7 +648,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       alerts,
       setAlerts: (a) => {
         setAlertsState(a);
-        save("sc:alerts", a);
+        saveLocalState("sc:alerts", a);
       },
       screeners: scopedScreeners,
       saveScreener: (s) => {
@@ -436,27 +659,32 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         };
         const next = [...allScreeners.filter((x) => x.id !== s.id), nextScreener];
         setAllScreeners(next);
-        save("sc:screeners", next);
+        saveLocalState("sc:screeners", next);
       },
       deleteScreener: (id) => {
         const next = allScreeners.filter((s) => s.id !== id);
         setAllScreeners(next);
-        save("sc:screeners", next);
+        saveLocalState("sc:screeners", next);
       },
       apiKeys,
       setApiKeys: (k) => {
         setApiKeysState(k);
-        save("sc:apikeys", k);
+        saveLocalState("sc:apikeys", k);
       },
+      cloudAccount,
+      cloudStatus,
+      cloudError,
+      signIntoCloud,
+      signOutOfCloud,
       refreshSeconds,
       setRefreshSeconds: (n) => {
         setRefreshState(n);
-        save("sc:refresh", n);
+        saveLocalState("sc:refresh", n);
       },
       theme,
       setTheme: (next) => {
         setThemeState(next);
-        save("sc:theme", next);
+        saveLocalState("sc:theme", next);
       },
       aiPrefill,
       setAiPrefill: setAiPrefillState,
@@ -468,10 +696,15 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     alerts,
     allScreeners,
     apiKeys,
+    cloudAccount,
+    cloudError,
+    cloudStatus,
     refreshSeconds,
     theme,
     aiPrefill,
     persistWatch,
+    signIntoCloud,
+    signOutOfCloud,
   ]);
 
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;

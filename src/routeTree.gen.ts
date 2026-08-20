@@ -14,6 +14,8 @@ import { Route as ChatRouteImport } from './routes/chat'
 import { Route as CompareRouteImport } from './routes/compare'
 import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as StockSymbolRouteImport } from './routes/stock.$symbol'
+import { Route as ApiCloudAuthRouteImport } from './routes/api/cloud/auth'
+import { Route as ApiCloudStateRouteImport } from './routes/api/cloud/state'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -40,6 +42,16 @@ const StockSymbolRoute = StockSymbolRouteImport.update({
   path: '/stock/$symbol',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiCloudAuthRoute = ApiCloudAuthRouteImport.update({
+  id: '/api/cloud/auth',
+  path: '/api/cloud/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ApiCloudStateRoute = ApiCloudStateRouteImport.update({
+  id: '/api/cloud/state',
+  path: '/api/cloud/state',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -47,6 +59,8 @@ export interface FileRoutesByFullPath {
   '/compare': typeof CompareRoute
   '/api/chat': typeof ApiChatRoute
   '/stock/$symbol': typeof StockSymbolRoute
+  '/api/cloud/auth': typeof ApiCloudAuthRoute
+  '/api/cloud/state': typeof ApiCloudStateRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -54,6 +68,8 @@ export interface FileRoutesByTo {
   '/compare': typeof CompareRoute
   '/api/chat': typeof ApiChatRoute
   '/stock/$symbol': typeof StockSymbolRoute
+  '/api/cloud/auth': typeof ApiCloudAuthRoute
+  '/api/cloud/state': typeof ApiCloudStateRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -62,13 +78,37 @@ export interface FileRoutesById {
   '/compare': typeof CompareRoute
   '/api/chat': typeof ApiChatRoute
   '/stock/$symbol': typeof StockSymbolRoute
+  '/api/cloud/auth': typeof ApiCloudAuthRoute
+  '/api/cloud/state': typeof ApiCloudStateRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/chat' | '/compare' | '/api/chat' | '/stock/$symbol'
+  fullPaths:
+    | '/'
+    | '/chat'
+    | '/compare'
+    | '/api/chat'
+    | '/stock/$symbol'
+    | '/api/cloud/auth'
+    | '/api/cloud/state'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/chat' | '/compare' | '/api/chat' | '/stock/$symbol'
-  id: '__root__' | '/' | '/chat' | '/compare' | '/api/chat' | '/stock/$symbol'
+  to:
+    | '/'
+    | '/chat'
+    | '/compare'
+    | '/api/chat'
+    | '/stock/$symbol'
+    | '/api/cloud/auth'
+    | '/api/cloud/state'
+  id:
+    | '__root__'
+    | '/'
+    | '/chat'
+    | '/compare'
+    | '/api/chat'
+    | '/stock/$symbol'
+    | '/api/cloud/auth'
+    | '/api/cloud/state'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -77,6 +117,8 @@ export interface RootRouteChildren {
   CompareRoute: typeof CompareRoute
   ApiChatRoute: typeof ApiChatRoute
   StockSymbolRoute: typeof StockSymbolRoute
+  ApiCloudAuthRoute: typeof ApiCloudAuthRoute
+  ApiCloudStateRoute: typeof ApiCloudStateRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -116,6 +158,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof StockSymbolRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/cloud/auth': {
+      id: '/api/cloud/auth'
+      path: '/api/cloud/auth'
+      fullPath: '/api/cloud/auth'
+      preLoaderRoute: typeof ApiCloudAuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/api/cloud/state': {
+      id: '/api/cloud/state'
+      path: '/api/cloud/state'
+      fullPath: '/api/cloud/state'
+      preLoaderRoute: typeof ApiCloudStateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -125,6 +181,8 @@ const rootRouteChildren: RootRouteChildren = {
   CompareRoute: CompareRoute,
   ApiChatRoute: ApiChatRoute,
   StockSymbolRoute: StockSymbolRoute,
+  ApiCloudAuthRoute: ApiCloudAuthRoute,
+  ApiCloudStateRoute: ApiCloudStateRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

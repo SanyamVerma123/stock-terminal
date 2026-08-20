@@ -124,29 +124,38 @@ function MoverCardDeck({ rows }: { rows: ScreenerRow[] }) {
 }
 
 export function MoversView({ initialName = "day_gainers" }: { initialName?: string } = {}) {
-  const fastMoversFn = useServerFn(getFastMovers);
+  const listPresetsFn = useServerFn(listPredefinedScreeners);
+  const runPresetFn = useServerFn(runPredefinedScreener);
   const cfg = useMarketConfig();
   const [name, setName] = useState(initialName);
-  const { data, isLoading } = useQuery({
-    queryKey: ["fast-movers", cfg.region],
-    queryFn: () => fastMoversFn({ data: { size: 25, region: cfg.region } }),
-    staleTime: 300_000,
+  const { data: listedPresets } = useQuery({
+    queryKey: ["predefined-screeners"],
+    queryFn: () => listPresetsFn(),
+    staleTime: 3_600_000,
+  });
+  const availablePresets = Array.from(
+    new Set([...PRIMARY_MOVER_NAMES, ...(listedPresets ?? [])]),
+  );
+  const { data, isLoading, isFetching } = useQuery({
+    queryKey: ["predefined-mover", name, cfg.region],
+    queryFn: () => runPresetFn({ data: { name, size: 25, region: cfg.region } }),
+    staleTime: 60_000,
     refetchOnWindowFocus: false,
-    refetchInterval: 20_000,
+    refetchInterval: PRIMARY_MOVER_NAMES.includes(name as (typeof PRIMARY_MOVER_NAMES)[number]) ? 30_000 : false,
     refetchIntervalInBackground: false,
   });
 
   return (
     <div className="space-y-4">
       <div className="no-scrollbar flex gap-2 overflow-x-auto">
-        {PRIMARY_MOVER_NAMES.map((n) => (
+        {availablePresets.map((n) => (
           <Chip key={n} active={n === name} onClick={() => setName(n)}>
             {n.replace(/_/g, " ")}
           </Chip>
         ))}
       </div>
-      <Panel title={name.replace(/_/g, " ")} subtitle="Live predefined market screener">
-        {isLoading || !data || data[name as keyof typeof data].length === 0 ? <DataLoading compact label={`Ranking ${name.replace(/_/g, " ")}`} detail="Loading one shared live snapshot, then preparing all three rankings together." /> : <MoverCardDeck rows={data[name as keyof typeof data]} />}
+      <Panel title={name.replace(/_/g, " ")} subtitle="Provider-defined live market screener">
+        {isLoading || isFetching || !data || data.length === 0 ? <DataLoading compact label={`Ranking ${name.replace(/_/g, " ")}`} detail="Retrieving the provider-defined live ranked universe and quote fields for this screener." /> : <MoverCardDeck rows={data} />}
       </Panel>
     </div>
   );

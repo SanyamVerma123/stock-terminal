@@ -607,31 +607,14 @@ async function fastMoverFallback(name: string, region: string, size: number): Pr
 
 /** One shared provider quote request produces all dashboard daily-mover rankings. */
 export async function fetchFastMovers(region = "us", size = 25) {
-  const market = region.toLowerCase() === "in" ? MARKETS.IN : MARKETS.US;
-  const quotes = await resolveWithin(fetchQuotes(market.equities), [], 4_500);
-  const rows = quotes.map((quote) => ({
-    symbol: quote.symbol,
-    name: quote.name,
-    price: quote.price,
-    changePercent: quote.changePercent,
-    marketCap: quote.marketCap,
-    volume: null,
-    peRatio: null,
-    exchange: quote.exchange,
-    sector: null,
-    industry: null,
-    currency: quote.currency,
-    rating: null,
-  } satisfies ScreenerRow));
-  const byChange = (direction: 1 | -1) => [...rows]
-    .sort((left, right) => direction * ((right.changePercent ?? -Infinity) - (left.changePercent ?? -Infinity)))
-    .slice(0, size);
+  const names = ["day_gainers", "day_losers", "most_actives"] as const;
+  const ranked = await Promise.all(
+    names.map((name) => fetchScreenPredefined(name, size, region)),
+  );
   return {
-    day_gainers: byChange(1),
-    day_losers: byChange(-1),
-    most_actives: [...rows]
-      .sort((left, right) => (right.marketCap ?? -Infinity) - (left.marketCap ?? -Infinity))
-      .slice(0, size),
+    day_gainers: ranked[0],
+    day_losers: ranked[1],
+    most_actives: ranked[2],
   };
 }
 
@@ -644,11 +627,9 @@ export async function fetchScreenPredefined(
   const raw = await resolveWithin(
     callMcpTool("screen_predefined", { name, size, region }).catch(() => null),
     null,
-    1_500,
+    8_000,
   );
-  const normalized = await enrichScreenerRows(
-    toScreenerRows(pick(raw, "quotes") ?? pick(raw, "data")),
-  );
+  const normalized = toScreenerRows(pick(raw, "quotes") ?? pick(raw, "data"));
   const inIndia = region.toLowerCase() === "in";
   const regionRows = normalized.filter((row) =>
     inIndia ? /\.(NS|BO)$/i.test(row.symbol) : !/\.(NS|BO)$/i.test(row.symbol),

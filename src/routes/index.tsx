@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
+import { useEffect } from "react";
 import { DashboardShell, PAGE_TITLES, type PageId } from "@/components/dashboard/DashboardShell";
 import { QuoteTable } from "@/components/dashboard/QuoteTable";
 import { AIView } from "@/components/dashboard/AIView";
@@ -31,6 +32,10 @@ import { CRYPTO_SYMS, FOREX_SYMS } from "@/lib/markets";
 import { PRESETS, symbolsForMarketPreset } from "@/lib/universe";
 
 export const Route = createFileRoute("/")({
+  validateSearch: (search: Record<string, unknown>) => {
+    const view = typeof search["view"] === "string" ? search["view"] : undefined;
+    return view ? { view } : {};
+  },
   head: () => ({
     meta: [
       { title: "Screener Terminal — Live Markets, Screener & AI Analyst" },
@@ -53,6 +58,7 @@ export const Route = createFileRoute("/")({
 });
 
 function Dashboard() {
+  const search = Route.useSearch();
   const [page, setPage] = useState<PageId>(() => {
     if (typeof window === "undefined") return "markets";
     const requested = new URLSearchParams(window.location.search).get("view") as PageId | null;
@@ -61,6 +67,10 @@ function Dashboard() {
   const { market, watchSymbols, toggleWatchlist, alerts, screeners } = useAppState();
   const cfg = useMarketConfig();
   const qc = useQueryClient();
+
+  useEffect(() => {
+    if (search.view) setPage(search.view);
+  }, [search.view]);
 
   const table = (
     symbols: string[],

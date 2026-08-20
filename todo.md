@@ -88,4 +88,15 @@
 - [x] Verify the built runtime starts on the managed port with the expected dist/index.js entry and save a corrected checkpoint.
 - [x] Trace why configured AI provider keys and selected models do not appear in the AI Analyst model selector.
 - [x] Repair Settings persistence and provider-model discovery so configured models are available for selection in AI Analyst.
-- [ ] Validate the repaired selected-model analyst request path with a completed response from the user’s configured provider after the updated build is live.
+- [x] Validate the repaired selected-model analyst request path with a completed response from the user’s configured provider after the updated build is live.
+- [x] Correct Day Gainers, Day Losers, and Most Active rankings so each tab uses the matching provider-defined market-ranking dataset.
+- [x] Repair the per-headline Research with AI handoff in market and stock news so it reliably opens a focused analyst request.
+- [x] Extend configured-provider model discovery so all models returned by OpenCode Zen and each supported provider can appear in Settings and AI Analyst.
+- [x] Add the complete provider-supported predefined equity screeners to Market Movers with clear names and accurate result coverage.
+- [x] Ensure AI-created screener presets translate a research query into saved, reusable structured filters and a matching stock table.
+- [x] Add authenticated cloud persistence for user settings, API preferences, watchlists, alerts, chat sessions, and saved screeners while preserving local fallback behavior.
+- [x] Add focused model-catalog coverage for all configured provider adapters and selector-visible models.
+- [x] Add a regression that proves AI screener tool output becomes a saved structured preset and matching stock-table card.
+- [x] Validate authenticated cloud state round trips securely without seeding permanent test account data, while confirming signed-out local fallback remains available.
+- [x] Explicitly validate signed-out local storage fallback after cloud logout or unavailable cloud access.
+- [x] Extend the disposable cloud round-trip check to prove a synchronized category beyond market restores without persisting API keys.

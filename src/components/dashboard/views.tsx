@@ -350,6 +350,11 @@ export function SettingsView() {
     deleteScreener,
     theme,
     setTheme,
+    cloudAccount,
+    cloudStatus,
+    cloudError,
+    signIntoCloud,
+    signOutOfCloud,
   } = useAppState();
   const modelsFn = useServerFn(listChatModels);
   const { data: modelCatalog } = useQuery({
@@ -411,6 +416,10 @@ export function SettingsView() {
   const [customModelId, setCustomModelId] = useState("");
   const [customModelLabel, setCustomModelLabel] = useState("");
   const [saved, setSaved] = useState(false);
+  const [accountMode, setAccountMode] = useState<"login" | "register">("login");
+  const [accountEmail, setAccountEmail] = useState("");
+  const [accountPassword, setAccountPassword] = useState("");
+  const [accountName, setAccountName] = useState("");
   const field =
     "mt-1 h-9 w-full rounded-lg border border-border bg-background px-3 text-sm text-foreground outline-none focus:border-primary/60";
   const preferredProvider = preferredModel.split(":", 1)[0];
@@ -495,6 +504,38 @@ export function SettingsView() {
 
   return (
     <div className="max-w-3xl space-y-4">
+      <div className="rounded-2xl border border-primary/25 bg-card/55 p-5 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <p className="text-sm font-medium text-foreground">Cloud account & sync</p>
+            <p className="mt-1 max-w-xl text-xs leading-5 text-muted-foreground">
+              Save your terminal preferences, watchlist, alerts, saved screeners, and model choices to your account. Provider API keys remain only on this device.
+            </p>
+          </div>
+          <span className={cn("rounded-full border px-2.5 py-1 text-[10px] font-medium", cloudStatus === "ready" ? "border-positive/30 bg-positive/10 text-positive" : cloudStatus === "syncing" || cloudStatus === "checking" ? "border-primary/30 bg-primary/10 text-primary" : "border-border text-muted-foreground")}>
+            {cloudStatus === "ready" ? "Cloud synced" : cloudStatus === "syncing" || cloudStatus === "checking" ? "Syncing" : cloudStatus === "error" ? "Sync issue" : "Local only"}
+          </span>
+        </div>
+        {cloudAccount ? (
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border/60 bg-background/25 p-3">
+            <div><p className="text-sm font-medium text-foreground">{cloudAccount.displayName || cloudAccount.email}</p><p className="text-xs text-muted-foreground">{cloudAccount.email} · changes save automatically</p></div>
+            <button type="button" onClick={() => void signOutOfCloud()} className="h-9 rounded-lg border border-border px-3 text-xs font-medium text-muted-foreground transition-colors hover:border-negative/40 hover:text-negative">Sign out</button>
+          </div>
+        ) : (
+          <form onSubmit={(event) => { event.preventDefault(); void signIntoCloud({ mode: accountMode, email: accountEmail, password: accountPassword, ...(accountMode === "register" && accountName.trim() ? { displayName: accountName } : {}) }).then((success) => { if (success) setAccountPassword(""); }); }} className="mt-4 grid gap-2 md:grid-cols-2">
+            <div className="flex gap-1 rounded-lg border border-border/70 bg-background/25 p-1 md:col-span-2">
+              <button type="button" onClick={() => setAccountMode("login")} className={cn("flex-1 rounded-md px-3 py-1.5 text-xs font-medium", accountMode === "login" ? "bg-primary/10 text-primary" : "text-muted-foreground")}>Sign in</button>
+              <button type="button" onClick={() => setAccountMode("register")} className={cn("flex-1 rounded-md px-3 py-1.5 text-xs font-medium", accountMode === "register" ? "bg-primary/10 text-primary" : "text-muted-foreground")}>Create account</button>
+            </div>
+            {accountMode === "register" ? <input value={accountName} onChange={(event) => setAccountName(event.target.value)} placeholder="Display name (optional)" autoComplete="name" className={field.replace("mt-1 ", "")} /> : null}
+            <input value={accountEmail} onChange={(event) => setAccountEmail(event.target.value)} placeholder="Email address" type="email" autoComplete="email" required className={field.replace("mt-1 ", "")} />
+            <input value={accountPassword} onChange={(event) => setAccountPassword(event.target.value)} placeholder={accountMode === "register" ? "Password (10+ characters)" : "Password"} type="password" autoComplete={accountMode === "register" ? "new-password" : "current-password"} minLength={10} required className={field.replace("mt-1 ", "")} />
+            <button type="submit" disabled={cloudStatus === "syncing" || cloudStatus === "checking"} className="h-9 rounded-lg bg-primary px-4 text-xs font-medium text-primary-foreground disabled:opacity-60 md:col-span-2">{cloudStatus === "syncing" ? "Working…" : accountMode === "register" ? "Create account & sync" : "Sign in & sync"}</button>
+          </form>
+        )}
+        {cloudError ? <p role="status" className="mt-3 rounded-lg border border-negative/25 bg-negative/5 px-3 py-2 text-xs text-negative">{cloudError}</p> : null}
+      </div>
+
       <div className="rounded-2xl border border-border/70 bg-card/55 p-5">
         <p className="text-sm font-medium text-foreground">Equity market</p>
         <p className="mt-1 text-xs text-muted-foreground">

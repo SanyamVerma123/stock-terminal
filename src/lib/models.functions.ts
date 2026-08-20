@@ -9,7 +9,7 @@ export type ChatModel = {
   note?: string;
 };
 
-type OpenRouterModel = { id?: string; name?: string };
+type ProviderModel = { id?: string; name?: string; display_name?: string };
 
 export type CatalogInput = {
   openrouterKey?: string;
@@ -123,15 +123,17 @@ export async function buildChatModelCatalog(
         signal: controller.signal,
       });
       if (!response.ok) return [] as ChatModel[];
-      const json = (await response.json()) as { data?: OpenRouterModel[] };
-      return (json.data ?? [])
-        .filter((item): item is { id: string; name?: string } => typeof item.id === "string")
-        .slice(0, 250)
-        .map((item) => ({
-          id: `${provider}:${item.id}`,
-          label: item.name ?? item.id,
-          provider,
-        }))
+      const json = (await response.json()) as { data?: ProviderModel[]; models?: ProviderModel[] };
+      return (json.data ?? json.models ?? [])
+        .flatMap((item) =>
+          typeof item.id === "string"
+            ? [{
+                id: `${provider}:${item.id}`,
+                label: item.name ?? item.display_name ?? item.id,
+                provider,
+              }]
+            : [],
+        )
         .sort((a, b) => a.label.localeCompare(b.label));
     } catch {
       return [] as ChatModel[];
@@ -139,15 +141,23 @@ export async function buildChatModelCatalog(
       clearTimeout(timeout);
     }
   };
-  const [openrouter, kilo] = await Promise.all([
+  const [openrouter, kilo, groq, together, deepseek, opencode] = await Promise.all([
     discoverModels("https://openrouter.ai/api/v1/models", "openrouter", providerKeys.openrouter),
     discoverModels("https://api.kilo.ai/api/gateway/models", "kilo", providerKeys.kilo),
+    discoverModels("https://api.groq.com/openai/v1/models", "groq", providerKeys.groq),
+    discoverModels("https://api.together.xyz/v1/models", "together", providerKeys.together),
+    discoverModels("https://api.deepseek.com/v1/models", "deepseek", providerKeys.deepseek),
+    discoverModels("https://opencode.ai/zen/v1/models", "opencode", providerKeys.opencode),
   ]);
   return {
     models: [
       ...modelsForConfiguredProviders(CURATED_MODELS, configuredProviders),
       ...openrouter,
       ...kilo,
+      ...groq,
+      ...together,
+      ...deepseek,
+      ...opencode,
     ],
     configuredProviders,
   };

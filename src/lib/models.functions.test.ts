@@ -53,4 +53,53 @@ describe("AI model defaults", () => {
       authorization: "Bearer fallback-kilo-key",
     });
   });
+
+  it("keeps every model returned by a configured OpenCode Zen catalog", async () => {
+    const returnedModels = Array.from({ length: 320 }, (_, index) => ({
+      id: `zen/model-${index + 1}`,
+      name: `Zen Model ${index + 1}`,
+    }));
+    const catalog = await buildChatModelCatalog(
+      { opencodeKey: "opencode-key" },
+      async () => new Response(JSON.stringify({ data: returnedModels }), {
+        status: 200,
+        headers: { "content-type": "application/json" },
+      }),
+    );
+
+    expect(catalog.models.filter((model) => model.provider === "opencode").length).toBeGreaterThanOrEqual(320);
+    expect(catalog.models).toContainEqual({
+      id: "opencode:zen/model-320",
+      label: "Zen Model 320",
+      provider: "opencode",
+    });
+  });
+
+  it("exposes every configured provider's discovered model to the shared selector catalog", async () => {
+    const providers = ["openrouter", "kilo", "groq", "together", "deepseek", "opencode"] as const;
+    const catalog = await buildChatModelCatalog(
+      {
+        openrouterKey: "openrouter-key",
+        kiloKey: "kilo-key",
+        groqKey: "groq-key",
+        togetherKey: "together-key",
+        deepseekKey: "deepseek-key",
+        opencodeKey: "opencode-key",
+      },
+      async (url) => {
+        const provider = providers.find((candidate) => url.includes(candidate)) ?? "openrouter";
+        return new Response(JSON.stringify({ data: [{ id: `${provider}/live-model`, name: `${provider} live` }] }), {
+          status: 200,
+          headers: { "content-type": "application/json" },
+        });
+      },
+    );
+
+    providers.forEach((provider) => {
+      expect(catalog.configuredProviders[provider]).toBe(true);
+      expect(catalog.models).toContainEqual(
+        expect.objectContaining({ id: `${provider}:${provider}/live-model`, provider }),
+      );
+    });
+  });
 });

@@ -61,3 +61,9 @@ Mobile screenshots at 375px showed the same Technology metrics in stacked, reada
 Source: direct `batch_snapshots` MCP probe, 2026-08-20.
 
 The provider returned current INR snapshots and prior closes for `^NSEI` (Nifty 50), `^CNXIT` (Nifty IT), `^NSEBANK` (Nifty Bank), `^CNXFMCG` (Nifty FMCG), `^CNXPHARMA` (Nifty Pharma), `^CNXENERGY` (Nifty Energy), `^CNXAUTO` (Nifty Auto), and `^CNXREALTY` (Nifty Realty). These symbols can be used only for their direct sector alignments. Sectors without a validated dedicated Nifty series will retain the provider-ranked company movement proxy rather than receiving an invented mapping.
+
+## Predefined Mover Validation
+
+Source: direct Hermes Trader MCP probes and live terminal verification, 2026-08-20.
+
+The provider catalog returned `day_gainers`, `day_losers`, `most_actives`, `aggressive_small_caps`, `most_shorted_stocks`, `undervalued_growth_stocks`, `undervalued_large_caps`, and the provider’s ETF and fund presets. Direct `screen_predefined` responses confirmed that Day Gainers, Day Losers, and Most Active are distinct live datasets; the application now renders their authoritative provider rows directly rather than applying a slow secondary quote-enrichment request or a generic fallback ranking.

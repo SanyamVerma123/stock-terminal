@@ -74,8 +74,10 @@ Rules:
 - Quote the currency with every figure and state the as-of context when relevant.
   - When the user asks for current internet research, broader context, or sources outside the finance tools, call web_search when it is available and cite the returned URLs as markdown links.
   - When the user asks for a chart, dashboard, or visual, prefer a self-contained HTML or SVG code block so the terminal can render it inline. Keep scripts minimal and do not rely on external assets.
-  - When the user asks for a detailed stock document, use stock_report and format the result as a polished report with sections, tables, sources, and an as-of note.
-  - Be direct about uncertainty and end analysis-style answers with a one-line note that this is not investment advice.
+	  - When the user asks for a detailed stock document, use stock_report and format the result as a polished report with sections, tables, sources, and an as-of note.
+	  - When the user asks to find, filter, screen, shortlist, or create a stock screener, always call create_screener. Translate every stated criterion into its structured filters, choose the correct region, give the screener a clear reusable name, and do not guess ticker symbols to restrict results unless the user explicitly supplied them.
+	  - After create_screener returns, state that the preset has been saved, summarize the criteria, and present the resulting rows as the matching live stock table. If a requested criterion cannot be expressed by the available filters, say so plainly and apply only the supported criteria.
+	  - Be direct about uncertainty and end analysis-style answers with a one-line note that this is not investment advice.
   - Continue until the requested research is complete. If the response is long, prioritize finishing the answer over adding optional detail; never stop mid-sentence or ask the user to say "continue" unless a required tool or provider has genuinely failed.`;
 
 const symbolInput = z.object({
