@@ -126,6 +126,18 @@ const BOTTOM: NavItem[] = [
   { id: "logout", title: "Log out", icon: LogOut },
 ];
 
+function getMarketSessionStatus(market: MarketId) {
+  const timeZone = market === "IN" ? "Asia/Kolkata" : "America/New_York";
+  const parts = new Intl.DateTimeFormat("en-US", { timeZone, weekday: "short", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).formatToParts();
+  const pick = (type: Intl.DateTimeFormatPartTypes) => parts.find((part) => part.type === type)?.value ?? "";
+  const minutes = Number(pick("hour")) * 60 + Number(pick("minute"));
+  const weekday = pick("weekday");
+  const isWeekday = !["Sat", "Sun"].includes(weekday);
+  const [openAt, closeAt] = market === "IN" ? [9 * 60 + 15, 15 * 60 + 30] : [9 * 60 + 30, 16 * 60];
+  const isOpen = isWeekday && minutes >= openAt && minutes < closeAt;
+  return { isOpen, label: isOpen ? "Market open" : "Market closed" };
+}
+
 function collectTitles(groups: NavGroup[]) {
   const walk = (items: NavItem[]) => {
     for (const i of items) {
@@ -320,6 +332,7 @@ export function DashboardShell({
   const [paletteOpen, setPaletteOpen] = useState(false);
   const { screeners, market, setMarket } = useAppState();
   const cfg = useMarketConfig();
+  const marketSession = getMarketSessionStatus(market);
   const groups = buildNav(
     watchlistCount,
     alertCount,
@@ -453,34 +466,17 @@ export function DashboardShell({
               <PanelLeftClose className="h-4 w-4" />
             )}
           </button>
-          <nav className="terminal-breadcrumb flex min-w-0 flex-1 items-center gap-1.5 overflow-hidden text-[12px] sm:gap-2 sm:text-[13px]">
+          <nav className="terminal-breadcrumb hidden min-w-0 flex-1 items-center gap-1.5 overflow-hidden text-[12px] sm:flex sm:gap-2 sm:text-[13px]">
             <span className="hidden text-muted-foreground sm:inline">Personal Terminal</span>
             <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/60" />
             <span className="max-w-[112px] truncate font-semibold text-foreground sm:max-w-none">
               {PAGE_TITLES[page] ?? "Markets"}
             </span>
           </nav>
-          <div className="terminal-market-switch ml-auto hidden items-center gap-1 rounded-xl border border-border/60 bg-transparent p-1 sm:flex">
-            {(Object.keys(MARKETS) as MarketId[]).map((id) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setMarket(id)}
-                className={cn(
-                  "rounded-md px-2.5 py-1 text-[11px] transition-colors",
-                  market === id
-                    ? "bg-primary/15 font-medium text-primary"
-                    : "text-muted-foreground hover:bg-primary/5 hover:text-foreground",
-                )}
-              >
-                {MARKETS[id].short}
-              </button>
-            ))}
-          </div>
           <button
             type="button"
             onClick={() => setPaletteOpen(true)}
-            className="terminal-search flex h-9 w-[clamp(132px,44vw,300px)] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border/60 bg-transparent px-3 text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground sm:gap-2 sm:px-3 sm:text-xs"
+            className="terminal-search ml-auto flex h-9 w-[clamp(96px,32vw,300px)] shrink-0 items-center justify-center gap-1.5 rounded-xl border border-border/60 bg-transparent px-2 text-[11px] text-muted-foreground transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-foreground sm:w-[clamp(132px,44vw,300px)] sm:gap-2 sm:px-3 sm:text-xs"
           >
             <Search className="h-3.5 w-3.5 shrink-0" />
             <span className="truncate">Search markets</span>
@@ -488,6 +484,13 @@ export function DashboardShell({
               ⌘K
             </kbd>
           </button>
+          <div className="terminal-market-switch flex shrink-0 items-center gap-0.5 rounded-xl border border-border/60 bg-transparent p-1 sm:gap-1">
+            {(Object.keys(MARKETS) as MarketId[]).map((id) => (
+              <button key={id} type="button" onClick={() => setMarket(id)} className={cn("rounded-md px-1.5 py-1 text-[10px] transition-colors sm:px-2.5 sm:text-[11px]", market === id ? "bg-primary/15 font-medium text-primary" : "text-muted-foreground hover:bg-primary/5 hover:text-foreground")}>
+                {MARKETS[id].short}
+              </button>
+            ))}
+          </div>
           <button
             type="button"
             onClick={onRefresh}
@@ -496,9 +499,9 @@ export function DashboardShell({
           >
             <RefreshCw className="h-4 w-4" />
           </button>
-          <span className="terminal-live quiet-live-indicator hidden items-center gap-1.5 rounded-full border border-positive/25 bg-transparent px-2.5 py-1 text-[11px] text-positive sm:flex">
-            <span className="quiet-live-dot" aria-hidden="true" />
-            <span className="sr-only">Live updates active</span>
+          <span className={cn("terminal-market-status flex shrink-0 items-center gap-1 rounded-full border px-2 py-1 text-[9px] font-medium sm:gap-1.5 sm:px-2.5 sm:text-[10px]", marketSession.isOpen ? "border-positive/25 bg-positive/10 text-positive" : "border-negative/25 bg-negative/10 text-negative")}>
+            <span className={cn("h-1.5 w-1.5 rounded-full", marketSession.isOpen ? "bg-positive" : "bg-negative")} aria-hidden="true" />
+            <span className="sm:hidden">{marketSession.isOpen ? "Open" : "Closed"}</span><span className="hidden sm:inline">{marketSession.label}</span>
           </span>
         </header>
 

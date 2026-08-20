@@ -36,7 +36,8 @@ export function DataTable({
   if (!table || table.rows.length === 0) return <EmptyState compact title={empty} />;
   const lead = table.columns[0] ?? "label";
   const details = table.columns.slice(1);
-  return <div className="generic-data-grid">{table.rows.map((row, index) => <article className="generic-data-card" key={`${row[lead] ?? "row"}-${index}`}><span className="generic-data-index">{String(index + 1).padStart(2, "0")}</span><b>{row[lead] ?? "—"}</b><div>{details.map(column => <span key={column}><small>{column}</small><strong>{row[column] ?? "—"}</strong></span>)}</div></article>)}</div>;
+  const symbolColumn = table.columns.find((column) => /^(symbol|ticker|code)$/i.test(column));
+  return <div className="generic-data-grid">{table.rows.map((row, index) => { const symbol = symbolColumn ? row[symbolColumn] : undefined; return <article className="generic-data-card" key={`${row[lead] ?? "row"}-${index}`}><span className="generic-data-index">{String(index + 1).padStart(2, "0")}</span>{symbol ? <Link to="/stock/$symbol" params={{ symbol }} className="block rounded focus:outline-none focus:ring-2 focus:ring-primary"><b>{row[lead] ?? symbol}</b></Link> : <b>{row[lead] ?? "—"}</b>}<div>{details.map(column => <span key={column}><small>{column}</small><strong>{row[column] ?? "—"}</strong></span>)}</div></article>; })}</div>;
 }
 
 export function StatementView({

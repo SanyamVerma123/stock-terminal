@@ -133,3 +133,11 @@
 - [x] Make heatmap tile areas proportionate to available live sector or industry market capitalization instead of fixed visual ranks.
 - [x] Standardize dashboard, sector, industry, and watchlist stock lists to the Pro Screener table/card presentation.
 - [x] Validate capitalization proportions and shared list behavior across mobile and desktop.
+- [x] Restore the clean pre-change sector-heatmap visual while retaining truthful market-weight sizing.
+- [x] Add a clickable heatmap tile detail panel below the map with concise sector information and vertical label handling where needed.
+- [x] Replace segmented watchlist cards with one sector-filterable watchlist table and a horizontally scrollable filter menu.
+- [x] Ensure all dashboard and industry stock selections navigate directly to the corresponding stock-detail page.
+- [x] Make stock-detail charts and key information phone-safe without unwanted zoom or horizontal overflow.
+- [x] Verify complete available sector coverage through the market-data provider rather than a limited 10-item result.
+- [x] Move the primary search control to the top header, place the US/India switch to the right, and show an explicit green/red market-open status signal.
+- [x] Keep the India Equities page to its compact stock-card presentation without rendering a duplicate detailed table below it.

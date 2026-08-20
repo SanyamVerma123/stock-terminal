@@ -78,6 +78,7 @@ function Dashboard() {
     symbols: string[],
     filter?: Parameters<typeof QuoteTable>[0]["filter"],
     empty?: string,
+    showMobileDetailRail = true,
   ) => (
     <QuoteTable
       symbols={symbols}
@@ -85,6 +86,7 @@ function Dashboard() {
       watchlist={watchSymbols}
       onToggleWatch={toggleWatchlist}
       {...(empty ? { emptyLabel: empty } : {})}
+      showMobileDetailRail={showMobileDetailRail}
     />
   );
 
@@ -135,7 +137,7 @@ function Dashboard() {
         case "settings":
           return <SettingsView />;
         case "equities":
-          return table(cfg.equities);
+          return table(cfg.equities, undefined, undefined, false);
         case "etfs":
           return table(cfg.etfs);
         case "crypto":

@@ -604,7 +604,7 @@ function IndustryMixPieChart({ table }: { table?: { columns: string[]; rows: Rec
   if (!table || table.rows.length === 0) return <p className="p-5 text-sm text-muted-foreground">No industry mix is available yet.</p>;
   const label = table.columns[0] ?? "Industry";
   const value = table.columns.find((column) => /weight|share|market cap/i.test(column)) ?? table.columns[1] ?? label;
-  const raw = table.rows.map((row) => ({ name: readableIndustryLabel(row[label] ?? "Industry"), value: numeric(row[value]) })).filter((row): row is { name: string; value: number } => row.value !== null && row.value > 0).slice(0, 10);
+  const raw = table.rows.map((row) => ({ name: readableIndustryLabel(row[label] ?? "Industry"), value: numeric(row[value]) })).filter((row): row is { name: string; value: number } => row.value !== null && row.value > 0);
   const total = raw.reduce((sum, row) => sum + row.value, 0);
   if (total <= 0) return <p className="p-5 text-sm text-muted-foreground">No numeric industry mix is available yet.</p>;
   const data = raw.map((row) => ({ ...row, percentage: (row.value / total) * 100 }));
@@ -845,9 +845,6 @@ export function SectorsView() {
 
       {industry && (
         <>
-          <Panel title={`${readableIndustryLabel(industry)} — top companies`}>
-            {isIndustryLoading || !isProviderIndustryData ? <DataLoading compact label={`Loading ${readableIndustryLabel(industry)} coverage`} detail="Waiting for provider-ranked industry coverage before showing companies." /> : <TableBarChart table={ind} />}
-          </Panel>
           <Panel title={`${readableIndustryLabel(industry)} — companies`}>
             {isIndustryLoading || !isProviderIndustryData ? <DataLoading compact label="Loading company coverage" detail="Waiting for complete provider-ranked industry data." /> : <DataTable table={ind} empty="No matching company coverage returned for this industry." />}
           </Panel>

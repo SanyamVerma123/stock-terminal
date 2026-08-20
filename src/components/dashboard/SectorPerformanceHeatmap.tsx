@@ -1,5 +1,6 @@
 import { useQuery, useQueries } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
+import { useState } from "react";
 import { DataLoading } from "@/components/ui/loading-state";
 import { useMarketConfig } from "@/lib/app-state";
 import { getQuotes, getSectorOverview } from "@/lib/finance.functions";
@@ -104,6 +105,10 @@ export function SectorPerformanceHeatmap() {
   const rectangleByKey = new Map(rectangles.map((rectangle) => [rectangle.key, rectangle]));
   const coverage = weightedSectors.length;
   const canDrawWeightedMap = coverage >= 2;
+  const [selectedSector, setSelectedSector] = useState<string | null>(null);
+  const selected = selectedSector ? resolved.find(({ sectorKey }) => sectorKey === selectedSector) : undefined;
+  const selectedSignal = selectedSector ? signals.find((signal) => signal.sectorKey === selectedSector) : undefined;
+  const selectedQuote = selectedSignal?.symbol ? quoteBySymbol.get(selectedSignal.symbol) : undefined;
 
   return (
     <section className="heatmap-intelligence rounded-2xl border border-border bg-card p-4 shadow-sm sm:p-5">
@@ -138,29 +143,47 @@ export function SectorPerformanceHeatmap() {
             const rect = rectangleByKey.get(sectorKey)!;
             const area = rect.width * rect.height;
             const compact = area < 800;
+            const verticalLabel = rect.width < 11 && rect.height > 24;
             const detail = signal?.label ?? (signal?.symbol ? "Lead-company proxy" : fmtCompact(value!.marketCap));
             return (
-              <article
+              <button
+                type="button"
                 key={sectorKey}
                 title={`${sectorLabel(sectorKey)} · ${fmtCompact(value!.marketCap)}`}
+                aria-pressed={selectedSector === sectorKey}
+                onClick={() => setSelectedSector(sectorKey)}
                 style={{
                   left: `${rect.left}%`,
                   top: `${rect.top}%`,
                   width: `${rect.width}%`,
                   height: `${rect.height}%`,
                 }}
-                className={`heatmap-cell absolute overflow-hidden border border-background/60 p-1.5 sm:p-2 ${movementClass(move)}`}
+                className={`heatmap-cell absolute overflow-hidden border border-background/60 p-1.5 text-left sm:p-2 ${selectedSector === sectorKey ? "ring-2 ring-primary ring-offset-1 ring-offset-card" : ""} ${movementClass(move)}`}
               >
-                <p className={`truncate font-semibold leading-tight ${compact ? "text-[7px] sm:text-[9px]" : "text-[9px] sm:text-[11px]"}`}>
+                <p className={`${verticalLabel ? "heatmap-cell-label-vertical" : "truncate"} font-semibold leading-tight ${compact ? "text-[7px] sm:text-[9px]" : "text-[9px] sm:text-[11px]"}`}>
                   {sectorLabel(sectorKey)}
                 </p>
                 <p className={`mt-1 truncate tabular font-semibold ${compact ? "text-[10px] sm:text-xs" : "text-sm sm:text-lg"}`}>
                   {move === null ? "—" : `${move >= 0 ? "+" : ""}${move.toFixed(2)}%`}
                 </p>
                 {!compact && <p className="mt-1 truncate text-[8px] opacity-75 sm:text-[10px]">{detail}</p>}
-              </article>
+              </button>
             );
           })}
+        </div>
+      )}
+      {selected && (
+        <div className="heatmap-detail mt-3 grid gap-3 rounded-xl border border-border/70 bg-surface/60 p-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-center sm:p-4">
+          <div className="min-w-0">
+            <p className="market-kicker">Selected sector</p>
+            <h3 className="mt-1 text-sm font-semibold text-foreground">{sectorLabel(selected.sectorKey)}</h3>
+            <p className="mt-1 text-xs leading-5 text-muted-foreground">{selected.value?.description ?? "Provider-backed sector overview with live market capitalization and one-day direction."}</p>
+          </div>
+          <div className="grid grid-cols-3 gap-2 text-right">
+            <span><small>Market cap</small><b>{fmtCompact(selected.value?.marketCap)}</b></span>
+            <span><small>1D move</small><b className={(selectedQuote?.changePercent ?? 0) >= 0 ? "text-positive" : "text-negative"}>{selectedQuote?.changePercent === null || selectedQuote?.changePercent === undefined ? "—" : `${selectedQuote.changePercent >= 0 ? "+" : ""}${selectedQuote.changePercent.toFixed(2)}%`}</b></span>
+            <span><small>Companies</small><b>{selected.value?.companiesCount?.toLocaleString() ?? "—"}</b></span>
+          </div>
         </div>
       )}
     </section>
