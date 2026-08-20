@@ -80,6 +80,29 @@ For generated assets, request **no text** and use them as separate static files.
 | [Dashboard collection][5] | Sidebar, card, table, and activity-feed composition references | Copy visual principles, not a whole template. |
 | [Data-visualization collection][6] | Heat maps, treemaps, gauges, and compact distribution charts | Keep charts data-driven and accessible, with tooltips and explicit legends. |
 
+## Uploaded 21st.dev source archive
+
+I reviewed the uploaded `21st-main.zip` archive in the project shared files. It is the **full 21st.dev web source repository**, rather than a small drop-in component folder. It includes reusable UI primitives such as `aurora-background`, `command-menu`, `sidebar`, `skeleton`, `skeletons`, `chart`, `scroll-area`, `resizable`, `tabs`, `table`, `tooltip`, `sheet`, and `shimmer-button`, together with template, search, studio, and navigation feature modules.
+
+| Archive component | Best terminal use | Adoption decision |
+| --- | --- | --- |
+| `aurora-background` | AI Analyst empty state, onboarding, or a low-opacity Global Markets backdrop | **Adapt the visual technique only.** Its full-screen layout and animated gradient should not sit behind market tables. |
+| `command-menu` | Expand the existing search command palette with recent symbols, saved screens, and market shortcuts | **Adapt selectively.** The archive implementation depends on Next.js, Clerk, Jotai, and 21st.dev-specific services; this project already has `cmdk`, so reuse the interaction model rather than importing its code. |
+| `sidebar` and `studio-navigation` | Improved compact navigation, mobile drawer behavior, and grouped terminal sections | **Borrow structure and motion.** Keep the existing dashboard navigation and route model. |
+| `chart`, `table`, `scroll-area`, and `resizable` | More structured research-sheet panels, sortable data modules, and an optional desktop AI research rail | **Use as design references.** Retain the application’s existing chart and table stack unless a specific interaction is missing. |
+| `skeleton`, `skeletons`, and `shimmer-button` | Unified live-data loading cards and subtle primary-action feedback | **Most portable candidates.** Recreate the styling with the project’s current Tailwind tokens to avoid dependency duplication. |
+
+> The recommended approach is to **port only isolated markup and visual behavior** into new local components. Do not copy the archive wholesale: several files import Next.js routing, Clerk authentication, Jotai storage, or 21st.dev backend utilities that are not part of this application.
+
+## Component-informed implementation order
+
+| First build | Existing capability to reuse | Uploaded-archive pattern to adapt | User-visible result |
+| --- | --- | --- | --- |
+| **Market pulse band** | Current market strip and region controls | `chart`, `badge`, `tooltip`, compact sidebar header rhythm | A cleaner live context bar with mini charts and refresh state. |
+| **Screener loading system** | Existing `DataLoading` component and provider status | `skeletons` and shimmer treatment | Consistent loading grids that signal live market-data activity without blocking the page. |
+| **AI research rail** | Existing AI Analyst chat, markdown, and saved context | `resizable`, `scroll-area`, `tabs` | A desktop research workspace with ticker context and source chips beside the conversation. |
+| **Ambient visual polish** | Existing paper and terminal theme tokens | Restrained `aurora-background` technique | One controlled visual anchor for AI and Global Markets, not decorative clutter across the app. |
+
 ## Delivery sequence
 
 | Phase | Scope | Outcome |
