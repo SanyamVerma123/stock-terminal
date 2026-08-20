@@ -14,3 +14,6 @@
 - [x] Save a checkpoint for the fresh screener-data correction.
 - [x] Verify that India Equities returns current India-listed screener results after the fresh-data update.
 - [x] Make the India Equities page heading follow the selected market label.
+- [x] Review the current dashboard visual system and identify the highest-value visual upgrade surfaces.
+- [x] Research relevant 21st.dev components and external visual-reference directions for a data-dense market terminal.
+- [x] Deliver a prioritized, implementation-ready visual improvement concept without changing the current interface.
