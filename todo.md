@@ -86,3 +86,6 @@
 - [x] Verify the production build emits deployable public assets at the hosting image’s expected path and save a new checkpoint.
 - [x] Diagnose and repair the managed container startup failure caused by the missing dist/index.js runtime entry.
 - [x] Verify the built runtime starts on the managed port with the expected dist/index.js entry and save a corrected checkpoint.
+- [x] Trace why configured AI provider keys and selected models do not appear in the AI Analyst model selector.
+- [x] Repair Settings persistence and provider-model discovery so configured models are available for selection in AI Analyst.
+- [ ] Validate the repaired selected-model analyst request path with a completed response from the user’s configured provider after the updated build is live.

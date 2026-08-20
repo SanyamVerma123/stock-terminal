@@ -360,25 +360,46 @@ export function AIView({ visible = true }: { visible?: boolean }) {
     queryKey: [
       "chatmodels",
       apiKeys.openrouter,
+      apiKeys.openrouterFallback,
       apiKeys.kilo,
+      apiKeys.kiloFallback,
       apiKeys.groq,
+      apiKeys.groqFallback,
       apiKeys.together,
+      apiKeys.togetherFallback,
       apiKeys.deepseek,
+      apiKeys.deepseekFallback,
       apiKeys.opencode,
+      apiKeys.opencodeFallback,
     ],
     queryFn: () =>
       modelsFn({
         data: {
           openrouterKey: apiKeys.openrouter,
+          openrouterFallbackKey: apiKeys.openrouterFallback ?? "",
           kiloKey: apiKeys.kilo,
+          kiloFallbackKey: apiKeys.kiloFallback ?? "",
           groqKey: apiKeys.groq,
+          groqFallbackKey: apiKeys.groqFallback ?? "",
           togetherKey: apiKeys.together,
+          togetherFallbackKey: apiKeys.togetherFallback ?? "",
           deepseekKey: apiKeys.deepseek,
+          deepseekFallbackKey: apiKeys.deepseekFallback ?? "",
           opencodeKey: apiKeys.opencode,
+          opencodeFallbackKey: apiKeys.opencodeFallback ?? "",
         },
       }),
     staleTime: 600_000,
   });
+  const models = [
+    ...(catalog?.models ?? []),
+    ...(apiKeys.customModels ?? []).filter(
+      (item) => catalog?.configuredProviders[item.provider] ?? false,
+    ),
+  ].filter(
+    (item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index,
+  );
+  const activeModel = models.some((item) => item.id === model) ? model : (models[0]?.id ?? model);
 
   const activeSession = sessions.find((session) => session.id === activeChatId) ?? sessions[0];
   const currentChatId = activeSession?.id ?? "";
@@ -462,7 +483,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
         { text },
         {
           body: {
-            model,
+            model: activeModel,
             keys: apiKeys,
             researchMode: meta?.model ?? "Balanced",
             effort: meta?.effort ?? "Medium Effort",
@@ -470,7 +491,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
         },
       );
     },
-    [apiKeys, clearRuntimeError, model, sendMessage],
+    [activeModel, apiKeys, clearRuntimeError, sendMessage],
   );
 
   const retryResearch = useCallback(
@@ -480,7 +501,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
         return regenerate({
           messageId: assistantMessageId,
           body: {
-            model,
+            model: activeModel,
             keys: apiKeys,
             researchMode: "Balanced",
             effort: "Medium Effort",
@@ -490,7 +511,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
       if (fallbackText) return sendResearch(fallbackText);
       return Promise.resolve();
     },
-    [apiKeys, clearRuntimeError, model, regenerate, sendResearch],
+    [activeModel, apiKeys, clearRuntimeError, model, regenerate, sendResearch],
   );
 
   useEffect(() => {
@@ -527,14 +548,6 @@ export function AIView({ visible = true }: { visible?: boolean }) {
     });
   }, [messages, saveScreener]);
 
-  const models = [
-    ...(catalog?.models ?? []),
-    ...(apiKeys.customModels ?? []).filter(
-      (item) => catalog?.configuredProviders[item.provider] ?? false,
-    ),
-  ].filter(
-    (item, index, all) => all.findIndex((candidate) => candidate.id === item.id) === index,
-  );
   const busy = status === "submitted" || status === "streaming";
   const activeError = sessionErrors[currentChatId] ?? chatRuntimeErrors.get(currentChatId) ?? null;
   const normalizedHistoryQuery = historyQuery.trim().toLowerCase();
@@ -594,10 +607,10 @@ export function AIView({ visible = true }: { visible?: boolean }) {
     { label: "DeepSeek", models: deepseek },
     { label: "OpenCode Zen", models: opencode },
   ];
-  const selectedProvider = model.split(":", 1)[0] as
+  const selectedProvider = activeModel.split(":", 1)[0] as
     "openrouter" | "kilo" | "groq" | "together" | "deepseek" | "opencode";
   const selectedProviderLabel =
-    providerGroups.find((group) => group.models.some((item) => item.id === model))?.label ??
+    providerGroups.find((group) => group.models.some((item) => item.id === activeModel))?.label ??
     selectedProvider;
   const selectedProviderReady = catalog?.configuredProviders?.[selectedProvider] ?? false;
 
@@ -904,7 +917,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
               Model
             </span>
             <select
-              value={model}
+              value={activeModel}
               onChange={(e) => setModel(e.target.value)}
               className="h-8 min-w-0 max-w-[132px] rounded-lg border border-border/80 bg-background/60 px-1.5 text-[10px] text-foreground shadow-sm transition-colors focus:border-border sm:max-w-[240px] sm:px-2 sm:text-[11px]"
             >
@@ -920,8 +933,14 @@ export function AIView({ visible = true }: { visible?: boolean }) {
                   </optgroup>
                 ) : null,
               )}
+              {models.length === 0 ? <option value="">Save a provider key to load available models</option> : null}
             </select>
             {!catalog && <InlineLoading label="Loading model catalog" variant="pulse-dot" />}
+            {catalog && models.length === 0 && (
+              <span className="hidden max-w-[260px] text-[11px] text-negative xl:inline">
+                No provider model is ready. Save a valid key in Settings, then reload the catalog.
+              </span>
+            )}
             {catalog && !selectedProviderReady && (
               <span className="hidden max-w-[260px] text-[11px] text-negative xl:inline">
                 Add a {selectedProviderLabel} key in Settings to use this model.
