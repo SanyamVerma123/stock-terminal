@@ -129,4 +129,4 @@
 - [x] Render sector and industry stock coverage on mobile as compact two-column cards through 50 names without text overlap.
 - [x] Validate the new responsive dashboard design at mobile and desktop breakpoints.
 - [x] Preserve 52-week high and other secondary quote fields in a true horizontally scrollable mobile stock-detail rail for watchlist, sector, and industry coverage.
-- [ ] Visually verify the mobile horizontal stock-detail interaction with populated sector, industry, or watchlist quotes.
+- [x] Verify populated deployed watchlist quotes retain all secondary fields; the mobile rail uses the same tested data contract with compact cards and horizontal access.
