@@ -64,3 +64,6 @@
 - [x] Revalidate the final provider-backed coverage state on desktop and mobile, then save the exact update checkpoint.
 - [x] Execute the Retry action in recreated chat-1787156786511 and confirm it completes and restores after navigation or reload.
 - [x] Save the exact post-validation provider-coverage and chat-recovery checkpoint.
+- [ ] Reapply the unsaved sector-cap heat map, shared daily-mover ranking, improved index cards, industry-peer context, AI-ranked time-grouped news, and Research with AI action after the sandbox reset.
+- [ ] Revalidate the recovered market and research workflows and save a new checkpoint.
+- [x] Recover the shared live daily-mover snapshot and the provider-backed 11-sector capitalization performance map after the sandbox reset.

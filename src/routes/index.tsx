@@ -4,6 +4,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { DashboardShell, PAGE_TITLES, type PageId } from "@/components/dashboard/DashboardShell";
 import { QuoteTable } from "@/components/dashboard/QuoteTable";
 import { AIView } from "@/components/dashboard/AIView";
+import { SectorPerformanceHeatmap } from "@/components/dashboard/SectorPerformanceHeatmap";
 import {
   AlertsView,
   MarketStrip,
@@ -108,6 +109,7 @@ function Dashboard() {
               </div>
               <MarketStrip />
               <MoversView />
+              <SectorPerformanceHeatmap />
               <div>
                 <h2 className="mb-3 text-sm font-semibold text-foreground">
                   Sector & industry detail

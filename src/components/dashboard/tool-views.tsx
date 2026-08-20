@@ -22,6 +22,7 @@ import {
   runEquityScreener,
   runEtfScreener,
   runPredefinedScreener,
+  getFastMovers,
   searchNews,
 } from "@/lib/finance.functions";
 import { DataTable, Panel, ScreenerTable, StatementView } from "./tables";
@@ -123,12 +124,12 @@ function MoverCardDeck({ rows }: { rows: ScreenerRow[] }) {
 }
 
 export function MoversView({ initialName = "day_gainers" }: { initialName?: string } = {}) {
-  const runFn = useServerFn(runPredefinedScreener);
+  const fastMoversFn = useServerFn(getFastMovers);
   const cfg = useMarketConfig();
   const [name, setName] = useState(initialName);
   const { data, isLoading } = useQuery({
-    queryKey: ["screen", name, cfg.region],
-    queryFn: () => runFn({ data: { name, size: 25, region: cfg.region } }),
+    queryKey: ["fast-movers", cfg.region],
+    queryFn: () => fastMoversFn({ data: { size: 25, region: cfg.region } }),
     staleTime: 300_000,
     refetchOnWindowFocus: false,
     refetchInterval: 20_000,
@@ -145,7 +146,7 @@ export function MoversView({ initialName = "day_gainers" }: { initialName?: stri
         ))}
       </div>
       <Panel title={name.replace(/_/g, " ")} subtitle="Live predefined market screener">
-        {isLoading || !data || data.length === 0 ? <DataLoading compact label={`Ranking ${name.replace(/_/g, " ")}`} detail="Refreshing the predefined price-action and liquidity ranking." /> : <MoverCardDeck rows={data} />}
+        {isLoading || !data || data[name as keyof typeof data].length === 0 ? <DataLoading compact label={`Ranking ${name.replace(/_/g, " ")}`} detail="Loading one shared live snapshot, then preparing all three rankings together." /> : <MoverCardDeck rows={data[name as keyof typeof data]} />}
       </Panel>
     </div>
   );

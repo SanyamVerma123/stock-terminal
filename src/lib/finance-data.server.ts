@@ -550,7 +550,7 @@ export async function fetchPredefinedScreeners(): Promise<string[]> {
 
 async function fastMoverFallback(name: string, region: string, size: number): Promise<ScreenerRow[]> {
   const market = region.toLowerCase() === "in" ? MARKETS.IN : MARKETS.US;
-  const quotes = await resolveWithin(fetchQuotes(market.equities), [], 1_500);
+  const quotes = await resolveWithin(fetchQuotes(market.equities), [], 4_500);
   const rows = quotes.map((quote) => ({
     symbol: quote.symbol,
     name: quote.name,
@@ -572,6 +572,36 @@ async function fastMoverFallback(name: string, region: string, size: number): Pr
       return name.includes("loser") ? -difference : difference;
     })
     .slice(0, size);
+}
+
+/** One shared provider quote request produces all dashboard daily-mover rankings. */
+export async function fetchFastMovers(region = "us", size = 25) {
+  const market = region.toLowerCase() === "in" ? MARKETS.IN : MARKETS.US;
+  const quotes = await resolveWithin(fetchQuotes(market.equities), [], 4_500);
+  const rows = quotes.map((quote) => ({
+    symbol: quote.symbol,
+    name: quote.name,
+    price: quote.price,
+    changePercent: quote.changePercent,
+    marketCap: quote.marketCap,
+    volume: null,
+    peRatio: null,
+    exchange: quote.exchange,
+    sector: null,
+    industry: null,
+    currency: quote.currency,
+    rating: null,
+  } satisfies ScreenerRow));
+  const byChange = (direction: 1 | -1) => [...rows]
+    .sort((left, right) => direction * ((right.changePercent ?? -Infinity) - (left.changePercent ?? -Infinity)))
+    .slice(0, size);
+  return {
+    day_gainers: byChange(1),
+    day_losers: byChange(-1),
+    most_actives: [...rows]
+      .sort((left, right) => (right.marketCap ?? -Infinity) - (left.marketCap ?? -Infinity))
+      .slice(0, size),
+  };
 }
 
 export async function fetchScreenPredefined(

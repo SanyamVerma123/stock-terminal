@@ -8,6 +8,7 @@ import {
   fetchEarningsDates,
   fetchEstimates,
   fetchFinancials,
+  fetchFastMovers,
   fetchHistory,
   fetchIndustryOverview,
   fetchMarketCalendar,
@@ -106,6 +107,10 @@ export const listPredefinedScreeners = createServerFn({ method: "GET" }).handler
 export const runPredefinedScreener = createServerFn({ method: "GET" })
   .inputValidator((d: { name: string; size?: number; region?: string }) => d)
   .handler(({ data }) => fetchScreenPredefined(data.name, data.size ?? 25, data.region ?? "us"));
+
+export const getFastMovers = createServerFn({ method: "GET" })
+  .inputValidator((d: { region?: string; size?: number }) => d)
+  .handler(({ data }) => fetchFastMovers(data.region ?? "us", data.size ?? 25));
 
 export const runEquityScreener = createServerFn({ method: "POST" })
   .inputValidator(
