@@ -28,6 +28,7 @@ import {
   SectorsView,
 } from "@/components/dashboard/tool-views";
 import { useAppState, useMarketConfig } from "@/lib/app-state";
+import { useScreenerAlertRunner } from "@/hooks/use-screener-alert-runner";
 import { CRYPTO_SYMS, FOREX_SYMS } from "@/lib/markets";
 import { PRESETS, symbolsForMarketPreset } from "@/lib/universe";
 
@@ -67,6 +68,7 @@ function Dashboard() {
   const { market, watchSymbols, toggleWatchlist, alerts, screeners } = useAppState();
   const cfg = useMarketConfig();
   const qc = useQueryClient();
+  useScreenerAlertRunner();
 
   useEffect(() => {
     if (search.view) setPage(search.view);
@@ -94,7 +96,7 @@ function Dashboard() {
       : undefined;
 
     const inner = (() => {
-      if (saved) return <SavedScreenerView filters={saved.filters} name={saved.name} />;
+      if (saved) return <SavedScreenerView screenerId={saved.id} filters={saved.filters} name={saved.name} />;
       switch (page) {
         case "markets":
           return (

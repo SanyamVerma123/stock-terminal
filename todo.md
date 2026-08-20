@@ -100,3 +100,16 @@
 - [x] Validate authenticated cloud state round trips securely without seeding permanent test account data, while confirming signed-out local fallback remains available.
 - [x] Explicitly validate signed-out local storage fallback after cloud logout or unavailable cloud access.
 - [x] Extend the disposable cloud round-trip check to prove a synchronized category beyond market restores without persisting API keys.
+- [x] Audit available notification and scheduling infrastructure before adding saved-screener match alerts.
+- [x] Add cloud-synced watchlist folders with folder assignment, ordering, and cross-device restore behavior.
+- [x] Add secure email-verification tokens, account verification UI, and protected verification status.
+- [x] Add secure password-reset request and confirmation flows with time-limited one-use tokens.
+- [ ] Add scheduled saved-screener match evaluation with user-controlled alert settings and notifications.
+- [ ] Create and validate a reusable application account-and-alerts implementation skill package if the `/skill-creator` request is intended as a deliverable.
+- [ ] Add optional browser-level notifications for screener matches, with explicit permission and an in-app fallback inbox.
+- [ ] Implement in-app account verification and password-reset token flows without external email delivery.
+- [x] Add an email delivery integration for verification, password-reset, and optional screener-match messages using a secure server-side API key.
+- [x] Replace the in-app-only verification/reset placeholder with email-delivered, single-use, time-limited verification and recovery links.
+- [ ] Implement the scheduled/durable screener-match evaluator and connect it to browser notification delivery so alerts fire beyond a one-time foreground check.
+- [ ] Add optional screener-match email delivery using the existing Resend helper, including user controls for enabling/disabling those emails.
+- [ ] Add regression/integration coverage for recurring screener match notifications and email alert delivery paths.

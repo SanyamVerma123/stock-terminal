@@ -16,6 +16,7 @@ import { Route as ApiChatRouteImport } from './routes/api/chat'
 import { Route as StockSymbolRouteImport } from './routes/stock.$symbol'
 import { Route as ApiCloudAuthRouteImport } from './routes/api/cloud/auth'
 import { Route as ApiCloudStateRouteImport } from './routes/api/cloud/state'
+import { Route as ApiScheduledScreenerAlertsRouteImport } from './routes/api/scheduled/screener-alerts'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -52,6 +53,12 @@ const ApiCloudStateRoute = ApiCloudStateRouteImport.update({
   path: '/api/cloud/state',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ApiScheduledScreenerAlertsRoute =
+  ApiScheduledScreenerAlertsRouteImport.update({
+    id: '/api/scheduled/screener-alerts',
+    path: '/api/scheduled/screener-alerts',
+    getParentRoute: () => rootRouteImport,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -61,6 +68,7 @@ export interface FileRoutesByFullPath {
   '/stock/$symbol': typeof StockSymbolRoute
   '/api/cloud/auth': typeof ApiCloudAuthRoute
   '/api/cloud/state': typeof ApiCloudStateRoute
+  '/api/scheduled/screener-alerts': typeof ApiScheduledScreenerAlertsRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +78,7 @@ export interface FileRoutesByTo {
   '/stock/$symbol': typeof StockSymbolRoute
   '/api/cloud/auth': typeof ApiCloudAuthRoute
   '/api/cloud/state': typeof ApiCloudStateRoute
+  '/api/scheduled/screener-alerts': typeof ApiScheduledScreenerAlertsRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +89,7 @@ export interface FileRoutesById {
   '/stock/$symbol': typeof StockSymbolRoute
   '/api/cloud/auth': typeof ApiCloudAuthRoute
   '/api/cloud/state': typeof ApiCloudStateRoute
+  '/api/scheduled/screener-alerts': typeof ApiScheduledScreenerAlertsRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +101,7 @@ export interface FileRouteTypes {
     | '/stock/$symbol'
     | '/api/cloud/auth'
     | '/api/cloud/state'
+    | '/api/scheduled/screener-alerts'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +111,7 @@ export interface FileRouteTypes {
     | '/stock/$symbol'
     | '/api/cloud/auth'
     | '/api/cloud/state'
+    | '/api/scheduled/screener-alerts'
   id:
     | '__root__'
     | '/'
@@ -109,6 +121,7 @@ export interface FileRouteTypes {
     | '/stock/$symbol'
     | '/api/cloud/auth'
     | '/api/cloud/state'
+    | '/api/scheduled/screener-alerts'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,6 +132,7 @@ export interface RootRouteChildren {
   StockSymbolRoute: typeof StockSymbolRoute
   ApiCloudAuthRoute: typeof ApiCloudAuthRoute
   ApiCloudStateRoute: typeof ApiCloudStateRoute
+  ApiScheduledScreenerAlertsRoute: typeof ApiScheduledScreenerAlertsRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -172,6 +186,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ApiCloudStateRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/api/scheduled/screener-alerts': {
+      id: '/api/scheduled/screener-alerts'
+      path: '/api/scheduled/screener-alerts'
+      fullPath: '/api/scheduled/screener-alerts'
+      preLoaderRoute: typeof ApiScheduledScreenerAlertsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,6 +204,7 @@ const rootRouteChildren: RootRouteChildren = {
   StockSymbolRoute: StockSymbolRoute,
   ApiCloudAuthRoute: ApiCloudAuthRoute,
   ApiCloudStateRoute: ApiCloudStateRoute,
+  ApiScheduledScreenerAlertsRoute: ApiScheduledScreenerAlertsRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

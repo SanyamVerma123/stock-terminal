@@ -224,19 +224,27 @@ function toParams(f: ScreenerFilters): ScreenParams {
 }
 
 /** Read-only run of a saved screener preset. */
-export function SavedScreenerView({ filters, name }: { filters: ScreenerFilters; name: string }) {
+export function SavedScreenerView({ screenerId, filters, name }: { screenerId: string; filters: ScreenerFilters; name: string }) {
   const runFn = useServerFn(runEquityScreener);
+  const { screenerAlertRules, setScreenerAlertRules, browserNotificationPermission, requestBrowserNotifications } = useAppState();
+  const rule = screenerAlertRules.find((item) => item.screenerId === screenerId);
   const params = toParams(filters);
   const { data, isLoading } = useQuery({
     queryKey: ["saved-screen", JSON.stringify(params)],
     queryFn: () => runFn({ data: params }),
     staleTime: 120_000,
   });
-  return (
-    <Panel title={name} subtitle="Saved custom screener — re-run live on every visit">
-      <ScreenerTable rows={data} loading={isLoading} />
-    </Panel>
-  );
+  return <div className="space-y-4">
+    <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-card/55 p-4">
+      <div><p className="text-sm font-medium text-foreground">Match alerts</p><p className="mt-1 text-xs text-muted-foreground">Check this saved screen every 15 minutes while the terminal is open and add new results to your cloud-synced inbox.</p></div>
+      <div className="flex flex-wrap items-center gap-2">
+        <button type="button" onClick={() => setScreenerAlertRules(rule ? screenerAlertRules.filter((item) => item.id !== rule.id) : [...screenerAlertRules, { id: crypto.randomUUID(), screenerId, enabled: true, browserEnabled: true, emailEnabled: false }])} className={cn("h-9 rounded-lg border px-3 text-xs font-medium", rule?.enabled ? "border-positive/40 bg-positive/10 text-positive" : "border-primary/40 text-primary")}>{rule?.enabled ? "Alert enabled" : "Enable match alert"}</button>
+        {rule?.enabled && <button type="button" onClick={() => setScreenerAlertRules(screenerAlertRules.map((item) => item.id === rule.id ? { ...item, browserEnabled: !item.browserEnabled } : item))} className="h-9 rounded-lg border border-border px-3 text-xs text-muted-foreground hover:text-foreground">Browser: {rule.browserEnabled ? "on" : "off"}</button>}
+        {rule?.enabled && browserNotificationPermission !== "granted" && browserNotificationPermission !== "unsupported" ? <button type="button" onClick={() => void requestBrowserNotifications()} className="h-9 rounded-lg border border-primary/40 px-3 text-xs text-primary">Allow browser alerts</button> : null}
+      </div>
+    </div>
+    <Panel title={name} subtitle="Saved custom screener — re-run live on every visit"><ScreenerTable rows={data} loading={isLoading} /></Panel>
+  </div>;
 }
 
 export function ProScreenerView() {

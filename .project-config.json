@@ -16,8 +16,8 @@
   ],
   "git_remote": {
     "repo_url": "https://7f0548f6b28a1758d9bf7be630d36cb4.artifacts.cloudflare.net/git/prod/MuJSeqviNXUCnYKgTh7Var.git",
-    "expiration": "2026-08-20T09:18:29.689Z",
-    "token": "art_v2_x_1f1683bfd70172c01d6e13ef81429f438268258a?expires=1787217509",
+    "expiration": "2026-08-21T03:22:51.163Z",
+    "token": "art_v2_x_d3fb5a070bf45da9e30d28df65f288a1084c68dc?expires=1787282571",
     "backend": "GIT_BACKEND_ARTIFACTS"
   },
   "name": "insightful-search-deployed",
@@ -26,11 +26,13 @@
   "secrets": {
     "BUILT_IN_FORGE_API_KEY": "BPEwf9A4rabKviUdhJyWux",
     "BUILT_IN_FORGE_API_URL": "https://forge.manus.ai",
+    "EMAIL_FROM": "youremail@Stock.Terminal.com",
     "JWT_SECRET": "XjgbetLPHLsD8ymRmvAbfL",
     "OAUTH_SERVER_URL": "https://api.manus.im",
     "OPENROUTER_API_KEY": "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",
     "OWNER_NAME": "For Work Only",
     "OWNER_OPEN_ID": "Ue4KsjJtKBBHQrvFbA5Ey4",
+    "RESEND_API_KEY": "re_TUd4TPbB_6wmQk987HmgLc5HtjLuxggeS",
     "VITE_ANALYTICS_ENDPOINT": "https://manus-analytics.com",
     "VITE_ANALYTICS_WEBSITE_ID": "254fbe91-abeb-47b5-803b-56289a704a98",
     "VITE_APP_ID": "MuJSeqviNXUCnYKgTh7Var",

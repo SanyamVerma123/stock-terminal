@@ -22,9 +22,34 @@ export type WatchItem = {
   industry: string;
   marketId: MarketId;
   assetClass: AssetClass;
+  folderId?: string;
 };
 
 export type Alert = { id: string; symbol: string; above: boolean; price: number; enabled: boolean };
+
+export type WatchFolder = {
+  id: string;
+  name: string;
+  color: "emerald" | "sky" | "violet" | "amber" | "rose";
+};
+
+export type ScreenerAlertRule = {
+  id: string;
+  screenerId: string;
+  enabled: boolean;
+  browserEnabled: boolean;
+  emailEnabled: boolean;
+  lastMatchKey?: string;
+};
+
+export type ScreenerNotification = {
+  id: string;
+  screenerId: string;
+  screenerName: string;
+  symbols: string[];
+  createdAt: string;
+  read: boolean;
+};
 
 export type ScreenerFilters = {
   region: string;
@@ -120,6 +145,12 @@ type State = {
   assetClass: AssetClass;
   setAssetClass: (assetClass: AssetClass) => void;
   watchlist: WatchItem[];
+  watchFolders: WatchFolder[];
+  createWatchFolder: (name: string, color?: WatchFolder["color"]) => void;
+  renameWatchFolder: (id: string, name: string) => void;
+  reorderWatchFolder: (id: string, direction: "up" | "down") => void;
+  deleteWatchFolder: (id: string) => void;
+  moveWatchToFolder: (symbol: string, folderId?: string) => void;
   isWatched: (symbol: string) => boolean;
   addToWatchlist: (symbol: string, name?: string) => void;
   removeFromWatchlist: (symbol: string) => void;
@@ -130,6 +161,11 @@ type State = {
   screeners: SavedScreener[];
   saveScreener: (s: SavedScreener) => void;
   deleteScreener: (id: string) => void;
+  screenerAlertRules: ScreenerAlertRule[];
+  setScreenerAlertRules: (rules: ScreenerAlertRule[]) => void;
+  screenerNotifications: ScreenerNotification[];
+  addScreenerNotification: (notification: ScreenerNotification) => void;
+  markScreenerNotificationsRead: () => void;
   apiKeys: ApiKeys;
   setApiKeys: (k: ApiKeys) => void;
   cloudAccount: CloudAccount | null;
@@ -141,6 +177,8 @@ type State = {
   setRefreshSeconds: (n: number) => void;
   theme: Theme;
   setTheme: (theme: Theme) => void;
+  browserNotificationPermission: NotificationPermission | "unsupported";
+  requestBrowserNotifications: () => Promise<NotificationPermission | "unsupported">;
   aiPrefill: string | null;
   setAiPrefill: (prompt: string | null) => void;
 };
@@ -255,8 +293,59 @@ function normalizeWatchlist(raw: unknown): WatchItem[] {
         industry: typeof item["industry"] === "string" ? item["industry"] : "",
         marketId: marketId as MarketId,
         assetClass,
+        ...(typeof item["folderId"] === "string" ? { folderId: item["folderId"] } : {}),
       },
     ];
+  });
+}
+
+function normalizeWatchFolders(raw: unknown): WatchFolder[] {
+  if (!Array.isArray(raw)) return [];
+  const colors: WatchFolder["color"][] = ["emerald", "sky", "violet", "amber", "rose"];
+  return raw.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const value = entry as Record<string, unknown>;
+    const id = typeof value["id"] === "string" ? value["id"] : "";
+    const name = typeof value["name"] === "string" ? value["name"].trim().slice(0, 48) : "";
+    const color = colors.includes(value["color"] as WatchFolder["color"])
+      ? (value["color"] as WatchFolder["color"])
+      : "emerald";
+    return id && name ? [{ id, name, color }] : [];
+  });
+}
+
+function normalizeScreenerAlertRules(raw: unknown): ScreenerAlertRule[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const value = entry as Record<string, unknown>;
+    const id = typeof value["id"] === "string" ? value["id"] : "";
+    const screenerId = typeof value["screenerId"] === "string" ? value["screenerId"] : "";
+    if (!id || !screenerId) return [];
+    return [{
+      id,
+      screenerId,
+      enabled: value["enabled"] !== false,
+      browserEnabled: value["browserEnabled"] !== false,
+      emailEnabled: value["emailEnabled"] === true,
+      ...(typeof value["lastMatchKey"] === "string" ? { lastMatchKey: value["lastMatchKey"] } : {}),
+    } satisfies ScreenerAlertRule];
+  });
+}
+
+function normalizeScreenerNotifications(raw: unknown): ScreenerNotification[] {
+  if (!Array.isArray(raw)) return [];
+  return raw.slice(0, 500).flatMap((entry) => {
+    if (!entry || typeof entry !== "object") return [];
+    const value = entry as Record<string, unknown>;
+    const id = typeof value["id"] === "string" ? value["id"] : "";
+    const screenerId = typeof value["screenerId"] === "string" ? value["screenerId"] : "";
+    const screenerName = typeof value["screenerName"] === "string" ? value["screenerName"] : "Saved screener";
+    const createdAt = typeof value["createdAt"] === "string" ? value["createdAt"] : "";
+    const symbols = Array.isArray(value["symbols"])
+      ? value["symbols"].filter((symbol): symbol is string => typeof symbol === "string").slice(0, 50)
+      : [];
+    return id && screenerId && createdAt ? [{ id, screenerId, screenerName, symbols, createdAt, read: value["read"] === true }] : [];
   });
 }
 
@@ -291,8 +380,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [market, setMarketState] = useState<MarketId>("US");
   const [assetClass, setAssetClassState] = useState<AssetClass>("equities");
   const [allWatchlist, setAllWatchlist] = useState<WatchItem[]>(DEFAULT_WATCH);
+  const [allWatchFolders, setAllWatchFolders] = useState<WatchFolder[]>([]);
   const [alerts, setAlertsState] = useState<Alert[]>([]);
   const [allScreeners, setAllScreeners] = useState<SavedScreener[]>([]);
+  const [screenerAlertRules, setScreenerAlertRulesState] = useState<ScreenerAlertRule[]>([]);
+  const [screenerNotifications, setScreenerNotificationsState] = useState<ScreenerNotification[]>([]);
   const [apiKeys, setApiKeysState] = useState<ApiKeys>({
     openrouter: "",
     kilo: "",
@@ -311,6 +403,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   const [cloudStatus, setCloudStatus] = useState<CloudStatus>("checking");
   const [cloudError, setCloudError] = useState<string | null>(null);
   const [cloudReady, setCloudReady] = useState(false);
+  const [browserNotificationPermission, setBrowserNotificationPermission] = useState<NotificationPermission | "unsupported">(
+    () => (typeof window !== "undefined" && "Notification" in window ? Notification.permission : "unsupported"),
+  );
   const classify = useServerFn(classifySymbols);
 
   useEffect(() => {
@@ -319,8 +414,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setMarketState(storedMarket);
     setAssetClassState(storedMarket === "IN" ? "equities" : storedAssetClass);
     setAllWatchlist(normalizeWatchlist(loadLocalState<unknown>("sc:watchlist2", DEFAULT_WATCH)));
+    setAllWatchFolders(normalizeWatchFolders(loadLocalState<unknown>("sc:watch-folders", [])));
     setAlertsState(loadLocalState<Alert[]>("sc:alerts", []));
     setAllScreeners(loadLocalState<SavedScreener[]>("sc:screeners", []));
+    setScreenerAlertRulesState(normalizeScreenerAlertRules(loadLocalState<unknown>("sc:screener-alert-rules", [])));
+    setScreenerNotificationsState(normalizeScreenerNotifications(loadLocalState<unknown>("sc:screener-notifications", [])));
     setApiKeysState(normalizeApiKeys(loadLocalState<unknown>("sc:apikeys", null)));
     setRefreshState(loadLocalState<number>("sc:refresh", 60));
     const storedTheme = loadLocalState<Theme>("sc:theme", "paper");
@@ -344,6 +442,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       const next = normalizeWatchlist(state.watchlist);
       setAllWatchlist(next);
       saveLocalState("sc:watchlist2", next);
+    }
+    if (state.watchFolders) {
+      const next = normalizeWatchFolders(state.watchFolders);
+      setAllWatchFolders(next);
+      saveLocalState("sc:watch-folders", next);
     }
     if (state.alerts) {
       const next = state.alerts.flatMap((item) => {
@@ -391,6 +494,16 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       });
       setAllScreeners(next);
       saveLocalState("sc:screeners", next);
+    }
+    if (state.screenerAlertRules) {
+      const next = normalizeScreenerAlertRules(state.screenerAlertRules);
+      setScreenerAlertRulesState(next);
+      saveLocalState("sc:screener-alert-rules", next);
+    }
+    if (state.screenerNotifications) {
+      const next = normalizeScreenerNotifications(state.screenerNotifications);
+      setScreenerNotificationsState(next);
+      saveLocalState("sc:screener-notifications", next);
     }
     if (state.refreshSeconds) {
       setRefreshState(state.refreshSeconds);
@@ -526,12 +639,22 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     }
   }, []);
 
+  const requestBrowserNotifications = useCallback(async (): Promise<NotificationPermission | "unsupported"> => {
+    if (typeof window === "undefined" || !("Notification" in window)) return "unsupported";
+    const permission = await Notification.requestPermission();
+    setBrowserNotificationPermission(permission);
+    return permission;
+  }, []);
+
   const cloudSnapshot = useMemo(() => JSON.stringify({
     market,
     assetClass,
     watchlist: allWatchlist,
+    watchFolders: allWatchFolders,
     alerts,
     screeners: allScreeners,
+    screenerAlertRules,
+    screenerNotifications,
     refreshSeconds,
     theme,
     aiPreferences: {
@@ -540,6 +663,7 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     },
   } satisfies CloudSyncState), [
     alerts,
+    allWatchFolders,
     allScreeners,
     allWatchlist,
     apiKeys.customModels,
@@ -547,6 +671,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     assetClass,
     market,
     refreshSeconds,
+    screenerAlertRules,
+    screenerNotifications,
     theme,
   ]);
 
@@ -589,6 +715,54 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         saveLocalState("sc:asset-class", next);
       },
       watchlist: scopedWatchlist,
+      watchFolders: allWatchFolders,
+      createWatchFolder: (name, color = "emerald") => {
+        const trimmed = name.trim().slice(0, 48);
+        if (!trimmed || allWatchFolders.some((folder) => folder.name.toLowerCase() === trimmed.toLowerCase())) return;
+        const next = [...allWatchFolders, { id: crypto.randomUUID(), name: trimmed, color }];
+        setAllWatchFolders(next);
+        saveLocalState("sc:watch-folders", next);
+      },
+      renameWatchFolder: (id, name) => {
+        const trimmed = name.trim().slice(0, 48);
+        if (!trimmed) return;
+        const next = allWatchFolders.map((folder) => folder.id === id ? { ...folder, name: trimmed } : folder);
+        setAllWatchFolders(next);
+        saveLocalState("sc:watch-folders", next);
+      },
+      reorderWatchFolder: (id, direction) => {
+        const index = allWatchFolders.findIndex((folder) => folder.id === id);
+        const target = direction === "up" ? index - 1 : index + 1;
+        if (index < 0 || target < 0 || target >= allWatchFolders.length) return;
+        const next = [...allWatchFolders];
+        const [folder] = next.splice(index, 1);
+        if (!folder) return;
+        next.splice(target, 0, folder);
+        setAllWatchFolders(next);
+        saveLocalState("sc:watch-folders", next);
+      },
+      deleteWatchFolder: (id) => {
+        const nextFolders = allWatchFolders.filter((folder) => folder.id !== id);
+        const nextWatchlist = allWatchlist.map((item) => {
+          if (item.folderId !== id) return item;
+          const { folderId: _folderId, ...withoutFolder } = item;
+          return withoutFolder;
+        });
+        setAllWatchFolders(nextFolders);
+        setAllWatchlist(nextWatchlist);
+        saveLocalState("sc:watch-folders", nextFolders);
+        saveLocalState("sc:watchlist2", nextWatchlist);
+      },
+      moveWatchToFolder: (symbol, folderId) => {
+        const next = allWatchlist.map((item) =>
+          item.symbol !== symbol || item.marketId !== market || item.assetClass !== assetClass
+            ? item
+            : folderId
+              ? { ...item, folderId }
+              : (() => { const { folderId: _folderId, ...withoutFolder } = item; return withoutFolder; })(),
+        );
+        persistWatch(next);
+      },
       watchSymbols: symbols,
       isWatched: (s) => symbols.includes(s),
       addToWatchlist: (symbol, name) => {
@@ -666,6 +840,25 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setAllScreeners(next);
         saveLocalState("sc:screeners", next);
       },
+      screenerAlertRules,
+      setScreenerAlertRules: (rules) => {
+        const next = normalizeScreenerAlertRules(rules);
+        setScreenerAlertRulesState(next);
+        saveLocalState("sc:screener-alert-rules", next);
+      },
+      screenerNotifications,
+      addScreenerNotification: (notification) => {
+        setScreenerNotificationsState((previous) => {
+          const next = [notification, ...previous.filter((item) => item.id !== notification.id)].slice(0, 500);
+          saveLocalState("sc:screener-notifications", next);
+          return next;
+        });
+      },
+      markScreenerNotificationsRead: () => {
+        const next = screenerNotifications.map((notification) => ({ ...notification, read: true }));
+        setScreenerNotificationsState(next);
+        saveLocalState("sc:screener-notifications", next);
+      },
       apiKeys,
       setApiKeys: (k) => {
         setApiKeysState(k);
@@ -686,6 +879,8 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
         setThemeState(next);
         saveLocalState("sc:theme", next);
       },
+      browserNotificationPermission,
+      requestBrowserNotifications,
       aiPrefill,
       setAiPrefill: setAiPrefillState,
     };
@@ -693,8 +888,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     market,
     assetClass,
     allWatchlist,
+    allWatchFolders,
     alerts,
     allScreeners,
+    screenerAlertRules,
+    screenerNotifications,
     apiKeys,
     cloudAccount,
     cloudError,
@@ -702,7 +900,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     refreshSeconds,
     theme,
     aiPrefill,
+    browserNotificationPermission,
     persistWatch,
+    requestBrowserNotifications,
     signIntoCloud,
     signOutOfCloud,
   ]);

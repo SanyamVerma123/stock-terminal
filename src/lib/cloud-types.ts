@@ -2,8 +2,11 @@ export type CloudSyncState = {
   market?: "US" | "IN";
   assetClass?: "equities" | "etfs" | "crypto" | "forex";
   watchlist?: unknown[];
+  watchFolders?: unknown[];
   alerts?: unknown[];
   screeners?: unknown[];
+  screenerAlertRules?: unknown[];
+  screenerNotifications?: unknown[];
   refreshSeconds?: number;
   theme?: "terminal" | "light" | "paper" | "neuborder";
   aiPreferences?: {
@@ -18,6 +21,7 @@ export type CloudAccount = {
   id: number;
   email: string;
   displayName: string | null;
+  emailVerified: boolean;
 };
 
 export function sanitizeCloudSyncState(input: unknown): CloudSyncState {
@@ -48,15 +52,21 @@ export function sanitizeCloudSyncState(input: unknown): CloudSyncState {
       }
     : undefined;
   const watchlist = pickArray("watchlist", 500);
+  const watchFolders = pickArray("watchFolders", 100);
   const alerts = pickArray("alerts", 500);
   const screeners = pickArray("screeners", 250);
+  const screenerAlertRules = pickArray("screenerAlertRules", 250);
+  const screenerNotifications = pickArray("screenerNotifications", 500);
   const chatSessions = pickArray("chatSessions", 40);
   return {
     ...(market ? { market } : {}),
     ...(assetClass ? { assetClass } : {}),
     ...(watchlist ? { watchlist } : {}),
+    ...(watchFolders ? { watchFolders } : {}),
     ...(alerts ? { alerts } : {}),
     ...(screeners ? { screeners } : {}),
+    ...(screenerAlertRules ? { screenerAlertRules } : {}),
+    ...(screenerNotifications ? { screenerNotifications } : {}),
     ...(refreshSeconds ? { refreshSeconds } : {}),
     ...(theme ? { theme } : {}),
     ...(aiPreferences && Object.keys(aiPreferences).length ? { aiPreferences } : {}),
