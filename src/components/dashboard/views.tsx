@@ -1,9 +1,9 @@
 import { useMemo, useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { Link } from "@tanstack/react-router";
 import { Bell, ExternalLink, Star, Trash2 } from "lucide-react";
-import { getMarketStrip, getNews, getWatchlistNews } from "@/lib/finance.functions";
+import { getMarketStrip, getNews, getRankedNews, getWatchlistNews } from "@/lib/finance.functions";
 import { Sparkline } from "@/components/finance/Sparkline";
 import { DeltaBadge } from "@/components/finance/DeltaBadge";
 import { TickerAutocomplete } from "@/components/finance/TickerAutocomplete";
@@ -30,7 +30,7 @@ export function MarketStrip() {
   return (
     <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
       {(data ?? []).map((ix) => (
-        <div key={ix.key} className="index-card rounded-2xl border border-border/70 bg-card/55 p-4">
+        <div key={ix.key} className="index-card rounded-2xl border border-border/70 bg-card/55 p-4 shadow-sm">
           <div className="flex items-center justify-between gap-3"><p className="text-xs font-medium uppercase tracking-wider text-muted-foreground">{ix.label}</p><span className="index-card-live">Live</span></div>
           <p className="tabular mt-2 text-2xl font-semibold tracking-tight text-foreground">
             {ix.last === null
@@ -41,6 +41,7 @@ export function MarketStrip() {
           <div className="mt-3">
             <Sparkline points={ix.points} up={(ix.changePercent ?? 0) >= 0} />
           </div>
+          {(() => { const values = ix.points.map((point) => point.c).filter((value): value is number => value !== null); const low = Math.min(...values); const high = Math.max(...values); const position = ix.last !== null && high > low ? ((ix.last - low) / (high - low)) * 100 : 50; return values.length ? <div className="mt-3 border-t border-border/60 pt-2"><div className="flex items-center justify-between text-[10px] text-muted-foreground"><span>1M low {low.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span><span>High {high.toLocaleString(undefined, { maximumFractionDigits: 0 })}</span></div><span className="mt-1.5 block h-1.5 overflow-hidden rounded-full bg-muted"><i className={cn("block h-full rounded-full", (ix.changePercent ?? 0) >= 0 ? "bg-positive" : "bg-negative")} style={{ width: `${Math.max(4, Math.min(100, position))}%` }} /></span></div> : null; })()}
         </div>
       ))}
     </div>
@@ -171,6 +172,7 @@ export function NewsView() {
   const [symbol, setSymbol] = useState<string | null>(null);
   const watchFn = useServerFn(getWatchlistNews);
   const oneFn = useServerFn(getNews);
+  const rankedFn = useServerFn(getRankedNews);
 
   const { data: feed, isLoading } = useQuery({
     queryKey: ["watchnews", watchSymbols.join(",")],
@@ -184,8 +186,25 @@ export function NewsView() {
     enabled: Boolean(symbol),
     staleTime: 120_000,
   });
+  const { data: rankedSingle } = useQuery({
+    queryKey: ["ranked-news", symbol],
+    queryFn: () => rankedFn({ data: { symbol: symbol! } }),
+    enabled: Boolean(symbol),
+    staleTime: 120_000,
+  });
+  const rankedWatch = useQueries({
+    queries: watchSymbols.slice(0, 6).map((watchSymbol) => ({
+      queryKey: ["ranked-news", watchSymbol],
+      queryFn: () => rankedFn({ data: { symbol: watchSymbol } }),
+      enabled: !symbol,
+      staleTime: 120_000,
+    })),
+  });
+  const rankedWatchItems = rankedWatch.flatMap((query, index) =>
+    (query.data ?? []).map((item) => ({ ...item, ...(watchSymbols[index] ? { symbol: watchSymbols[index] } : {}) })),
+  );
 
-  const items = symbol ? (single ?? []).map((n) => ({ ...n, symbol })) : (feed ?? []);
+  const items = symbol ? (rankedSingle ?? single ?? []).map((n) => ({ ...n, symbol })) : rankedWatchItems.length > 0 ? rankedWatchItems : (feed ?? []);
   const busy = symbol ? loadingSingle : isLoading;
 
   return (

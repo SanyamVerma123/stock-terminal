@@ -16,6 +16,7 @@ import {
   fetchMarketStrip,
   fetchMarketSummary,
   fetchNews,
+  fetchRankedNews,
   fetchOptionChain,
   fetchOptionExpirations,
   fetchOwnership,
@@ -52,6 +53,10 @@ export const getMarketStrip = createServerFn({ method: "GET" })
 export const getNews = createServerFn({ method: "GET" })
   .inputValidator((d: { symbol: string }) => d)
   .handler(({ data }) => fetchNews(data.symbol));
+
+export const getRankedNews = createServerFn({ method: "GET" })
+  .inputValidator((d: { symbol: string }) => d)
+  .handler(({ data }) => fetchRankedNews(data.symbol));
 
 export const searchNews = createServerFn({ method: "GET" })
   .inputValidator((d: { query: string }) => d)

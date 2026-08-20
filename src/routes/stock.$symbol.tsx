@@ -14,6 +14,7 @@ import {
   getIndustryOverview,
   getNews,
   getQuotes,
+  getRankedNews,
   getSummary,
   getUpgrades,
 } from "@/lib/finance.functions";
@@ -84,6 +85,7 @@ function StockPage() {
   const summaryFn = useServerFn(getSummary);
   const historyFn = useServerFn(getHistory);
   const newsFn = useServerFn(getNews);
+  const rankedNewsFn = useServerFn(getRankedNews);
   const finFn = useServerFn(getFinancials);
   const analystFn = useServerFn(getAnalyst);
   const upgradesFn = useServerFn(getUpgrades);
@@ -111,6 +113,11 @@ function StockPage() {
   const { data: news } = useQuery({
     queryKey: ["news", symbol],
     queryFn: () => newsFn({ data: { symbol } }),
+    staleTime: 120_000,
+  });
+  const { data: rankedNews } = useQuery({
+    queryKey: ["ranked-news", symbol],
+    queryFn: () => rankedNewsFn({ data: { symbol } }),
     staleTime: 120_000,
   });
   const { data: financials } = useQuery({
@@ -420,7 +427,7 @@ function StockPage() {
               )}
             </Card>
 
-            <Card title="News"><NewsTimeline items={(news ?? []).map((item) => ({ ...item, symbol }))} empty="No recent headlines." /><div className="mt-4 border-t border-border pt-4"><ResearchWithAIButton prompt={`Research ${symbol} using the latest available news. Prioritize the highest-importance headlines, explain likely business relevance, identify industry-peer context for ${r?.industry ?? "its industry"}, and distinguish verified facts from uncertainty.`} /></div></Card>
+            <Card title="News"><NewsTimeline items={(rankedNews ?? news ?? []).map((item) => ({ ...item, symbol }))} empty="No recent headlines." /><div className="mt-4 border-t border-border pt-4"><ResearchWithAIButton prompt={`Research ${symbol} using the latest available news. Prioritize the highest-importance headlines, explain likely business relevance, identify industry-peer context for ${r?.industry ?? "its industry"}, and distinguish verified facts from uncertainty.`} /></div></Card>
           </div>
         </div>
       </main>

@@ -201,6 +201,37 @@ export async function fetchNews(symbol: string, count = 12): Promise<NewsItem[]>
   return normalizeNews(pick(raw, "news"));
 }
 
+export type RankedNewsItem = NewsItem & { priorityScore: number; scoringBasis: "ai" | "recency" };
+
+function recencyPriority(item: NewsItem) {
+  const stamp = item.pubDate ? Date.parse(item.pubDate) : NaN;
+  const hours = Number.isFinite(stamp) ? Math.max(0, (Date.now() - stamp) / 3_600_000) : 8_760;
+  return Math.max(1, Math.round(100 - Math.min(96, hours / 6)));
+}
+
+/** Scores a bounded headline set with the configured no-cost OpenRouter route; falls back transparently when unavailable. */
+export async function fetchRankedNews(symbol: string): Promise<RankedNewsItem[]> {
+  const items = await fetchNews(symbol);
+  const fallback = items.map((item) => ({ ...item, priorityScore: recencyPriority(item), scoringBasis: "recency" as const }));
+  const apiKey = process.env["OPENROUTER_API_KEY"];
+  if (!apiKey || items.length === 0) return fallback.sort((a, b) => b.priorityScore - a.priorityScore);
+  try {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 7_000);
+    const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+      method: "POST", signal: controller.signal,
+      headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+      body: JSON.stringify({ model: "openrouter/free", temperature: 0, max_tokens: 300, response_format: { type: "json_object" }, messages: [{ role: "system", content: "Score financial-news importance from 1 to 100. Return JSON {scores:[number,...]} in the supplied order; judge materiality, novelty, earnings/guidance, regulation and M&A, not investment attractiveness." }, { role: "user", content: JSON.stringify(items.map((item) => ({ title: item.title, publisher: item.publisher, summary: item.summary, pubDate: item.pubDate }))) }] }),
+    });
+    clearTimeout(timer);
+    const payload = await response.json() as { choices?: Array<{ message?: { content?: string } }> };
+    const content = payload.choices?.[0]?.message?.content;
+    const parsed = content ? JSON.parse(content.replace(/```json|```/g, "").trim()) as { scores?: unknown[] } : null;
+    const scores = Array.isArray(parsed?.scores) ? parsed.scores : [];
+    return fallback.map((item, index) => ({ ...item, priorityScore: typeof scores[index] === "number" ? Math.max(1, Math.min(100, Math.round(scores[index] as number))) : item.priorityScore, scoringBasis: typeof scores[index] === "number" ? "ai" as const : "recency" as const })).sort((a, b) => b.priorityScore - a.priorityScore);
+  } catch { return fallback.sort((a, b) => b.priorityScore - a.priorityScore); }
+}
+
 function normalizeNews(raw: unknown): NewsItem[] {
   return rows(raw)
     .map((n) => {
