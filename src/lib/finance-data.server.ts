@@ -579,6 +579,40 @@ export async function fetchPredefinedScreeners(): Promise<string[]> {
   return Array.isArray(list) ? list.map(String) : [];
 }
 
+const PRIMARY_MOVER_PRESETS = ["day_gainers", "day_losers", "most_actives"] as const;
+
+export function isPrimaryMoverPreset(name: string): name is (typeof PRIMARY_MOVER_PRESETS)[number] {
+  return (PRIMARY_MOVER_PRESETS as readonly string[]).includes(name);
+}
+
+/**
+ * Provider presets occasionally return an unranked universe. Apply the preset's own ordering
+ * and deduplicate symbols so each mover surface remains distinct even when the provider's order
+ * is inconsistent.
+ */
+export function rankPredefinedScreenerRows(
+  name: string,
+  inputRows: ScreenerRow[],
+  size: number,
+): ScreenerRow[] {
+  const uniqueRows = Array.from(
+    new Map(inputRows.filter((row) => row.symbol.length > 0).map((row) => [row.symbol, row])).values(),
+  );
+  if (!isPrimaryMoverPreset(name)) return uniqueRows.slice(0, size);
+
+  return uniqueRows
+    .sort((left, right) => {
+      if (name === "most_actives") {
+        const volumeDifference = (right.volume ?? Number.NEGATIVE_INFINITY) - (left.volume ?? Number.NEGATIVE_INFINITY);
+        if (volumeDifference !== 0) return volumeDifference;
+        return (right.changePercent ?? Number.NEGATIVE_INFINITY) - (left.changePercent ?? Number.NEGATIVE_INFINITY);
+      }
+      const changeDifference = (right.changePercent ?? Number.NEGATIVE_INFINITY) - (left.changePercent ?? Number.NEGATIVE_INFINITY);
+      return name === "day_losers" ? -changeDifference : changeDifference;
+    })
+    .slice(0, size);
+}
+
 async function fastMoverFallback(name: string, region: string, size: number): Promise<ScreenerRow[]> {
   const market = region.toLowerCase() === "in" ? MARKETS.IN : MARKETS.US;
   const quotes = await resolveWithin(fetchQuotes(market.equities), [], 4_500);
@@ -596,20 +630,13 @@ async function fastMoverFallback(name: string, region: string, size: number): Pr
     currency: quote.currency,
     rating: null,
   } satisfies ScreenerRow));
-  return rows
-    .sort((left, right) => {
-      if (name.includes("active")) return (right.volume ?? -Infinity) - (left.volume ?? -Infinity);
-      const difference = (right.changePercent ?? -Infinity) - (left.changePercent ?? -Infinity);
-      return name.includes("loser") ? -difference : difference;
-    })
-    .slice(0, size);
+  return rankPredefinedScreenerRows(name, rows, size);
 }
 
 /** One shared provider quote request produces all dashboard daily-mover rankings. */
 export async function fetchFastMovers(region = "us", size = 25) {
-  const names = ["day_gainers", "day_losers", "most_actives"] as const;
   const ranked = await Promise.all(
-    names.map((name) => fetchScreenPredefined(name, size, region)),
+    PRIMARY_MOVER_PRESETS.map((name) => fetchScreenPredefined(name, size, region)),
   );
   return {
     day_gainers: ranked[0],
@@ -624,6 +651,27 @@ export async function fetchScreenPredefined(
   region = "us",
 ): Promise<ScreenerRow[]> {
   const fallbackPromise = fastMoverFallback(name, region, size);
+  const fallbackSort = name.includes("loser")
+    ? { sortField: "percentchange", sortAscending: true }
+    : name.includes("active")
+      ? { sortField: "dayvolume", sortAscending: false }
+      : { sortField: "percentchange", sortAscending: false };
+
+  // Daily-mover views must not reuse the provider's generic predefined payload. Query a fresh,
+  // explicitly sorted equity screen for every preset so gainers, losers, and active names each
+  // receive their own current ranked universe.
+  if (isPrimaryMoverPreset(name)) {
+    // A live ranked universe usually arrives just after the generic screener's short UI budget.
+    // Give only these dedicated daily-mover requests more time instead of showing static symbols.
+    const freshProviderRows = await fetchProviderEquityRows(
+      { region, size, ...fallbackSort },
+      7_500,
+    );
+    const rankedScreen = rankPredefinedScreenerRows(name, freshProviderRows, size);
+    if (rankedScreen.length > 0) return rankedScreen;
+    return rankPredefinedScreenerRows(name, await fallbackPromise, size);
+  }
+
   const raw = await resolveWithin(
     callMcpTool("screen_predefined", { name, size, region }).catch(() => null),
     null,
@@ -634,26 +682,15 @@ export async function fetchScreenPredefined(
   const regionRows = normalized.filter((row) =>
     inIndia ? /\.(NS|BO)$/i.test(row.symbol) : !/\.(NS|BO)$/i.test(row.symbol),
   );
-  if (regionRows.length > 0) return regionRows;
-  const rankedFallback = await fallbackPromise;
-  if (rankedFallback.length > 0) return rankedFallback;
+  if (regionRows.length > 0) return rankPredefinedScreenerRows(name, regionRows, size);
   if (normalized.length === 0) return [];
 
-  const fallbackSort = name.includes("loser")
-    ? { sortField: "percentchange", sortAscending: true }
-    : name.includes("active")
-      ? { sortField: "dayvolume", sortAscending: false }
-      : { sortField: "percentchange", sortAscending: false };
   const screened = await fetchScreenEquities({ region, size, ...fallbackSort });
-  if (screened.length > 0) return screened;
+  if (screened.length > 0) return rankPredefinedScreenerRows(name, screened, size);
+  const rankedFallback = await fallbackPromise;
+  if (rankedFallback.length > 0) return rankPredefinedScreenerRows(name, rankedFallback, size);
   const fallback = await fallbackRegionRows(region, size);
-  return [...fallback].sort((a, b) => {
-    if (name.includes("active")) return (b.volume ?? -Infinity) - (a.volume ?? -Infinity);
-    return (
-      ((b.changePercent ?? -Infinity) - (a.changePercent ?? -Infinity)) *
-      (name.includes("loser") ? -1 : 1)
-    );
-  });
+  return rankPredefinedScreenerRows(name, fallback, size);
 }
 
 export type EquityScreenInput = {
@@ -839,6 +876,27 @@ function screenerRequest(input: EquityScreenInput, includeClassification: boolea
   };
 }
 
+async function fetchProviderEquityRows(input: EquityScreenInput, timeoutMs = 3_000) {
+  const [raw, broadRaw] = await Promise.all([
+    resolveWithin(
+      callMcpTool("screen_equities", screenerRequest(input, true)).catch(() => null),
+      null,
+      timeoutMs,
+    ),
+    resolveWithin(
+      callMcpTool("screen_equities", screenerRequest(input, false)).catch(() => null),
+      null,
+      timeoutMs,
+    ),
+  ]);
+  const classifiedRows = raw ? toScreenerRows(pick(raw, "quotes") ?? pick(raw, "data")) : [];
+  const classifiedMatches = filterScreenerRows(classifiedRows, input);
+  if (classifiedMatches.length > 0) return classifiedMatches;
+
+  const broadRows = broadRaw ? toScreenerRows(pick(broadRaw, "quotes") ?? pick(broadRaw, "data")) : [];
+  return filterScreenerRows(broadRows, input);
+}
+
 async function enrichScreenerRows(rowsToEnrich: ScreenerRow[]) {
   const unresolved = rowsToEnrich.filter((row) => !row.sector || !row.industry).slice(0, 40);
   if (unresolved.length === 0) return rowsToEnrich;
@@ -930,25 +988,8 @@ export async function fetchScreenEquities(input: EquityScreenInput): Promise<Scr
   }
   const regionalFallback = () =>
     filterScreenerRows(immediateRegionRows(input.region ?? "us", input.size ?? 25), input);
-  const [raw, broadRaw] = await Promise.all([
-    resolveWithin(
-    callMcpTool("screen_equities", screenerRequest(input, true)).catch(() => null),
-    null,
-    3_000,
-    ),
-    resolveWithin(
-    callMcpTool("screen_equities", screenerRequest(input, false)).catch(() => null),
-    null,
-    3_000,
-    ),
-  ]);
-  const classifiedRows = raw ? toScreenerRows(pick(raw, "quotes") ?? pick(raw, "data")) : [];
-  const classifiedMatches = filterScreenerRows(classifiedRows, input);
-  if (classifiedMatches.length > 0) return classifiedMatches;
-
-  const broadRows = broadRaw ? toScreenerRows(pick(broadRaw, "quotes") ?? pick(broadRaw, "data")) : [];
-  const broadMatches = filterScreenerRows(broadRows, input);
-  if (broadMatches.length > 0) return broadMatches;
+  const providerRows = await fetchProviderEquityRows(input);
+  if (providerRows.length > 0) return providerRows;
 
   return regionalFallback();
 }

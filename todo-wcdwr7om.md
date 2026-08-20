@@ -8,3 +8,9 @@
 - [x] Review the current README and latest application capabilities.
 - [x] Update README.md with current features, setup steps, environment guidance, and AI Analyst behavior.
 - [x] Validate the README update and save it in a checkpoint.
+- [x] Trace the shared preset-screener data flow used by dashboard movers and every screener page.
+- [x] Ensure each selected preset fetches and renders its own fresh provider-ranked stocks rather than reusing another preset’s result block.
+- [x] Add regression tests and verify distinct daily-gainer, daily-loser, most-active, and other preset results across affected views.
+- [x] Save a checkpoint for the fresh screener-data correction.
+- [x] Verify that India Equities returns current India-listed screener results after the fresh-data update.
+- [x] Make the India Equities page heading follow the selected market label.

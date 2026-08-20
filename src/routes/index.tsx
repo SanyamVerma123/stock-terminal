@@ -198,7 +198,7 @@ function Dashboard() {
       <div className="h-full overflow-y-auto px-6 py-6">
         <div className="mx-auto w-full max-w-6xl space-y-6">
           <h1 className="text-lg font-semibold tracking-tight text-foreground">
-            {saved?.name ?? PAGE_TITLES[page] ?? "Markets"}
+            {saved?.name ?? (page === "equities" ? `${cfg.label} Equities` : PAGE_TITLES[page]) ?? "Markets"}
           </h1>
           {inner}
         </div>

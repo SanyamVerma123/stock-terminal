@@ -126,6 +126,7 @@ function MoverCardDeck({ rows }: { rows: ScreenerRow[] }) {
 export function MoversView({ initialName = "day_gainers" }: { initialName?: string } = {}) {
   const listPresetsFn = useServerFn(listPredefinedScreeners);
   const runPresetFn = useServerFn(runPredefinedScreener);
+  const fastMoversFn = useServerFn(getFastMovers);
   const cfg = useMarketConfig();
   const [name, setName] = useState(initialName);
   const { data: listedPresets } = useQuery({
@@ -136,14 +137,40 @@ export function MoversView({ initialName = "day_gainers" }: { initialName?: stri
   const availablePresets = Array.from(
     new Set([...PRIMARY_MOVER_NAMES, ...(listedPresets ?? [])]),
   );
-  const { data, isLoading, isFetching } = useQuery({
-    queryKey: ["predefined-mover", name, cfg.region],
-    queryFn: () => runPresetFn({ data: { name, size: 25, region: cfg.region } }),
-    staleTime: 60_000,
-    refetchOnWindowFocus: false,
-    refetchInterval: PRIMARY_MOVER_NAMES.includes(name as (typeof PRIMARY_MOVER_NAMES)[number]) ? 30_000 : false,
+  const primaryName = PRIMARY_MOVER_NAMES.includes(name as (typeof PRIMARY_MOVER_NAMES)[number])
+    ? (name as (typeof PRIMARY_MOVER_NAMES)[number])
+    : null;
+  const {
+    data: fastMovers,
+    isLoading: loadingFastMovers,
+    isFetching: fetchingFastMovers,
+  } = useQuery({
+    queryKey: ["fresh-fast-movers", cfg.region, 25],
+    queryFn: () => fastMoversFn({ data: { size: 25, region: cfg.region } }),
+    enabled: primaryName !== null,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 30_000,
     refetchIntervalInBackground: false,
   });
+  const {
+    data: presetRows,
+    isLoading: loadingPreset,
+    isFetching: fetchingPreset,
+  } = useQuery({
+    queryKey: ["predefined-mover", name, cfg.region],
+    queryFn: () => runPresetFn({ data: { name, size: 25, region: cfg.region } }),
+    enabled: primaryName === null,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
+  });
+  const data = primaryName ? fastMovers?.[primaryName] : presetRows;
+  const isLoading = primaryName ? loadingFastMovers : loadingPreset;
+  const isFetching = primaryName ? fetchingFastMovers : fetchingPreset;
 
   return (
     <div className="space-y-4">
@@ -154,7 +181,7 @@ export function MoversView({ initialName = "day_gainers" }: { initialName?: stri
           </Chip>
         ))}
       </div>
-      <Panel title={name.replace(/_/g, " ")} subtitle="Provider-defined live market screener">
+      <Panel title={name.replace(/_/g, " ")} subtitle="Fresh provider-ranked market screener">
         {isLoading || isFetching || !data || data.length === 0 ? <DataLoading compact label={`Ranking ${name.replace(/_/g, " ")}`} detail="Retrieving the provider-defined live ranked universe and quote fields for this screener." /> : <MoverCardDeck rows={data} />}
       </Panel>
     </div>
@@ -232,7 +259,9 @@ export function SavedScreenerView({ screenerId, filters, name }: { screenerId: s
   const { data, isLoading } = useQuery({
     queryKey: ["saved-screen", JSON.stringify(params)],
     queryFn: () => runFn({ data: params }),
-    staleTime: 120_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
   return <div className="space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-card/55 p-4">
@@ -274,7 +303,9 @@ export function ProScreenerView() {
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["proscreen", runs, JSON.stringify(params)],
     queryFn: () => runFn({ data: params }),
-    staleTime: 120_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
   });
 
   const sectorOptions = Array.from(
@@ -521,7 +552,11 @@ export function EtfScreenerView() {
   const { data, isLoading } = useQuery({
     queryKey: ["etfscreen", region],
     queryFn: () => fn({ data: { region, size: 30 } }),
-    staleTime: 300_000,
+    staleTime: 0,
+    refetchOnMount: "always",
+    refetchOnWindowFocus: true,
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
   });
   return (
     <div className="space-y-4">
