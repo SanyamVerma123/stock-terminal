@@ -190,6 +190,51 @@
   color: var(--primary);
 }
 
+.financial-statement-tabs,
+.financial-period-toggle {
+  display: flex;
+  gap: 0.3rem;
+}
+
+.financial-statement-tabs {
+  margin-top: 0.85rem;
+  overflow-x: auto;
+  padding-bottom: 0.15rem;
+  scrollbar-width: none;
+}
+
+.financial-statement-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.financial-statement-tabs button,
+.financial-period-toggle button {
+  flex: 0 0 auto;
+  border: 1px solid color-mix(in oklab, var(--border) 82%, transparent);
+  border-radius: 999px;
+  padding: 0.38rem 0.72rem;
+  color: var(--muted-foreground);
+  background: color-mix(in oklab, var(--card) 86%, transparent);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.financial-statement-tabs button.is-active,
+.financial-period-toggle button.is-active {
+  border-color: color-mix(in oklab, var(--primary) 38%, var(--border));
+  color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 10%, transparent);
+}
+
+.financial-statement-tabs button:hover,
+.financial-period-toggle button:hover {
+  border-color: color-mix(in oklab, var(--primary) 28%, var(--border));
+  color: var(--primary);
+}
+
 .financial-statement-section {
   scroll-margin-top: 1rem;
 }
@@ -205,5 +250,17 @@
 
   .financial-analysis-header h2 {
     font-size: 1rem;
+  }
+
+  .financial-analysis-header {
+    flex-wrap: wrap;
+  }
+
+  .financial-period-toggle {
+    width: 100%;
+  }
+
+  .financial-period-toggle button {
+    flex: 1 1 0;
   }
 }

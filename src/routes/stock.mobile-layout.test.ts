@@ -33,19 +33,21 @@ describe("stock research mobile layout", () => {
     expect(pageSource).toContain('label="52W high / low"');
     expect(pageSource).toContain('label="Return on equity"');
     expect(pageSource).toContain("fundamentals-statement-context");
-    expect(pageSource).toContain("FinancialStatementSection");
+    expect(pageSource).toContain("FinancialStatementTable");
   });
 
-  it("renders all three financial statements with persistent navigation and live data queries", () => {
-    expect(pageSource).toContain('id="profit-loss"');
-    expect(pageSource).toContain('id="balance-sheet"');
-    expect(pageSource).toContain('id="cash-flow"');
+  it("switches one focused financial table between all three statements", () => {
+    expect(pageSource).toContain('const [statement, setStatement] = useState<"income" | "balance" | "cash">("income")');
+    expect(pageSource).toContain('role="tablist"');
+    expect(pageSource).toContain('aria-selected={statement === key}');
+    expect(pageSource).toContain("activeStatement");
     expect(pageSource).toContain("incomeFinancials");
     expect(pageSource).toContain("balanceFinancials");
     expect(pageSource).toContain("cashFinancials");
-    expect(pageSource).toContain("financial-analysis-nav");
-    expect(pageSource).not.toContain("setStatement");
-    expect(fundamentalsStyles).toContain(".financial-analysis-nav");
-    expect(fundamentalsStyles).toContain(".financial-frequency-toggle");
+    expect(pageSource).toContain('statement === "income" &&');
+    expect(pageSource).toContain('statement: "balance", quarterly: false');
+    expect(pageSource).toContain('statement: "cash", quarterly: false');
+    expect(fundamentalsStyles).toContain(".financial-statement-tabs");
+    expect(fundamentalsStyles).toContain(".financial-period-toggle");
   });
 });

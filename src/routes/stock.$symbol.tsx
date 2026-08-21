@@ -86,15 +86,13 @@ function FundamentalMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
-function FinancialStatementSection({
-  id,
+function FinancialStatementTable({
   title,
   description,
   statement,
   quarterly,
   currency,
 }: {
-  id: string;
   title: string;
   description: string;
   statement: StatementTable | undefined;
@@ -102,11 +100,11 @@ function FinancialStatementSection({
   currency: string | null | undefined;
 }) {
   return (
-    <section id={id} className="financial-statement-section research-sheet-card overflow-hidden rounded-2xl border border-border bg-card" aria-labelledby={`${id}-title`}>
+    <section className="financial-statement-section research-sheet-card overflow-hidden rounded-2xl border border-border bg-card" aria-label={`${title} financial statement`}>
       <div className="research-sheet-card-header flex items-center justify-between gap-3 border-b border-border px-4 py-3">
         <div>
           <p className="fundamentals-kicker">Financial statement</p>
-          <h3 id={`${id}-title`} className="mt-0.5 text-sm font-medium text-foreground">{title}</h3>
+          <h3 className="mt-0.5 text-lg font-semibold tracking-tight text-foreground">{title}</h3>
         </div>
         <span className="financial-statement-period">{quarterly ? "Quarterly" : "Annual"}</span>
       </div>
@@ -147,6 +145,7 @@ function FinancialStatementSection({
 function StockPage() {
   const { symbol } = Route.useParams();
   const [range, setRange] = useState<RangeKey>("6mo");
+  const [statement, setStatement] = useState<"income" | "balance" | "cash">("income");
   const [quarterly, setQuarterly] = useState(false);
   const { isWatched, toggleWatchlist } = useAppState();
 
@@ -194,13 +193,13 @@ function StockPage() {
     staleTime: 300_000,
   });
   const { data: balanceFinancials } = useQuery({
-    queryKey: ["financials", symbol, "balance", quarterly],
-    queryFn: () => finFn({ data: { symbol, statement: "balance", quarterly } }),
+    queryKey: ["financials", symbol, "balance", "annual"],
+    queryFn: () => finFn({ data: { symbol, statement: "balance", quarterly: false } }),
     staleTime: 300_000,
   });
   const { data: cashFinancials } = useQuery({
-    queryKey: ["financials", symbol, "cash", quarterly],
-    queryFn: () => finFn({ data: { symbol, statement: "cash", quarterly } }),
+    queryKey: ["financials", symbol, "cash", "annual"],
+    queryFn: () => finFn({ data: { symbol, statement: "cash", quarterly: false } }),
     staleTime: 300_000,
   });
   const { data: analyst } = useQuery({
@@ -241,6 +240,11 @@ function StockPage() {
     staleTime: 60_000,
   });
   const peerBenchmark = (peerQuotes ?? []).filter((quote) => quote.changePercent !== null).reduce((total, quote, _, all) => total + (quote.changePercent ?? 0) / Math.max(all.length, 1), 0);
+  const activeStatement = statement === "income"
+    ? { title: "Profit & Loss", description: "Revenue, expenses, operating performance, and net income", data: incomeFinancials, period: quarterly ? "Quarterly" : "Annual" }
+    : statement === "balance"
+      ? { title: "Balance Sheet", description: "Assets, liabilities, equity, and financial position", data: balanceFinancials, period: "Annual" }
+      : { title: "Cash Flow", description: "Operating, investing, financing, and net cash movement", data: cashFinancials, period: "Annual" };
 
   if (error) {
     return (
@@ -329,25 +333,23 @@ function StockPage() {
                 <div>
                   <p className="fundamentals-kicker">Complete financials</p>
                   <h2 id="financial-analysis-title" className="mt-0.5 text-lg font-semibold tracking-tight text-foreground">Financial statements</h2>
-                  <p className="mt-1 text-xs text-muted-foreground">Profit &amp; Loss, Balance Sheet, and Cash Flow—structured for period-by-period review.</p>
+                  <p className="mt-1 text-xs text-muted-foreground">Select one statement at a time for a focused period-by-period review.</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setQuarterly((value) => !value)}
-                  className="financial-frequency-toggle"
-                >
-                  {quarterly ? "Quarterly" : "Annual"}
-                </button>
+                {statement === "income" && (
+                  <div className="financial-period-toggle" aria-label="Profit and Loss period">
+                    <button type="button" onClick={() => setQuarterly(false)} className={cn(!quarterly && "is-active")}>Yearly</button>
+                    <button type="button" onClick={() => setQuarterly(true)} className={cn(quarterly && "is-active")}>Quarterly</button>
+                  </div>
+                )}
               </div>
-              <nav className="financial-analysis-nav" aria-label="Financial statement sections">
-                <a href="#profit-loss">Profit &amp; Loss</a>
-                <a href="#balance-sheet">Balance Sheet</a>
-                <a href="#cash-flow">Cash Flow</a>
-              </nav>
-              <div className="mt-4 space-y-4">
-                <FinancialStatementSection id="profit-loss" title="Profit &amp; Loss" description="Revenue, expenses, operating performance, and net income" statement={incomeFinancials} quarterly={quarterly} currency={q?.currency} />
-                <FinancialStatementSection id="balance-sheet" title="Balance Sheet" description="Assets, liabilities, equity, and financial position" statement={balanceFinancials} quarterly={quarterly} currency={q?.currency} />
-                <FinancialStatementSection id="cash-flow" title="Cash Flow" description="Operating, investing, financing, and net cash movement" statement={cashFinancials} quarterly={quarterly} currency={q?.currency} />
+              <div className="financial-statement-tabs" role="tablist" aria-label="Financial statement selector">
+                {(["income", "balance", "cash"] as const).map((key) => {
+                  const label = key === "income" ? "Profit & Loss" : key === "balance" ? "Balance Sheet" : "Cash Flow";
+                  return <button key={key} type="button" role="tab" aria-selected={statement === key} className={cn(statement === key && "is-active")} onClick={() => setStatement(key)}>{label}</button>;
+                })}
+              </div>
+              <div className="mt-4">
+                <FinancialStatementTable title={activeStatement.title} description={activeStatement.description} statement={activeStatement.data} quarterly={activeStatement.period === "Quarterly"} currency={q?.currency} />
               </div>
             </section>
 

@@ -47,11 +47,17 @@
   }
 
   .stock-price-chart {
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
+    overflow: hidden;
   }
 
   .stock-price-chart .recharts-responsive-container,
-  .stock-price-chart .recharts-wrapper {
+  .stock-price-chart .recharts-wrapper,
+  .stock-price-chart .recharts-surface {
+    width: 100% !important;
+    max-width: 100% !important;
     min-width: 0 !important;
   }
 
@@ -79,6 +85,11 @@
 
   .stock-data-scroll table {
     min-width: 640px;
+  }
+
+  .financial-statement-section .stock-data-scroll {
+    width: 100%;
+    max-width: 100%;
   }
 
   .stock-data-row-label {

@@ -70,3 +70,11 @@
 - [x] Record complete-statements verification: the 1280px view displays the Financial statements overview, the navigation links, and sequential Profit & Loss, Balance Sheet, and Cash Flow cards. The 375px view retains all three cards and their contained period-table scroll affordances without page-width overflow. TypeScript and 37 regression tests pass. Provider statement responses were unavailable during the live capture, so each section visibly reports its no-provider-data state.
 - [x] Confirm rendered three-statement captures: the reviewed 1280px image shows the annual toggle, three statement links, and independently labelled Profit & Loss, Balance Sheet, and Cash Flow cards; the reviewed 375px image keeps those same three sections and their swipe guidance within the page width.
 - [x] Save a checkpoint for the complete Screener-style financial-statements update.
+- [x] Review the existing stacked financial-statement implementation against the requested single-table Screener interaction.
+- [x] Replace stacked statement cards with a button-selected Profit & Loss, Balance Sheet, or Cash Flow table.
+- [x] Restrict yearly and quarterly controls to Profit & Loss and preserve annual balance-sheet and cash-flow tables.
+- [x] Refine the stock chart and selected financial table for a complete phone-sized view.
+- [x] Record interactive-layout review: the 1280px view presents the three statement buttons with Profit & Loss selected and its Yearly/Quarterly controls; the 375px view keeps the price chart, all period controls, the selected statement card, and table swipe guidance within the phone width. The screenshots show no provider statement data for the selected ticker, so live populated rows remain covered by the statement rendering and query tests.
+- [x] Run final validation for the interactive single-table financials update.
+- [x] Confirm the final 375px rendered review: the chart remains within its card, all price-range controls are visible, the Yearly/Quarterly selector appears only with Profit & Loss selected, and the focused table/card stays within the phone viewport with its own deliberate period-scroll affordance. TypeScript and all 37 regression tests pass.
+- [ ] Save a checkpoint for the interactive single-table financials update.
