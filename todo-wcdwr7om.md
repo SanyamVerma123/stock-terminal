@@ -123,4 +123,4 @@
 - [x] Preserve the full market-status pill at narrow phone widths by compacting the active theme label below 420px.
 - [x] Verify the clarified theme labels.
 - [x] Record theme-label review: the selected control displays System, Light, or Dark beside its icon on standard widths; below 420px it contracts to the icon so the US/IN switch and complete market-status pill remain within the header. Focused theme-control tests pass.
-- [ ] Save a checkpoint for the clarified theme labels.
+- [x] Save a checkpoint for the clarified theme labels.
