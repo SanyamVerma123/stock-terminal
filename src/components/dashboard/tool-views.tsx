@@ -720,8 +720,8 @@ export function SectorsView() {
   const [industry, setIndustry] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["sector", sector, cfg.id],
-    queryFn: () => overviewFn({ data: { sectorKey: sector, region: cfg.id } }),
+    queryKey: ["sector", sector, cfg.id, "detail-industry-coverage"],
+    queryFn: () => overviewFn({ data: { sectorKey: sector, region: cfg.id, detailIndustryCoverage: true } }),
     staleTime: 300_000,
     refetchOnWindowFocus: false,
     refetchInterval: 30_000,

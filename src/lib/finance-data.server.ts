@@ -1002,27 +1002,102 @@ export type TickerMeta = {
   currency: string | null;
 };
 
+type CachedClassifications = { expiresAt: number; pending: Promise<TickerMeta[]> };
+const sectorClassificationCache = new Map<string, CachedClassifications>();
+
+function sectorTableSymbols(table: GenericTable) {
+  const symbolColumn = firstMatchingColumn(table.columns, /symbol|ticker|code/i) ?? table.columns[0];
+  if (!symbolColumn) return [];
+  return [...new Set(table.rows.map((row) => row[symbolColumn]).filter((symbol): symbol is string => Boolean(symbol && symbol !== "—")))];
+}
+
+function providerWeight(value: string | undefined) {
+  if (!value || value === "—") return null;
+  const parsed = Number(value.replace(/[%,$₹\s,]/g, ""));
+  if (!Number.isFinite(parsed)) return null;
+  return parsed > 1 ? parsed / 100 : parsed;
+}
+
+/** Reconstructs a sector industry mix from classified provider constituents when its aggregate omits industries. */
+export function deriveIndustryCoverageFromClassifications(table: GenericTable, classifications: TickerMeta[]) {
+  const symbolColumn = firstMatchingColumn(table.columns, /symbol|ticker|code/i) ?? table.columns[0] ?? "Symbol";
+  const existingNameColumn = firstMatchingColumn(table.columns, /^name$|company.*name|name.*company/i);
+  const existingIndustryColumn = firstMatchingColumn(table.columns, /^industry$/i);
+  const weightColumn = firstMatchingColumn(table.columns, /market.*weight|weight.*market|^weight$/i);
+  const nameColumn = existingNameColumn ?? "Name";
+  const industryColumn = existingIndustryColumn ?? "Industry";
+  const columns = [...table.columns];
+  if (!columns.includes(nameColumn)) columns.splice(1, 0, nameColumn);
+  if (!columns.includes(industryColumn)) columns.push(industryColumn);
+  const bySymbol = new Map(classifications.map((item) => [safeSymbol(item.symbol), item]));
+  const grouped = new Map<string, { companies: number; weight: number }>();
+  const rows = table.rows.map((row) => {
+    const symbol = row[symbolColumn] ?? "";
+    const meta = bySymbol.get(safeSymbol(symbol));
+    const industry = meta?.industry || row[industryColumn] || "";
+    const next = {
+      ...row,
+      [nameColumn]: row[nameColumn] && row[nameColumn] !== "—" ? row[nameColumn] : meta?.name ?? displayNameForSymbol(symbol),
+      [industryColumn]: industry || "Unclassified",
+    };
+    if (industry) {
+      const previous = grouped.get(industry) ?? { companies: 0, weight: 0 };
+      grouped.set(industry, {
+        companies: previous.companies + 1,
+        weight: previous.weight + (providerWeight(weightColumn ? row[weightColumn] : undefined) ?? 0),
+      });
+    }
+    return next;
+  });
+  const totalWeight = [...grouped.values()].reduce((sum, item) => sum + item.weight, 0);
+  const industries = [...grouped.entries()]
+    .map(([industry, item]) => ({
+      Industry: industry,
+      Companies: String(item.companies),
+      "Tracked Share": `${((totalWeight > 0 ? item.weight / totalWeight : item.companies / Math.max(rows.length, 1)) * 100).toFixed(2)}%`,
+    }))
+    .sort((left, right) => Number(right["Tracked Share"].replace("%", "")) - Number(left["Tracked Share"].replace("%", "")));
+  return {
+    topCompanies: { columns, rows },
+    industries: { columns: ["Industry", "Companies", "Tracked Share"], rows: industries },
+  } satisfies { topCompanies: GenericTable; industries: GenericTable };
+}
+
+async function cachedSectorClassifications(region: string, sector: string, symbols: string[]) {
+  const key = `${region.toLowerCase()}:${sector}:${symbols.join(",")}`;
+  const existing = sectorClassificationCache.get(key);
+  if (existing && existing.expiresAt > Date.now()) return existing.pending;
+  const pending = resolveWithin(fetchClassify(symbols, 50), [], 20_000);
+  sectorClassificationCache.set(key, { expiresAt: Date.now() + 300_000, pending });
+  return pending;
+}
+
 /** Sector / industry classification used to auto-group the watchlist. */
-export async function fetchClassify(symbols: string[]): Promise<TickerMeta[]> {
-  const settled = await Promise.allSettled(
-    symbols.slice(0, 40).map(async (symbol) => {
-      const raw = await callMcpTool("get_company_info", { ticker: symbol });
-      const info = isRecord(pick(raw, "info"))
-        ? (pick(raw, "info") as Record<string, unknown>)
-        : {};
-      return {
-        symbol,
-        name: displayNameForSymbol(
+export async function fetchClassify(symbols: string[], limit = 40): Promise<TickerMeta[]> {
+  const selected = symbols.slice(0, limit);
+  const classified: TickerMeta[] = [];
+  for (let start = 0; start < selected.length; start += 8) {
+    const settled = await Promise.allSettled(
+      selected.slice(start, start + 8).map(async (symbol) => {
+        const raw = await callMcpTool("get_company_info", { ticker: symbol });
+        const info = isRecord(pick(raw, "info"))
+          ? (pick(raw, "info") as Record<string, unknown>)
+          : {};
+        return {
           symbol,
-          str(info["shortName"]) ?? str(info["longName"]) ?? str(info["displayName"]),
-        ),
-        sector: canonicalSectorKey(str(info["sector"]) ?? guessSector(symbol)) || "",
-        industry: canonicalIndustryKey(str(info["industry"]) ?? "") || "",
-        currency: str(info["currency"]),
-      } satisfies TickerMeta;
-    }),
-  );
-  return settled.flatMap((s) => (s.status === "fulfilled" ? [s.value] : []));
+          name: displayNameForSymbol(
+            symbol,
+            str(info["shortName"]) ?? str(info["longName"]) ?? str(info["displayName"]),
+          ),
+          sector: canonicalSectorKey(str(info["sector"]) ?? guessSector(symbol)) || "",
+          industry: canonicalIndustryKey(str(info["industry"]) ?? "") || "",
+          currency: str(info["currency"]),
+        } satisfies TickerMeta;
+      }),
+    );
+    classified.push(...settled.flatMap((result) => (result.status === "fulfilled" ? [result.value] : [])));
+  }
+  return classified;
 }
 
 function guessSector(symbol: string) {
@@ -1312,18 +1387,39 @@ async function fallbackSectorOverview(sectorKey: string, region: string): Promis
   };
 }
 
-export async function fetchSectorOverview(sectorKey: string, region = "US") {
+export async function fetchSectorOverview(
+  sectorKey: string,
+  region = "US",
+  options: { detailIndustryCoverage?: boolean } = {},
+) {
   const canonicalSector = canonicalSectorKey(sectorKey);
   const immediateFallback = immediateFallbackSectorOverview(canonicalSector, region);
+  const overviewTimeoutMs = options.detailIndustryCoverage ? 15_000 : 4_500;
   const raw = await resolveWithin(callMcpTool("get_sector_overview", {
     sector_key: providerTaxonomyLabel(canonicalSector, "sector"),
     region,
-  }).catch(() => null), null, 4_500);
+  }).catch(() => null), null, overviewTimeoutMs);
   const o = isRecord(pick(raw, "overview"))
     ? (pick(raw, "overview") as Record<string, unknown>)
     : {};
-  const providerTopCompanies = toGenericTable(pick(raw, "top_companies"), 100);
-  const providerIndustries = toGenericTable(pick(raw, "industries"), 100);
+  let providerTopCompanies = toGenericTable(pick(raw, "top_companies"), 100);
+  let providerIndustries = toGenericTable(pick(raw, "industries"), 100);
+  if (
+    options.detailIndustryCoverage &&
+    providerTopCompanies.rows.length > 0 &&
+    providerIndustries.rows.length === 0
+  ) {
+    const classifications = await cachedSectorClassifications(
+      region,
+      canonicalSector,
+      sectorTableSymbols(providerTopCompanies),
+    );
+    const derived = deriveIndustryCoverageFromClassifications(providerTopCompanies, classifications);
+    if (derived.industries.rows.length > 0) {
+      providerTopCompanies = derived.topCompanies;
+      providerIndustries = derived.industries;
+    }
+  }
   const fallbackNeeded = providerTopCompanies.rows.length === 0 || providerIndustries.rows.length === 0;
   const fallback = fallbackNeeded
     ? await resolveWithin(
@@ -1360,8 +1456,8 @@ export async function fetchSectorOverview(sectorKey: string, region = "US") {
         ? "Representative listed-company coverage is shown while the provider’s sector aggregate refreshes."
         : null),
     marketCap: num(o["market_cap"]) ?? fallback.marketCap,
-    companiesCount: providerCompaniesCount ?? fallback.companiesCount,
-    industriesCount: num(o["industries_count"]) ?? fallback.industriesCount,
+    companiesCount: providerCompaniesCount ?? (providerTopCompanies.rows.length || fallback.companiesCount),
+    industriesCount: Math.max(num(o["industries_count"]) ?? 0, industries.rows.length, fallback.industriesCount),
     employeeCount: num(o["employee_count"]),
     marketWeight: num(o["market_weight"]),
     source: usingTrackedFallback ? "tracked" : "provider",

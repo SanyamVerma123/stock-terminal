@@ -147,3 +147,5 @@
 - [x] Repair Industrial-sector data resolution in dashboard and Sector Intelligence views so loading completes with the same available coverage as the working Screener query.
 - [x] Confirm the live Industrials overview returns provider-ranked coverage, including 50 displayed companies, 25 industries, and a reported market capitalization after the request completes.
 - [x] Confirm the persistent dashboard resolves all 11 weighted sectors, including an Industrials tile with live capitalization and one-day direction.
+- [x] Expand Industrial dashboard and Sector Intelligence coverage beyond the reduced 4-company, 3-industry subset to the full provider-backed Screener result.
+- [x] Live-validate India Industrials after a fresh provider resolution: 50 provider-ranked companies and 15 classified industry groups render in Sector Intelligence.

@@ -162,8 +162,10 @@ export const getMarketStatus = createServerFn({ method: "GET" })
 export const listSectors = createServerFn({ method: "GET" }).handler(() => fetchSectors());
 
 export const getSectorOverview = createServerFn({ method: "GET" })
-  .inputValidator((d: { sectorKey: string; region?: string }) => d)
-  .handler(({ data }) => fetchSectorOverview(data.sectorKey, data.region ?? "US"));
+  .inputValidator((d: { sectorKey: string; region?: string; detailIndustryCoverage?: boolean }) => d)
+  .handler(({ data }) => fetchSectorOverview(data.sectorKey, data.region ?? "US", {
+    detailIndustryCoverage: data.detailIndustryCoverage ?? false,
+  }));
 
 export const getIndustryOverview = createServerFn({ method: "GET" })
   .inputValidator((d: { industryKey: string; region?: string }) => d)

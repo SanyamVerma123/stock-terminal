@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  deriveIndustryCoverageFromClassifications,
   filterMarketCalendar,
   overviewTableToScreenerRows,
   rankPredefinedScreenerRows,
@@ -55,6 +56,33 @@ describe("sector overview fallback resolution", () => {
     expect(resolved.needsFallback).toBe(true);
     expect(resolved.topCompanies.rows).toEqual([{ Symbol: "CAT" }]);
     expect(resolved.industries.rows).toEqual([{ Industry: "Aerospace & Defense" }]);
+  });
+});
+
+describe("derived sector industry coverage", () => {
+  it("reconstructs India industry composition from provider-ranked companies when the provider omits its industries array", () => {
+    const derived = deriveIndustryCoverageFromClassifications(
+      {
+        columns: ["symbol", "market weight"],
+        rows: [
+          { symbol: "LT.NS", "market weight": "0.08" },
+          { symbol: "ADANIPORTS.BO", "market weight": "0.06" },
+          { symbol: "HAL.BO", "market weight": "0.05" },
+          { symbol: "BEL.NS", "market weight": "0.04" },
+        ],
+      },
+      [
+        { symbol: "LT.NS", name: "Larsen & Toubro", sector: "industrials", industry: "engineering-construction", currency: "INR" },
+        { symbol: "ADANIPORTS.BO", name: "Adani Ports", sector: "industrials", industry: "marine-shipping", currency: "INR" },
+        { symbol: "HAL.BO", name: "Hindustan Aeronautics", sector: "industrials", industry: "aerospace-defense", currency: "INR" },
+        { symbol: "BEL.NS", name: "Bharat Electronics", sector: "industrials", industry: "aerospace-defense", currency: "INR" },
+      ],
+    );
+
+    expect(derived.topCompanies.rows).toHaveLength(4);
+    expect(derived.industries.rows).toHaveLength(3);
+    expect(derived.industries.rows[0]).toMatchObject({ Industry: "aerospace-defense", Companies: "2" });
+    expect(derived.topCompanies.rows[1]).toMatchObject({ Name: "Adani Ports", Industry: "marine-shipping" });
   });
 });
 
