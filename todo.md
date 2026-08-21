@@ -144,3 +144,6 @@
 - [x] Update agent.md with the current terminal interaction, responsive-layout, and validation conventions.
 - [x] Add the supplied animated AI working indicator at the start of each streaming analyst response and keep it moving with the response as text arrives.
 - [x] Keep the analyst conversation positioned on the active streamed response while preserving a user-controlled scroll position when reading older messages.
+- [x] Repair Industrial-sector data resolution in dashboard and Sector Intelligence views so loading completes with the same available coverage as the working Screener query.
+- [x] Confirm the live Industrials overview returns provider-ranked coverage, including 50 displayed companies, 25 industries, and a reported market capitalization after the request completes.
+- [x] Confirm the persistent dashboard resolves all 11 weighted sectors, including an Industrials tile with live capitalization and one-day direction.

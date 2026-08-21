@@ -1128,6 +1128,19 @@ type SectorFallback = {
   industries: GenericTable;
 };
 
+export function resolveSectorOverviewTables(
+  providerTopCompanies: GenericTable,
+  providerIndustries: GenericTable,
+  fallback: Pick<SectorFallback, "topCompanies" | "industries">,
+) {
+  const needsFallback = providerTopCompanies.rows.length === 0 || providerIndustries.rows.length === 0;
+  return {
+    needsFallback,
+    topCompanies: providerTopCompanies.rows.length > 0 ? providerTopCompanies : fallback.topCompanies,
+    industries: providerIndustries.rows.length > 0 ? providerIndustries : fallback.industries,
+  };
+}
+
 async function resolveWithin<T>(promise: Promise<T>, fallback: T, timeoutMs = 1_800): Promise<T> {
   let timeout: ReturnType<typeof setTimeout> | undefined;
   try {
@@ -1301,7 +1314,7 @@ async function fallbackSectorOverview(sectorKey: string, region: string): Promis
 
 export async function fetchSectorOverview(sectorKey: string, region = "US") {
   const canonicalSector = canonicalSectorKey(sectorKey);
-  const fallback = immediateFallbackSectorOverview(canonicalSector, region);
+  const immediateFallback = immediateFallbackSectorOverview(canonicalSector, region);
   const raw = await resolveWithin(callMcpTool("get_sector_overview", {
     sector_key: providerTaxonomyLabel(canonicalSector, "sector"),
     region,
@@ -1311,16 +1324,28 @@ export async function fetchSectorOverview(sectorKey: string, region = "US") {
     : {};
   const providerTopCompanies = toGenericTable(pick(raw, "top_companies"), 100);
   const providerIndustries = toGenericTable(pick(raw, "industries"), 100);
-  const needsFallback = providerTopCompanies.rows.length === 0 || providerIndustries.rows.length === 0;
+  const fallbackNeeded = providerTopCompanies.rows.length === 0 || providerIndustries.rows.length === 0;
+  const fallback = fallbackNeeded
+    ? await resolveWithin(
+      fallbackSectorOverview(canonicalSector, region).catch(() => immediateFallback),
+      immediateFallback,
+      7_500,
+    )
+    : immediateFallback;
+  const resolvedTables = resolveSectorOverviewTables(
+    providerTopCompanies,
+    providerIndustries,
+    fallback,
+  );
   const profiles = profilesForRegion(region).filter((profile) =>
     taxonomyMatches(profile.sector, canonicalSector, "sector"),
   );
   const topCompanies = enhanceCompanyTable(
-    providerTopCompanies.rows.length > 0 ? providerTopCompanies : fallback.topCompanies,
+    resolvedTables.topCompanies,
     profiles,
   );
-  const industries = providerIndustries.rows.length > 0 ? providerIndustries : fallback.industries;
-  const usingTrackedFallback = providerTopCompanies.rows.length === 0 || providerIndustries.rows.length === 0;
+  const industries = resolvedTables.industries;
+  const usingTrackedFallback = resolvedTables.needsFallback;
   const providerCompaniesCount = num(o["companies_count"]);
   const coverageStatus = usingTrackedFallback
     ? "representative"

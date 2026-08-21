@@ -3,6 +3,7 @@ import {
   filterMarketCalendar,
   overviewTableToScreenerRows,
   rankPredefinedScreenerRows,
+  resolveSectorOverviewTables,
 } from "./finance-data.server";
 
 describe("provider overview screener conversion", () => {
@@ -33,6 +34,27 @@ describe("provider overview screener conversion", () => {
       sector: "healthcare",
       industry: "pharmaceuticals",
     });
+  });
+});
+
+describe("sector overview fallback resolution", () => {
+  it("uses available tracked Industrial coverage when an incomplete provider overview would otherwise keep the sector unresolved", () => {
+    const fallback = {
+      topCompanies: { columns: ["Symbol"], rows: [{ Symbol: "CAT" }] },
+      industries: {
+        columns: ["Industry"],
+        rows: [{ Industry: "Farm & Heavy Construction Machinery" }],
+      },
+    };
+    const resolved = resolveSectorOverviewTables(
+      { columns: [], rows: [] },
+      { columns: ["Industry"], rows: [{ Industry: "Aerospace & Defense" }] },
+      fallback,
+    );
+
+    expect(resolved.needsFallback).toBe(true);
+    expect(resolved.topCompanies.rows).toEqual([{ Symbol: "CAT" }]);
+    expect(resolved.industries.rows).toEqual([{ Industry: "Aerospace & Defense" }]);
   });
 });
 

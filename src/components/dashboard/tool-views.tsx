@@ -731,8 +731,6 @@ export function SectorsView() {
     enabled: Boolean(industry),
     staleTime: 300_000,
   });
-  const isProviderSectorData = data?.source === "provider";
-  const isProviderIndustryData = ind?.source === "provider";
   const sectorSymbolColumn = data?.topCompanies.columns.find((column) => /symbol|ticker|code/i.test(column)) ?? "Symbol";
   const sectorSymbols = data?.topCompanies.rows
     .map((row) => row[sectorSymbolColumn])
@@ -815,7 +813,7 @@ export function SectorsView() {
         <div className="sector-hero-status"><span>{cfg.label}</span><b>{data?.source === "provider" ? "Provider-ranked" : "Representative coverage"}</b><small>{data?.coverageStatus ?? "Syncing coverage"}</small></div>
       </section>
 
-      {isProviderSectorData && data ? (
+      {data ? (
         <>
         <div className="sector-kpi-grid grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {[
@@ -884,7 +882,7 @@ export function SectorsView() {
       {industry && (
         <>
           <Panel title={`${readableIndustryLabel(industry)} — companies`}>
-            {isIndustryLoading || !isProviderIndustryData ? <DataLoading compact label="Loading company coverage" detail="Waiting for complete provider-ranked industry data." /> : <DataTable table={ind} empty="No matching company coverage returned for this industry." />}
+            {isIndustryLoading || !ind ? <DataLoading compact label="Loading company coverage" detail="Resolving available company coverage for the selected industry." /> : <DataTable table={ind} empty="No matching company coverage returned for this industry." />}
           </Panel>
         </>
       )}
@@ -915,7 +913,7 @@ export function SectorsView() {
       ) : null}
         </>
       ) : (
-        <DataLoading label="Loading sector coverage" detail={isLoading ? "Resolving live prices, market capitalization, industry composition, and listed companies for the selected sector." : "Waiting for the provider’s ranked sector coverage before showing company cards."} />
+        <DataLoading label="Loading sector coverage" detail={isLoading ? "Resolving live prices, market capitalization, industry composition, and listed companies for the selected sector." : "Refreshing the selected sector coverage."} />
       )}
     </div>
   );
