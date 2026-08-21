@@ -829,7 +829,7 @@ async function enrichOverviewScreenerRows(rowsToEnrich: ScreenerRow[]) {
   const quotes = await resolveWithin(
     fetchQuotes(rowsToEnrich.slice(0, 50).map((row) => row.symbol)),
     [],
-    2_000,
+    6_500,
   );
   const quoteBySymbol = new Map(quotes.map((quote) => [quote.symbol, quote]));
   return rowsToEnrich.map((row) => {
@@ -876,7 +876,7 @@ function screenerRequest(input: EquityScreenInput, includeClassification: boolea
   };
 }
 
-async function fetchProviderEquityRows(input: EquityScreenInput, timeoutMs = 3_000) {
+async function fetchProviderEquityRows(input: EquityScreenInput, timeoutMs = 6_500) {
   const [raw, broadRaw] = await Promise.all([
     resolveWithin(
       callMcpTool("screen_equities", screenerRequest(input, true)).catch(() => null),

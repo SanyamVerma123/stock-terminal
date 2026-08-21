@@ -28,6 +28,19 @@ describe("stock movement presentation", () => {
     expect(stockRouteSource).toContain("stockMovementClass(peer.changePercent)");
   });
 
+  it("enriches incomplete screener and sector card rows with provider quotes before applying their direction shade", () => {
+    expect(tableSource).toContain("screener-card-live-quotes");
+    expect(tableSource).toContain("stockMovementClass(quote.changePercent)");
+    expect(toolViewSource).toContain("industry-live-quotes");
+    expect(toolViewSource).toContain('quotes={sectorQuotes}');
+    expect(toolViewSource).toContain('quotes={industryQuotes}');
+  });
+
+  it("does not cap the resolved industry signal deck at an arbitrary short list", () => {
+    expect(toolViewSource).toContain("table.rows.map((row)");
+    expect(toolViewSource).not.toContain("table.rows.slice(0, 8)");
+  });
+
   it("makes System resolve to paper while preserving explicit Light and Dark options", () => {
     expect(appStateSource).toContain('theme === "system" ? "paper" : theme');
     expect(appStateSource).not.toContain("syncSystemTheme");

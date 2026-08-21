@@ -708,7 +708,7 @@ function SectorPulseVisual({ quotes }: { quotes: Quote[] }) {
 function IndustrySignalDeck({ table, selectedIndustry, onSelect }: { table: { columns: string[]; rows: Record<string, string>[] }; selectedIndustry: string | null; onSelect: (industry: string) => void }) {
   const label = table.columns[0] ?? "Industry";
   const share = table.columns.find((column) => /weight|share|market cap/i.test(column)) ?? table.columns[1] ?? "";
-  return <div className="industry-signal-deck">{table.rows.slice(0, 8).map((row) => { const industry = row[label] ?? "Industry"; return <button key={industry} type="button" onClick={() => onSelect(industry)} className={cn(selectedIndustry === industry && "is-active")}><span>{readableIndustryLabel(industry)}</span><b>{row[share] ?? "—"}</b><small>{selectedIndustry === industry ? "Open detail" : "Inspect industry"}</small></button>; })}</div>;
+  return <div className="industry-signal-deck">{table.rows.map((row) => { const industry = row[label] ?? "Industry"; return <button key={industry} type="button" onClick={() => onSelect(industry)} className={cn(selectedIndustry === industry && "is-active")}><span>{readableIndustryLabel(industry)}</span><b>{row[share] ?? "—"}</b><small>{selectedIndustry === industry ? "Open detail" : "Inspect industry"}</small></button>; })}</div>;
 }
 
 export function SectorsView() {
@@ -720,7 +720,7 @@ export function SectorsView() {
   const [industry, setIndustry] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ["sector", sector, cfg.id, "detail-industry-coverage"],
+    queryKey: ["sector", sector, cfg.id, "detail-industry-coverage-v2"],
     queryFn: () => overviewFn({ data: { sectorKey: sector, region: cfg.id, detailIndustryCoverage: true } }),
     staleTime: 300_000,
     refetchOnWindowFocus: false,
@@ -737,10 +737,22 @@ export function SectorsView() {
   const sectorSymbols = data?.topCompanies.rows
     .map((row) => row[sectorSymbolColumn])
     .filter((symbol): symbol is string => Boolean(symbol)) ?? [];
+  const industrySymbolColumn = ind?.columns.find((column) => /symbol|ticker|code/i.test(column)) ?? "Symbol";
+  const industrySymbols = ind?.rows
+    .map((row) => row[industrySymbolColumn])
+    .filter((symbol): symbol is string => Boolean(symbol)) ?? [];
   const { data: sectorQuotes, isLoading: isSectorQuotesLoading } = useQuery({
     queryKey: ["sector-live-quotes", cfg.id, sectorSymbols.join(",")],
     queryFn: () => quotesFn({ data: { symbols: sectorSymbols.join(",") } }),
     enabled: Boolean(sectorSymbols.length > 0),
+    staleTime: 30_000,
+    refetchInterval: 30_000,
+    refetchIntervalInBackground: false,
+  });
+  const { data: industryQuotes } = useQuery({
+    queryKey: ["industry-live-quotes", cfg.id, industrySymbols.join(",")],
+    queryFn: () => quotesFn({ data: { symbols: industrySymbols.join(",") } }),
+    enabled: Boolean(industrySymbols.length > 0),
     staleTime: 30_000,
     refetchInterval: 30_000,
     refetchIntervalInBackground: false,
@@ -752,7 +764,7 @@ export function SectorsView() {
   );
   const liveMarketCap = data?.marketCap ?? (totalTrackedMarketCap > 0 ? totalTrackedMarketCap : null);
   const liveCompanyTable = data ? {
-    columns: [...new Set([...data.topCompanies.columns, "Price", "Market Cap", "Market Weight"])],
+    columns: [...new Set([...data.topCompanies.columns, "Price", "Today", "Market Cap", "Market Weight"])],
     rows: data.topCompanies.rows.map((row) => {
       const quote: Quote | undefined = quoteBySymbol.get(row[sectorSymbolColumn] ?? "");
       const weight = quote?.marketCap && totalTrackedMarketCap > 0
@@ -763,6 +775,9 @@ export function SectorsView() {
         Price: quote?.price === null || quote?.price === undefined
           ? isSectorQuotesLoading ? "Syncing live quote" : "Live quote unavailable"
           : fmtPrice(quote.price, quote.currency),
+        Today: quote?.changePercent === null || quote?.changePercent === undefined
+          ? isSectorQuotesLoading ? "Syncing live quote" : "Live move unavailable"
+          : `${quote.changePercent >= 0 ? "+" : ""}${quote.changePercent.toFixed(2)}%`,
         "Market Cap": quote?.marketCap === null || quote?.marketCap === undefined
           ? isSectorQuotesLoading ? "Syncing live quote" : "Live quote unavailable"
           : fmtCompact(quote.marketCap),
@@ -884,7 +899,7 @@ export function SectorsView() {
       {industry && (
         <>
           <Panel title={`${readableIndustryLabel(industry)} — companies`}>
-            {isIndustryLoading || !ind ? <DataLoading compact label="Loading company coverage" detail="Resolving available company coverage for the selected industry." /> : <DataTable table={ind} empty="No matching company coverage returned for this industry." />}
+            {isIndustryLoading || !ind ? <DataLoading compact label="Loading company coverage" detail="Resolving available company coverage for the selected industry." /> : <DataTable table={ind} quotes={industryQuotes} empty="No matching company coverage returned for this industry." />}
           </Panel>
         </>
       )}
@@ -901,7 +916,7 @@ export function SectorsView() {
             : "All companies matched to the selected representative sector coverage."
         }
       >
-        <DataTable table={liveCompanyTable} empty="No matching company coverage returned for this sector." />
+        <DataTable table={liveCompanyTable} quotes={sectorQuotes} empty="No matching company coverage returned for this sector." />
       </Panel>
       {data?.industries.rows.length ? (
         <Panel title={`${sectorLabel(sector)} — industry directory`} subtitle="Industry coverage and its share of the selected sector only.">

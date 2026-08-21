@@ -84,6 +84,31 @@ describe("derived sector industry coverage", () => {
     expect(derived.industries.rows[0]).toMatchObject({ Industry: "aerospace-defense", Companies: "2" });
     expect(derived.topCompanies.rows[1]).toMatchObject({ Name: "Adani Ports", Industry: "marine-shipping" });
   });
+
+  it("retains all provider-ranked constituents and every classified industry in a full sector detail result", () => {
+    const industries = Array.from({ length: 15 }, (_, index) => `industrial-group-${index + 1}`);
+    const symbols = Array.from({ length: 50 }, (_, index) => `IND${index + 1}.NS`);
+    const derived = deriveIndustryCoverageFromClassifications(
+      {
+        columns: ["Symbol", "Market Weight"],
+        rows: symbols.map((symbol, index) => ({
+          Symbol: symbol,
+          "Market Weight": `${0.01 + index / 10_000}`,
+        })),
+      },
+      symbols.map((symbol, index) => ({
+        symbol,
+        name: `Industrial Company ${index + 1}`,
+        sector: "industrials",
+        industry: industries[index % industries.length]!,
+        currency: "INR",
+      })),
+    );
+
+    expect(derived.topCompanies.rows).toHaveLength(50);
+    expect(derived.industries.rows).toHaveLength(15);
+    expect(derived.industries.rows.reduce((count, row) => count + Number(row.Companies), 0)).toBe(50);
+  });
 });
 
 describe("economic event filters", () => {
