@@ -117,4 +117,4 @@
 - [x] Add focused theme-control regression coverage and validate TypeScript after the header update.
 - [x] Verify theme persistence and responsive header behavior.
 - [x] Record header-control review: desktop places the three-option system/light/dark selector at the top right directly before the US/IN switch and market-status pill. At 375px, the selector remains fully visible beside the market switch and compact Closed status with no page-width overflow; refresh is intentionally hidden at this breakpoint to preserve space. TypeScript and 48 regression tests pass.
-- [ ] Save a checkpoint for the theme and top-right market-status update.
+- [x] Save a checkpoint for the theme and top-right market-status update.
