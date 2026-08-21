@@ -1,0 +1,17 @@
+{
+  "name": "Insightful Search",
+  "short_name": "Insightful",
+  "description": "Live market intelligence, screeners, and company research.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0c1b19",
+  "theme_color": "#0c1b19",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}
