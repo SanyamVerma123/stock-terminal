@@ -318,6 +318,38 @@
   font-size: 11px;
 }
 
+.financial-line-label {
+  display: block;
+}
+
+.financial-parent-row > td {
+  color: var(--foreground);
+  font-weight: 650;
+}
+
+.financial-child-row > td {
+  background: color-mix(in oklab, var(--surface) 62%, var(--card));
+}
+
+.financial-child-label {
+  position: relative;
+  display: block;
+  padding-left: 0.95rem;
+  font-size: 12px;
+}
+
+.financial-child-label::before {
+  position: absolute;
+  top: 50%;
+  left: 0.15rem;
+  width: 0.45rem;
+  height: 0.45rem;
+  border-bottom: 1px solid color-mix(in oklab, var(--primary) 45%, var(--border));
+  border-left: 1px solid color-mix(in oklab, var(--primary) 45%, var(--border));
+  content: "";
+  transform: translateY(-75%);
+}
+
 .financial-line-detail {
   padding: 0.65rem 0.85rem 0.8rem;
 }

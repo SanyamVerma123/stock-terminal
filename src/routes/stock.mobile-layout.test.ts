@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const pageSource = readFileSync(new URL("./stock.$symbol.tsx", import.meta.url), "utf8");
 const mobileStyles = readFileSync(new URL("../stock-mobile.css", import.meta.url), "utf8");
 const fundamentalsStyles = readFileSync(new URL("../fundamentals.css", import.meta.url), "utf8");
+const hierarchySource = readFileSync(new URL("../lib/statement-hierarchy.ts", import.meta.url), "utf8");
 
 describe("stock research mobile layout", () => {
   it("uses a native responsive layout instead of a page zoom toggle", () => {
@@ -58,13 +59,14 @@ describe("stock research mobile layout", () => {
     expect(pageSource).toContain("Net income growth");
     expect(pageSource).toContain("financial-line-expand");
     expect(pageSource).toContain("aria-expanded={expanded}");
-    expect(pageSource).toContain("relatedStatementRows");
-    expect(pageSource).toContain("STATEMENT_BREAKDOWN_LABELS");
-    expect(pageSource).toContain("provider line-item breakdown");
+    expect(pageSource).toContain("buildStatementHierarchy");
+    expect(hierarchySource).toContain("STATEMENT_ACCOUNT_CHILDREN");
+    expect(pageSource).toContain("financial-child-row");
+    expect(pageSource).toContain("financial-child-label");
     expect(pageSource).toContain("FINANCIAL_VIEW_PREFERENCE_KEY");
     expect(pageSource).toContain('window.localStorage.setItem(FINANCIAL_VIEW_PREFERENCE_KEY');
     expect(fundamentalsStyles).toContain(".profit-loss-growth-summary");
     expect(fundamentalsStyles).toContain(".financial-line-detail");
-    expect(fundamentalsStyles).toContain(".financial-line-breakdown");
+    expect(fundamentalsStyles).toContain(".financial-child-row");
   });
 });

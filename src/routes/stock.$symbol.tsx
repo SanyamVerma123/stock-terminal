@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { createFileRoute } from "@tanstack/react-router";
+import { Fragment } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { SiteHeader } from "@/components/finance/SiteHeader";
@@ -19,6 +20,7 @@ import {
   getUpgrades,
 } from "@/lib/finance.functions";
 import { RANGES, type RangeKey, type StatementTable } from "@/lib/finance-types";
+import { buildStatementHierarchy, type FinancialStatementKey } from "@/lib/statement-hierarchy";
 import { fmtCompact, fmtDate, fmtNumber, fmtPercent, fmtPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { DataLoading } from "@/components/ui/loading-state";
@@ -86,7 +88,6 @@ function FundamentalMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
-type FinancialStatementKey = "income" | "balance" | "cash";
 type FinancialViewPreference = { statement: FinancialStatementKey; quarterly: boolean };
 
 const FINANCIAL_VIEW_PREFERENCE_KEY = "sc:financial-view-preference";
@@ -115,21 +116,6 @@ function calculateGrowth(row: StatementTable["rows"][number] | undefined) {
   const previous = row?.values[1];
   if (typeof current !== "number" || typeof previous !== "number" || previous === 0) return null;
   return (current - previous) / Math.abs(previous);
-}
-
-const STATEMENT_BREAKDOWN_LABELS: Record<string, string[]> = {
-  "Total Revenue": ["Cost Of Revenue", "Gross Profit"],
-  "Operating Income": ["Gross Profit", "Operating Expense", "Research And Development"],
-  "Net Income": ["Pretax Income", "Tax Provision"],
-  "Total Assets": ["Current Assets", "Cash And Cash Equivalents", "Inventory"],
-  "Total Liabilities Net Minority Interest": ["Current Liabilities", "Total Debt"],
-  "Operating Cash Flow": ["Depreciation And Amortization", "Change In Working Capital"],
-  "Free Cash Flow": ["Operating Cash Flow", "Capital Expenditure"],
-};
-
-function relatedStatementRows(statement: StatementTable | undefined, rowLabel: string) {
-  const labels = STATEMENT_BREAKDOWN_LABELS[rowLabel] ?? [];
-  return (statement?.rows ?? []).filter((row) => labels.includes(row.label));
 }
 
 function ProfitLossGrowthSummary({ statement, currency }: { statement: StatementTable | undefined; currency: string | null | undefined }) {
@@ -180,6 +166,7 @@ function FinancialStatementTable({
   expandedRows: Record<string, boolean>;
   onToggleRow: (rowLabel: string) => void;
 }) {
+  const hierarchy = buildStatementHierarchy(statement, statementKey);
   return (
     <section className="financial-statement-section research-sheet-card overflow-hidden rounded-2xl border border-border bg-card" aria-label={`${title} financial statement`}>
       <div className="research-sheet-card-header flex items-center justify-between gap-3 border-b border-border px-4 py-3">
@@ -205,48 +192,32 @@ function FinancialStatementTable({
               </tr>
             </thead>
             <tbody>
-              {(statement?.rows ?? []).map((row) => {
+              {hierarchy.map(({ row, children }) => {
                 const rowId = `${statementKey}:${row.label}`;
                 const expanded = expandedRows[rowId] === true;
-                const detailRows = relatedStatementRows(statement, row.label);
-                return <>
-                  <tr key={row.label} className="border-b border-border/60 last:border-0">
+                return <Fragment key={row.label}>
+                  <tr className={cn("border-b border-border/60 last:border-0", children.length > 0 && "financial-parent-row")}>
                     <td className="stock-data-row-label sticky left-0 z-10 bg-card py-2.5 pr-4 text-muted-foreground">
-                      <button type="button" className="financial-line-expand" aria-expanded={expanded} onClick={() => onToggleRow(row.label)}>
-                        <span aria-hidden="true">{expanded ? "−" : "+"}</span>
-                        {row.label}
-                      </button>
+                      {children.length > 0 ? (
+                        <button type="button" className="financial-line-expand" aria-expanded={expanded} onClick={() => onToggleRow(row.label)}>
+                          <span aria-hidden="true">{expanded ? "−" : "+"}</span>
+                          {row.label}
+                        </button>
+                      ) : <span className="financial-line-label">{row.label}</span>}
                     </td>
                     {row.values.map((value, index) => (
                       <td key={index} className="tabular py-2.5 pl-4 text-right text-foreground">{fmtCompact(value, currency)}</td>
                     ))}
                   </tr>
-                  {expanded && (
-                    <tr key={`${row.label}-detail`} className="financial-line-detail-row border-b border-border/60">
-                      <td colSpan={Math.max((statement?.columns.length ?? 0) + 1, 1)} className="bg-surface/60 p-0">
-                        <div className="financial-line-detail">
-                          <p>{detailRows.length ? `${row.label} provider line-item breakdown` : `${row.label} by reporting period`}</p>
-                          {detailRows.length ? (
-                            <div className="financial-line-breakdown">
-                              {detailRows.map((detailRow) => (
-                                <div key={detailRow.label} className="financial-line-breakdown-row">
-                                  <strong>{detailRow.label}</strong>
-                                  <span>{detailRow.values.map((value, index) => <b key={`${detailRow.label}-${index}`}>{fmtCompact(value, currency)}<small>{fmtDate(statement?.columns[index] ?? "")}</small></b>)}</span>
-                                </div>
-                              ))}
-                            </div>
-                          ) : (
-                            <div className="financial-line-periods">
-                              {row.values.map((value, index) => (
-                                <span key={`${row.label}-${index}`}><small>{fmtDate(statement?.columns[index] ?? "")}</small><b>{fmtCompact(value, currency)}</b></span>
-                              ))}
-                            </div>
-                          )}
-                        </div>
-                      </td>
+                  {expanded && children.map((child) => (
+                    <tr key={`${row.label}-${child.label}`} className="financial-child-row border-b border-border/50">
+                      <td className="stock-data-row-label sticky left-0 z-10 bg-card py-2 pl-4 pr-4 text-muted-foreground"><span className="financial-child-label">{child.label}</span></td>
+                      {child.values.map((value, index) => (
+                        <td key={`${child.label}-${index}`} className="tabular py-2 pl-4 text-right text-foreground">{fmtCompact(value, currency)}</td>
+                      ))}
                     </tr>
-                  )}
-                </>;
+                  ))}
+                </Fragment>;
               })}
             </tbody>
           </table>
