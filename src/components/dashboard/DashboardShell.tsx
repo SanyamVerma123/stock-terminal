@@ -26,9 +26,12 @@ import {
   Settings,
   SlidersHorizontal,
   Menu,
+  Monitor,
+  Moon,
   Sparkles,
   Sprout,
   Star,
+  Sun,
   Target,
   TrendingUp,
   Zap,
@@ -38,6 +41,7 @@ import { searchTickers } from "@/lib/finance.functions";
 import { useAppState, useMarketConfig } from "@/lib/app-state";
 import { MARKETS, type MarketId } from "@/lib/markets";
 import { cn } from "@/lib/utils";
+import "@/theme-controls.css";
 
 export type PageId = string;
 
@@ -136,6 +140,24 @@ function getMarketSessionStatus(market: MarketId) {
   const [openAt, closeAt] = market === "IN" ? [9 * 60 + 15, 15 * 60 + 30] : [9 * 60 + 30, 16 * 60];
   const isOpen = isWeekday && minutes >= openAt && minutes < closeAt;
   return { isOpen, label: isOpen ? "Market open" : "Market closed" };
+}
+
+function HeaderThemeSwitcher() {
+  const { theme, setTheme } = useAppState();
+  const options = [
+    { value: "system" as const, label: "Use system theme", icon: Monitor },
+    { value: "paper" as const, label: "Use light theme", icon: Sun },
+    { value: "terminal" as const, label: "Use dark theme", icon: Moon },
+  ];
+  return (
+    <div className="header-theme-switcher" role="radiogroup" aria-label="Color theme">
+      {options.map(({ value, label, icon: Icon }) => (
+        <button key={value} type="button" role="radio" aria-label={label} aria-checked={theme === value} onClick={() => setTheme(value)} className={cn(theme === value && "is-active")}>
+          <Icon className="h-3.5 w-3.5" />
+        </button>
+      ))}
+    </div>
+  );
 }
 
 function collectTitles(groups: NavGroup[]) {
@@ -484,7 +506,9 @@ export function DashboardShell({
               ⌘K
             </kbd>
           </button>
-          <div className="terminal-market-switch flex shrink-0 items-center gap-0.5 rounded-xl border border-border/60 bg-transparent p-1 sm:gap-1">
+          <div className="terminal-header-controls ml-1 flex shrink-0 items-center gap-1.5 sm:gap-2">
+          <HeaderThemeSwitcher />
+          <div className="terminal-market-switch flex items-center gap-0.5 rounded-xl border border-border/60 bg-transparent p-1 sm:gap-1">
             {(Object.keys(MARKETS) as MarketId[]).map((id) => (
               <button key={id} type="button" onClick={() => setMarket(id)} className={cn("rounded-md px-1.5 py-1 text-[10px] transition-colors sm:px-2.5 sm:text-[11px]", market === id ? "bg-primary/15 font-medium text-primary" : "text-muted-foreground hover:bg-primary/5 hover:text-foreground")}>
                 {MARKETS[id].short}
@@ -494,7 +518,7 @@ export function DashboardShell({
           <button
             type="button"
             onClick={onRefresh}
-            className="shrink-0 rounded-xl p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+            className="hidden shrink-0 rounded-xl p-2 text-muted-foreground transition-colors hover:bg-accent hover:text-foreground sm:inline-flex"
             title="Refresh live data"
           >
             <RefreshCw className="h-4 w-4" />
@@ -503,6 +527,7 @@ export function DashboardShell({
             <span className={cn("h-1.5 w-1.5 rounded-full", marketSession.isOpen ? "bg-positive" : "bg-negative")} aria-hidden="true" />
             <span className="sm:hidden">{marketSession.isOpen ? "Open" : "Closed"}</span><span className="hidden sm:inline">{marketSession.label}</span>
           </span>
+          </div>
         </header>
 
         <main className="min-h-0 flex-1 overflow-hidden">{children}</main>

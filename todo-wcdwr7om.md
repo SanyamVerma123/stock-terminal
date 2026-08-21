@@ -111,3 +111,10 @@
 - [x] Add focused tests and verify desktop and mobile visual analytics.
 - [x] Record visual analytics verification: desktop places the three-panel Performance, cash, and composition surface directly after Financial Statements, while the 375px stock view stacks the cards inside the page width. The dedicated sector workspace was opened through its own navigation and displays a distinct Sector intelligence lab, sector selector, and coverage-safe loading state. TypeScript, 44 regression tests, and a production build pass. Provider statement and sector constituent payloads were unavailable during captures, so charts correctly state their data prerequisites rather than inventing values.
 - [x] Save a checkpoint for the professional stock and sector visual analytics expansion.
+- [x] Inspect the existing header controls, theme state, and current market-status placement.
+- [x] Add an accessible top-right light, dark, and system theme switcher with persisted preference.
+- [x] Move and refine the market-open or market-closed indicator in the top-right header control area.
+- [x] Add focused theme-control regression coverage and validate TypeScript after the header update.
+- [x] Verify theme persistence and responsive header behavior.
+- [x] Record header-control review: desktop places the three-option system/light/dark selector at the top right directly before the US/IN switch and market-status pill. At 375px, the selector remains fully visible beside the market switch and compact Closed status with no page-width overflow; refresh is intentionally hidden at this breakpoint to preserve space. TypeScript and 48 regression tests pass.
+- [ ] Save a checkpoint for the theme and top-right market-status update.

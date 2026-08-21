@@ -8,7 +8,7 @@ export type CloudSyncState = {
   screenerAlertRules?: unknown[];
   screenerNotifications?: unknown[];
   refreshSeconds?: number;
-  theme?: "terminal" | "light" | "paper" | "neuborder";
+  theme?: "terminal" | "light" | "paper" | "neuborder" | "system";
   aiPreferences?: {
     preferredModel?: string;
     customModels?: unknown[];
@@ -33,7 +33,7 @@ export function sanitizeCloudSyncState(input: unknown): CloudSyncState {
   const assetClass = ["equities", "etfs", "crypto", "forex"].includes(String(value["assetClass"]))
     ? (value["assetClass"] as CloudSyncState["assetClass"])
     : undefined;
-  const theme = ["terminal", "light", "paper", "neuborder"].includes(String(value["theme"]))
+  const theme = ["terminal", "light", "paper", "neuborder", "system"].includes(String(value["theme"]))
     ? (value["theme"] as CloudSyncState["theme"])
     : undefined;
   const refreshSeconds =
