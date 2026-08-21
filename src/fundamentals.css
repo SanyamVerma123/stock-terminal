@@ -1,0 +1,129 @@
+.fundamentals-card {
+  background: linear-gradient(145deg, color-mix(in oklab, var(--primary) 3%, var(--card)), var(--card) 38%) !important;
+}
+
+.fundamentals-kicker,
+.fundamentals-statement-context,
+.fundamental-metric-label {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.fundamentals-status {
+  border: 1px solid color-mix(in oklab, var(--positive) 26%, var(--border));
+  border-radius: 999px;
+  padding: 3px 7px;
+  color: var(--positive);
+  background: color-mix(in oklab, var(--positive) 7%, transparent);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fundamentals-grid {
+  display: grid;
+  width: 100%;
+  max-width: 100%;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+}
+
+.fundamental-metric {
+  min-width: 0;
+  padding: 0.8rem 1rem;
+  border-right: 1px solid color-mix(in oklab, var(--border) 74%, transparent);
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 74%, transparent);
+}
+
+.fundamental-metric:nth-child(3n) {
+  border-right: 1px solid color-mix(in oklab, var(--border) 74%, transparent);
+}
+
+.fundamental-metric:nth-child(2n) {
+  border-right: 0;
+}
+
+.fundamental-metric-label,
+.fundamental-metric-value {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fundamental-metric-value {
+  overflow: hidden;
+  margin-top: 0.35rem;
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fundamentals-context {
+  padding: 0.9rem 1rem 1rem;
+}
+
+.fundamentals-sector {
+  color: var(--primary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.fundamentals-summary {
+  margin-top: 0.45rem;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  line-height: 1.55;
+}
+
+.fundamentals-statement-context {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+  padding: 0 0 0.7rem;
+}
+
+@media (min-width: 641px) {
+  .fundamentals-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .fundamentals-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .fundamental-metric:nth-child(2n) {
+    border-right: 1px solid color-mix(in oklab, var(--border) 74%, transparent);
+  }
+
+  .fundamental-metric:nth-child(3n) {
+    border-right: 0;
+  }
+}
+
+@media (max-width: 640px) {
+  .fundamentals-grid {
+    grid-template-columns: minmax(0, 1fr) !important;
+  }
+
+  .fundamental-metric {
+    padding: 0.7rem 0.75rem;
+    border-right: 0 !important;
+  }
+
+  .fundamentals-statement-context {
+    padding: 0 0 0.6rem;
+    font-size: 8px;
+  }
+}

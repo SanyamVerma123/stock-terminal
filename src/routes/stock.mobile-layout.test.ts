@@ -25,4 +25,13 @@ describe("stock research mobile layout", () => {
     expect(mobileStyles).toContain(".stock-research-main");
     expect(mobileStyles).toContain(".stock-price-chart .recharts-responsive-container");
   });
+
+  it("uses a structured Screener-inspired fundamentals snapshot above detailed statements", () => {
+    expect(pageSource).toContain("fundamentals-grid");
+    expect(pageSource).toContain('label="Market cap"');
+    expect(pageSource).toContain('label="52W high / low"');
+    expect(pageSource).toContain('label="Return on equity"');
+    expect(pageSource).toContain("fundamentals-statement-context");
+    expect(pageSource).toContain("Annual financial statement");
+  });
 });

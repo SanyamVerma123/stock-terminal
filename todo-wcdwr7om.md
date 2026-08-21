@@ -56,3 +56,10 @@
 - [x] Correct confirmed narrow-phone overflow and validate the revised stock-page view.
 - [x] Record narrow-phone verification: at 320px, the compact shared header, all stock-page cards, the price-range strip, long peer copy, and live event data remain inside the visible width; wide datasets remain intentionally contained within their dedicated scroll regions.
 - [x] Save a checkpoint for the confirmed narrow-phone stock-page correction.
+- [x] Research the referenced Screener-style fundamentals hierarchy and compare it with the current stock-page data model.
+- [x] Record Screener-style reference findings: a compact key-ratio grid leads into distinct Profit & Loss, Balance Sheet, and Cash Flow statement sections; each statement uses an explicit period header, a fixed first line-item column, horizontally readable period values, and supplemental growth/return context beneath the statement.
+- [x] Redesign the stock-page fundamentals into a Screener-inspired, data-dense financial overview without changing live data sources.
+- [x] Preserve mobile-fit table behavior and validate the revised fundamentals layout.
+- [x] Record fundamentals verification: desktop presents a three-column key-ratio grid alongside the existing statement table; phone presents every fundamental metric in one readable column with no clipped cells; existing table headers and contained horizontal scrolling are unchanged. TypeScript and 36 regression tests pass. Provider responses were unavailable during capture, so the live-data grid rendered its explicit unavailable-value state.
+- [x] Confirm rendered fundamentals captures: the 1280px view shows the three-column Fundamental snapshot aligned beside Financials, while the 375px view shows all twelve metrics in one unclipped column before Industry peers. The explicit unavailable-value state and Financials Line item header are visible in both captures.
+- [ ] Save a checkpoint for the Screener-inspired fundamentals revision.

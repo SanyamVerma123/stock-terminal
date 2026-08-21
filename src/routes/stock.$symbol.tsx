@@ -28,6 +28,7 @@ import { Star } from "lucide-react";
 import { NewsTimeline } from "@/components/research/NewsTimeline";
 import { ResearchWithAIButton } from "@/components/research/ResearchWithAIButton";
 import "@/stock-mobile.css";
+import "@/fundamentals.css";
 
 export const Route = createFileRoute("/stock/$symbol")({
   head: ({ params }) => ({
@@ -72,6 +73,15 @@ function Stat({ label, value }: { label: string; value: string }) {
     <div className="research-metric rounded-xl border border-border bg-surface px-3 py-2.5">
       <p className="research-metric-label text-[11px] uppercase tracking-wider text-muted-foreground">{label}</p>
       <p className="tabular mt-0.5 text-sm font-medium text-foreground">{value}</p>
+    </div>
+  );
+}
+
+function FundamentalMetric({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="fundamental-metric">
+      <span className="fundamental-metric-label">{label}</span>
+      <strong className="fundamental-metric-value">{value}</strong>
     </div>
   );
 }
@@ -276,6 +286,10 @@ function StockPage() {
                 </div>
               }
             >
+              <div className="fundamentals-statement-context">
+                <span>{quarterly ? "Quarterly financial statement" : "Annual financial statement"}</span>
+                <span>{q?.currency === "INR" ? "Reported in Indian rupees" : "Provider-reported figures"}</span>
+              </div>
               <div className="stock-data-scroll -mx-4 px-4" role="region" aria-label="Financial statement data" tabIndex={0}>
                 <table className="w-full min-w-[640px] border-collapse text-sm">
                   <thead>
@@ -376,32 +390,35 @@ function StockPage() {
           </div>
 
           <div className="space-y-6">
-            <Card title="Key ratios">
-              <div className="grid grid-cols-2 gap-2">
-                <Stat label="Market cap" value={fmtCompact(q?.marketCap, q?.currency)} />
-                <Stat label="P/E (TTM)" value={fmtNumber(r?.trailingPE)} />
-                <Stat label="Forward P/E" value={fmtNumber(r?.forwardPE)} />
-                <Stat label="P/B" value={fmtNumber(r?.priceToBook)} />
-                <Stat label="EV/EBITDA" value={fmtNumber(r?.enterpriseToEbitda)} />
-                <Stat label="ROE" value={fmtPercent(r?.returnOnEquity)} />
-                <Stat label="Profit margin" value={fmtPercent(r?.profitMargins)} />
-                <Stat label="Rev growth" value={fmtPercent(r?.revenueGrowth)} />
-                <Stat label="Debt/Equity" value={fmtNumber(r?.debtToEquity)} />
-                <Stat label="Dividend yield" value={fmtPercent(r?.dividendYield)} />
-                <Stat label="Beta" value={fmtNumber(r?.beta)} />
-                <Stat label="Rating" value={r?.recommendationKey ?? "—"} />
+            <section className="fundamentals-card research-sheet-card overflow-hidden rounded-2xl border border-border bg-card" aria-labelledby="fundamentals-title">
+              <div className="research-sheet-card-header flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+                <div>
+                  <p className="fundamentals-kicker">Fundamental snapshot</p>
+                  <h2 id="fundamentals-title" className="mt-0.5 text-sm font-medium text-foreground">Key ratios</h2>
+                </div>
+                <span className="fundamentals-status">Live data</span>
               </div>
-              {r?.summary && (
-                <p className="mt-4 line-clamp-6 text-sm leading-relaxed text-muted-foreground">
-                  {r.summary}
-                </p>
+              <div className="fundamentals-grid">
+                <FundamentalMetric label="Market cap" value={fmtCompact(q?.marketCap, q?.currency)} />
+                <FundamentalMetric label="Current price" value={fmtPrice(q?.price, q?.currency)} />
+                <FundamentalMetric label="52W high / low" value={`${fmtPrice(q?.yearHigh, q?.currency)} / ${fmtPrice(q?.yearLow, q?.currency)}`} />
+                <FundamentalMetric label="Stock P/E" value={fmtNumber(r?.trailingPE)} />
+                <FundamentalMetric label="Forward P/E" value={fmtNumber(r?.forwardPE)} />
+                <FundamentalMetric label="Price / book" value={fmtNumber(r?.priceToBook)} />
+                <FundamentalMetric label="EV / EBITDA" value={fmtNumber(r?.enterpriseToEbitda)} />
+                <FundamentalMetric label="Dividend yield" value={fmtPercent(r?.dividendYield)} />
+                <FundamentalMetric label="Return on equity" value={fmtPercent(r?.returnOnEquity)} />
+                <FundamentalMetric label="Profit margin" value={fmtPercent(r?.profitMargins)} />
+                <FundamentalMetric label="Revenue growth" value={fmtPercent(r?.revenueGrowth)} />
+                <FundamentalMetric label="Debt / equity" value={fmtNumber(r?.debtToEquity)} />
+              </div>
+              {(r?.sector || r?.industry || r?.summary) && (
+                <div className="fundamentals-context">
+                  {(r?.sector || r?.industry) && <p className="fundamentals-sector">{r?.sector} {r?.industry ? `· ${r.industry}` : ""}</p>}
+                  {r?.summary && <p className="fundamentals-summary line-clamp-4">{r.summary}</p>}
+                </div>
               )}
-              {(r?.sector || r?.industry) && (
-                <p className="mt-3 text-xs text-muted-foreground">
-                  {r?.sector} {r?.industry ? `· ${r.industry}` : ""}
-                </p>
-              )}
-            </Card>
+            </section>
 
             <Card title="Industry peers">
               <p className="text-xs text-muted-foreground">{r?.industry ?? "Industry classification loading"} · equal-weight 1D peer benchmark</p>
