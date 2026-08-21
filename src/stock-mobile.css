@@ -84,6 +84,26 @@
     min-width: 0 !important;
   }
 
+  .stock-price-chart .recharts-tooltip-wrapper {
+    max-width: calc(100% - 12px) !important;
+  }
+
+  .stock-close-tooltip {
+    width: min(132px, calc(100vw - 56px));
+    min-width: 0;
+    padding: 7px 8px;
+  }
+
+  .stock-close-tooltip b {
+    gap: 6px;
+  }
+
+  .stock-close-tooltip p {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .stock-chart-meta {
     gap: 0.5rem;
   }

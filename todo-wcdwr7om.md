@@ -144,3 +144,12 @@
 - [x] Keep the mobile stock research page within the viewport, retaining horizontal scrolling only inside explicit data regions.
 - [x] Validate the corrected phone layouts and publish the responsive fixes.
 - [x] Record mobile-layout verification: small weighted map cells now use compact sector labels or a directional glyph, while retaining full accessible labels; their text is clipped to the tile boundary rather than overprinting neighbors. The 375px live AAPL stock page displays the symbol, metrics, chart, price range, financial controls, and content inside the viewport; wide tables retain their own contained scrolling. Strict TypeScript and all 59 regression tests pass.
+- [x] Inspect the user-provided full-length mobile stock-page capture at readable scale and identify only confirmed layout defects.
+- [x] Correct any confirmed remaining mobile layout defects without changing intentional contained table scrolling.
+- [x] Validate the full phone flow and publish the refinement if a correction is necessary.
+- [x] Inspect the stock research page’s full-page mobile scaling; the 76px-wide long image was capture compression rather than a reproducible page-scale defect at 320px or 375px.
+- [x] Inspect the confirmed mobile chart-tooltip and Financial Statements header/control overflow shown in the supplied WIPRO capture.
+- [x] Keep chart tooltips and the Financial Statements header/period controls fully inside the phone viewport.
+- [x] Validate the repaired mobile stock-page interaction and publish the correction.
+- [x] Capture finding: the chart tooltip opens beyond the right boundary at 360px. The Financial Statements description and the Yearly/Quarterly control row also extend beyond the visible right edge; the detailed statement table itself remains an intentional contained sideways-scroll region.
+- [x] Final validation: Recharts now reverses and constrains tooltip positioning within the chart view box, using a compact mobile tooltip surface. Financial Statements heading copy wraps inside the module and the Yearly/Quarterly selector is intrinsically two-column with explicit viewport bounds. Strict TypeScript and all 59 regression tests pass.

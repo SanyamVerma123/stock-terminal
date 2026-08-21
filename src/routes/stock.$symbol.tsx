@@ -435,7 +435,7 @@ function StockPage() {
                 <div>
                   <p className="fundamentals-kicker">Complete financials</p>
                   <h2 id="financial-analysis-title" className="mt-0.5 text-lg font-semibold tracking-tight text-foreground">Financial statements</h2>
-                  <p className="mt-1 text-xs text-muted-foreground">Select one statement at a time for a focused period-by-period review.</p>
+                  <p className="mt-1 max-w-full text-xs text-muted-foreground" style={{ overflowWrap: "anywhere", whiteSpace: "normal" }}>Select one statement at a time for a focused period-by-period review.</p>
                 </div>
                 {statement === "income" && (
                   <div className="financial-period-toggle" aria-label="Profit and Loss period">

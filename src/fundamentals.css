@@ -196,6 +196,14 @@
   gap: 0.3rem;
 }
 
+.financial-period-toggle {
+  display: grid;
+  width: 100%;
+  max-width: 13rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  overflow: hidden;
+}
+
 .financial-statement-tabs {
   margin-top: 0.85rem;
   overflow-x: auto;
@@ -220,6 +228,14 @@
   font-weight: 700;
   letter-spacing: 0.04em;
   transition: background-color 160ms ease, border-color 160ms ease, color 160ms ease;
+}
+
+.financial-period-toggle button {
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .financial-statement-tabs button.is-active,
@@ -454,10 +470,21 @@
 @media (max-width: 640px) {
   .financial-analysis-header {
     align-items: flex-start;
+    display: block;
+    width: 100%;
+    max-width: 100%;
+    overflow-x: clip;
   }
 
-  .financial-analysis-header > div {
+  .financial-analysis-header > div:first-child {
+    display: block;
+    width: 100%;
+    max-width: 100%;
     min-width: 0;
+  }
+
+  .financial-analysis-header > div:first-child > p {
+    overflow-wrap: anywhere;
   }
 
   .financial-analysis-header h2 {
@@ -470,6 +497,7 @@
 
   .financial-period-toggle {
     display: grid;
+    margin-top: 0.7rem;
     max-width: 100%;
     width: 100%;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -481,6 +509,31 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .financial-analysis .financial-analysis-header {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: clip !important;
+  }
+
+  .financial-analysis .financial-analysis-header > div:first-child {
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .financial-analysis .financial-period-toggle {
+    display: grid !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+    overflow: hidden !important;
+  }
+
+  .financial-analysis .financial-period-toggle button {
+    width: 100% !important;
+    min-width: 0 !important;
   }
 
   .profit-loss-growth-grid {

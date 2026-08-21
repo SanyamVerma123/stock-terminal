@@ -5,6 +5,7 @@ const pageSource = readFileSync(new URL("./stock.$symbol.tsx", import.meta.url),
 const mobileStyles = readFileSync(new URL("../stock-mobile.css", import.meta.url), "utf8");
 const fundamentalsStyles = readFileSync(new URL("../fundamentals.css", import.meta.url), "utf8");
 const hierarchySource = readFileSync(new URL("../lib/statement-hierarchy.ts", import.meta.url), "utf8");
+const chartSource = readFileSync(new URL("../components/finance/StockPriceChart.tsx", import.meta.url), "utf8");
 
 describe("stock research mobile layout", () => {
   it("uses a native responsive layout instead of a page zoom toggle", () => {
@@ -31,6 +32,13 @@ describe("stock research mobile layout", () => {
     expect(mobileStyles).toContain("margin-right: 0 !important");
     expect(mobileStyles).toContain(".financial-statement-tabs");
     expect(fundamentalsStyles).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
+    expect(fundamentalsStyles).toContain("overflow-x: clip");
+    expect(fundamentalsStyles).toContain("display: grid !important");
+    expect(fundamentalsStyles).toContain("grid-template-columns: repeat(2, minmax(0, 1fr)) !important");
+    expect(fundamentalsStyles).toContain("max-width: 13rem");
+    expect(chartSource).toContain("allowEscapeViewBox={{ x: false, y: false }}");
+    expect(chartSource).toContain("reverseDirection={{ x: true, y: true }}");
+    expect(mobileStyles).toContain(".stock-price-chart .recharts-tooltip-wrapper");
   });
 
   it("uses a structured Screener-inspired fundamentals snapshot above detailed statements", () => {
