@@ -86,18 +86,99 @@ function FundamentalMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
+type FinancialStatementKey = "income" | "balance" | "cash";
+type FinancialViewPreference = { statement: FinancialStatementKey; quarterly: boolean };
+
+const FINANCIAL_VIEW_PREFERENCE_KEY = "sc:financial-view-preference";
+
+function readFinancialViewPreference(): FinancialViewPreference {
+  if (typeof window === "undefined") return { statement: "income", quarterly: false };
+  try {
+    const raw = window.localStorage.getItem(FINANCIAL_VIEW_PREFERENCE_KEY);
+    if (!raw) return { statement: "income", quarterly: false };
+    const value = JSON.parse(raw) as Partial<FinancialViewPreference>;
+    return {
+      statement: value.statement === "balance" || value.statement === "cash" ? value.statement : "income",
+      quarterly: value.quarterly === true,
+    };
+  } catch {
+    return { statement: "income", quarterly: false };
+  }
+}
+
+function findStatementRow(statement: StatementTable | undefined, labels: string[]) {
+  return statement?.rows.find((row) => labels.some((label) => row.label.toLowerCase() === label.toLowerCase()));
+}
+
+function calculateGrowth(row: StatementTable["rows"][number] | undefined) {
+  const current = row?.values[0];
+  const previous = row?.values[1];
+  if (typeof current !== "number" || typeof previous !== "number" || previous === 0) return null;
+  return (current - previous) / Math.abs(previous);
+}
+
+const STATEMENT_BREAKDOWN_LABELS: Record<string, string[]> = {
+  "Total Revenue": ["Cost Of Revenue", "Gross Profit"],
+  "Operating Income": ["Gross Profit", "Operating Expense", "Research And Development"],
+  "Net Income": ["Pretax Income", "Tax Provision"],
+  "Total Assets": ["Current Assets", "Cash And Cash Equivalents", "Inventory"],
+  "Total Liabilities Net Minority Interest": ["Current Liabilities", "Total Debt"],
+  "Operating Cash Flow": ["Depreciation And Amortization", "Change In Working Capital"],
+  "Free Cash Flow": ["Operating Cash Flow", "Capital Expenditure"],
+};
+
+function relatedStatementRows(statement: StatementTable | undefined, rowLabel: string) {
+  const labels = STATEMENT_BREAKDOWN_LABELS[rowLabel] ?? [];
+  return (statement?.rows ?? []).filter((row) => labels.includes(row.label));
+}
+
+function ProfitLossGrowthSummary({ statement, currency }: { statement: StatementTable | undefined; currency: string | null | undefined }) {
+  const metrics = [
+    { label: "Revenue growth", row: findStatementRow(statement, ["Total Revenue"]) },
+    { label: "Operating income growth", row: findStatementRow(statement, ["Operating Income"]) },
+    { label: "Net income growth", row: findStatementRow(statement, ["Net Income"]) },
+  ];
+
+  return (
+    <section className="profit-loss-growth-summary" aria-label="Profit and Loss growth summary">
+      <div className="profit-loss-growth-heading">
+        <p className="fundamentals-kicker">Performance trend</p>
+        <h3>Growth summary</h3>
+      </div>
+      <div className="profit-loss-growth-grid">
+        {metrics.map(({ label, row }) => {
+          const growth = calculateGrowth(row);
+          return (
+            <div key={label} className="profit-loss-growth-card">
+              <span>{label}</span>
+              <strong className={cn(growth !== null && growth < 0 && "is-negative")}>{growth === null ? "—" : fmtPercent(growth)}</strong>
+              <small>{row?.values[0] === undefined ? "Awaiting statement data" : `${fmtCompact(row.values[0], currency)} latest period`}</small>
+            </div>
+          );
+        })}
+      </div>
+    </section>
+  );
+}
+
 function FinancialStatementTable({
   title,
   description,
   statement,
   quarterly,
   currency,
+  statementKey,
+  expandedRows,
+  onToggleRow,
 }: {
   title: string;
   description: string;
   statement: StatementTable | undefined;
   quarterly: boolean;
   currency: string | null | undefined;
+  statementKey: FinancialStatementKey;
+  expandedRows: Record<string, boolean>;
+  onToggleRow: (rowLabel: string) => void;
 }) {
   return (
     <section className="financial-statement-section research-sheet-card overflow-hidden rounded-2xl border border-border bg-card" aria-label={`${title} financial statement`}>
@@ -124,14 +205,49 @@ function FinancialStatementTable({
               </tr>
             </thead>
             <tbody>
-              {(statement?.rows ?? []).map((row) => (
-                <tr key={row.label} className="border-b border-border/60 last:border-0">
-                  <td className="stock-data-row-label sticky left-0 z-10 bg-card py-2.5 pr-4 text-muted-foreground">{row.label}</td>
-                  {row.values.map((value, index) => (
-                    <td key={index} className="tabular py-2.5 pl-4 text-right text-foreground">{fmtCompact(value, currency)}</td>
-                  ))}
-                </tr>
-              ))}
+              {(statement?.rows ?? []).map((row) => {
+                const rowId = `${statementKey}:${row.label}`;
+                const expanded = expandedRows[rowId] === true;
+                const detailRows = relatedStatementRows(statement, row.label);
+                return <>
+                  <tr key={row.label} className="border-b border-border/60 last:border-0">
+                    <td className="stock-data-row-label sticky left-0 z-10 bg-card py-2.5 pr-4 text-muted-foreground">
+                      <button type="button" className="financial-line-expand" aria-expanded={expanded} onClick={() => onToggleRow(row.label)}>
+                        <span aria-hidden="true">{expanded ? "−" : "+"}</span>
+                        {row.label}
+                      </button>
+                    </td>
+                    {row.values.map((value, index) => (
+                      <td key={index} className="tabular py-2.5 pl-4 text-right text-foreground">{fmtCompact(value, currency)}</td>
+                    ))}
+                  </tr>
+                  {expanded && (
+                    <tr key={`${row.label}-detail`} className="financial-line-detail-row border-b border-border/60">
+                      <td colSpan={Math.max((statement?.columns.length ?? 0) + 1, 1)} className="bg-surface/60 p-0">
+                        <div className="financial-line-detail">
+                          <p>{detailRows.length ? `${row.label} provider line-item breakdown` : `${row.label} by reporting period`}</p>
+                          {detailRows.length ? (
+                            <div className="financial-line-breakdown">
+                              {detailRows.map((detailRow) => (
+                                <div key={detailRow.label} className="financial-line-breakdown-row">
+                                  <strong>{detailRow.label}</strong>
+                                  <span>{detailRow.values.map((value, index) => <b key={`${detailRow.label}-${index}`}>{fmtCompact(value, currency)}<small>{fmtDate(statement?.columns[index] ?? "")}</small></b>)}</span>
+                                </div>
+                              ))}
+                            </div>
+                          ) : (
+                            <div className="financial-line-periods">
+                              {row.values.map((value, index) => (
+                                <span key={`${row.label}-${index}`}><small>{fmtDate(statement?.columns[index] ?? "")}</small><b>{fmtCompact(value, currency)}</b></span>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </>;
+              })}
             </tbody>
           </table>
           {!statement?.rows.length && <p className="py-6 text-sm text-muted-foreground">No provider statement data.</p>}
@@ -145,9 +261,20 @@ function FinancialStatementTable({
 function StockPage() {
   const { symbol } = Route.useParams();
   const [range, setRange] = useState<RangeKey>("6mo");
-  const [statement, setStatement] = useState<"income" | "balance" | "cash">("income");
-  const [quarterly, setQuarterly] = useState(false);
+  const [financialPreference, setFinancialPreference] = useState<FinancialViewPreference>(readFinancialViewPreference);
+  const [expandedRows, setExpandedRows] = useState<Record<string, boolean>>({});
   const { isWatched, toggleWatchlist } = useAppState();
+  const statement = financialPreference.statement;
+  const quarterly = financialPreference.quarterly;
+
+  const updateFinancialPreference = (next: FinancialViewPreference) => {
+    setFinancialPreference(next);
+    try {
+      window.localStorage.setItem(FINANCIAL_VIEW_PREFERENCE_KEY, JSON.stringify(next));
+    } catch {
+      /* Preferences remain available for the current session. */
+    }
+  };
 
   const summaryFn = useServerFn(getSummary);
   const historyFn = useServerFn(getHistory);
@@ -337,19 +464,21 @@ function StockPage() {
                 </div>
                 {statement === "income" && (
                   <div className="financial-period-toggle" aria-label="Profit and Loss period">
-                    <button type="button" onClick={() => setQuarterly(false)} className={cn(!quarterly && "is-active")}>Yearly</button>
-                    <button type="button" onClick={() => setQuarterly(true)} className={cn(quarterly && "is-active")}>Quarterly</button>
+                    <button type="button" onClick={() => updateFinancialPreference({ statement: "income", quarterly: false })} className={cn(!quarterly && "is-active")}>Yearly</button>
+                    <button type="button" onClick={() => updateFinancialPreference({ statement: "income", quarterly: true })} className={cn(quarterly && "is-active")}>Quarterly</button>
                   </div>
                 )}
               </div>
               <div className="financial-statement-tabs" role="tablist" aria-label="Financial statement selector">
                 {(["income", "balance", "cash"] as const).map((key) => {
                   const label = key === "income" ? "Profit & Loss" : key === "balance" ? "Balance Sheet" : "Cash Flow";
-                  return <button key={key} type="button" role="tab" aria-selected={statement === key} className={cn(statement === key && "is-active")} onClick={() => setStatement(key)}>{label}</button>;
+                  return <button key={key} type="button" role="tab" aria-selected={statement === key} className={cn(statement === key && "is-active")} onClick={() => updateFinancialPreference({ statement: key, quarterly })}>{label}</button>;
                 })}
               </div>
               <div className="mt-4">
-                <FinancialStatementTable title={activeStatement.title} description={activeStatement.description} statement={activeStatement.data} quarterly={activeStatement.period === "Quarterly"} currency={q?.currency} />
+                <FinancialStatementTable title={activeStatement.title} description={activeStatement.description} statement={activeStatement.data} quarterly={activeStatement.period === "Quarterly"} currency={q?.currency} statementKey={statement} expandedRows={expandedRows} onToggleRow={(rowLabel) => setExpandedRows((previous) => ({ ...previous, [`${statement}:${rowLabel}`]: !previous[`${statement}:${rowLabel}`] }))} />
+                {statement === "income" && <ProfitLossGrowthSummary statement={incomeFinancials} currency={q?.currency} />}
+                <p className="financial-preference-note" role="status">Your statement and Profit &amp; Loss period choice are saved on this device.</p>
               </div>
             </section>
 

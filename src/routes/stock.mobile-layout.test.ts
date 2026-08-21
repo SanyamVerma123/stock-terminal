@@ -37,7 +37,7 @@ describe("stock research mobile layout", () => {
   });
 
   it("switches one focused financial table between all three statements", () => {
-    expect(pageSource).toContain('const [statement, setStatement] = useState<"income" | "balance" | "cash">("income")');
+    expect(pageSource).toContain("const [financialPreference, setFinancialPreference]");
     expect(pageSource).toContain('role="tablist"');
     expect(pageSource).toContain('aria-selected={statement === key}');
     expect(pageSource).toContain("activeStatement");
@@ -49,5 +49,22 @@ describe("stock research mobile layout", () => {
     expect(pageSource).toContain('statement: "cash", quarterly: false');
     expect(fundamentalsStyles).toContain(".financial-statement-tabs");
     expect(fundamentalsStyles).toContain(".financial-period-toggle");
+  });
+
+  it("offers live-data growth cards, expandable period breakdowns, and stored financial-view preferences", () => {
+    expect(pageSource).toContain("ProfitLossGrowthSummary");
+    expect(pageSource).toContain("Revenue growth");
+    expect(pageSource).toContain("Operating income growth");
+    expect(pageSource).toContain("Net income growth");
+    expect(pageSource).toContain("financial-line-expand");
+    expect(pageSource).toContain("aria-expanded={expanded}");
+    expect(pageSource).toContain("relatedStatementRows");
+    expect(pageSource).toContain("STATEMENT_BREAKDOWN_LABELS");
+    expect(pageSource).toContain("provider line-item breakdown");
+    expect(pageSource).toContain("FINANCIAL_VIEW_PREFERENCE_KEY");
+    expect(pageSource).toContain('window.localStorage.setItem(FINANCIAL_VIEW_PREFERENCE_KEY');
+    expect(fundamentalsStyles).toContain(".profit-loss-growth-summary");
+    expect(fundamentalsStyles).toContain(".financial-line-detail");
+    expect(fundamentalsStyles).toContain(".financial-line-breakdown");
   });
 });

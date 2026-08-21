@@ -235,6 +235,186 @@
   color: var(--primary);
 }
 
+.profit-loss-growth-summary {
+  margin-top: 0.9rem;
+  border: 1px solid color-mix(in oklab, var(--primary) 18%, var(--border));
+  border-radius: 14px;
+  overflow: hidden;
+  background: linear-gradient(110deg, color-mix(in oklab, var(--primary) 5%, var(--card)), var(--card) 65%);
+}
+
+.profit-loss-growth-heading {
+  padding: 0.75rem 0.9rem;
+  border-bottom: 1px solid color-mix(in oklab, var(--border) 74%, transparent);
+}
+
+.profit-loss-growth-heading h3 {
+  margin-top: 0.15rem;
+  color: var(--foreground);
+  font-size: 0.85rem;
+  font-weight: 650;
+}
+
+.profit-loss-growth-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.profit-loss-growth-card {
+  min-width: 0;
+  padding: 0.8rem 0.9rem;
+  border-right: 1px solid color-mix(in oklab, var(--border) 74%, transparent);
+}
+
+.profit-loss-growth-card:last-child {
+  border-right: 0;
+}
+
+.profit-loss-growth-card span,
+.profit-loss-growth-card small,
+.profit-loss-growth-card strong {
+  display: block;
+}
+
+.profit-loss-growth-card span,
+.profit-loss-growth-card small,
+.financial-preference-note {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+}
+
+.profit-loss-growth-card strong {
+  margin: 0.3rem 0;
+  color: var(--positive);
+  font-family: var(--font-mono);
+  font-size: 1rem;
+}
+
+.profit-loss-growth-card strong.is-negative {
+  color: var(--negative);
+}
+
+.financial-line-expand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-width: 100%;
+  color: inherit;
+  text-align: left;
+}
+
+.financial-line-expand > span {
+  display: inline-grid;
+  width: 1rem;
+  height: 1rem;
+  place-items: center;
+  border: 1px solid color-mix(in oklab, var(--primary) 25%, var(--border));
+  border-radius: 4px;
+  color: var(--primary);
+  background: color-mix(in oklab, var(--primary) 6%, transparent);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.financial-line-detail {
+  padding: 0.65rem 0.85rem 0.8rem;
+}
+
+.financial-line-detail > p {
+  margin-bottom: 0.55rem;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.financial-line-periods {
+  display: flex;
+  gap: 0.45rem;
+  overflow-x: auto;
+  padding-bottom: 0.1rem;
+}
+
+.financial-line-periods span {
+  flex: 0 0 auto;
+  min-width: 82px;
+  border: 1px solid color-mix(in oklab, var(--border) 78%, transparent);
+  border-radius: 8px;
+  padding: 0.4rem 0.5rem;
+  background: var(--card);
+}
+
+.financial-line-periods small,
+.financial-line-periods b {
+  display: block;
+}
+
+.financial-line-periods small {
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 9px;
+}
+
+.financial-line-periods b {
+  margin-top: 0.2rem;
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: 11px;
+}
+
+.financial-line-breakdown {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.financial-line-breakdown-row {
+  display: grid;
+  grid-template-columns: minmax(130px, 0.8fr) minmax(0, 2.2fr);
+  gap: 0.65rem;
+  align-items: center;
+  padding: 0.45rem 0.5rem;
+  border: 1px solid color-mix(in oklab, var(--border) 72%, transparent);
+  border-radius: 8px;
+  background: var(--card);
+}
+
+.financial-line-breakdown-row > strong {
+  color: var(--foreground);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.financial-line-breakdown-row > span {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.55rem;
+  overflow-x: auto;
+}
+
+.financial-line-breakdown-row b {
+  flex: 0 0 auto;
+  color: var(--foreground);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  text-align: right;
+}
+
+.financial-line-breakdown-row small {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--muted-foreground);
+  font-family: var(--font-mono);
+  font-size: 8px;
+}
+
+.financial-preference-note {
+  margin-top: 0.65rem;
+  text-align: right;
+}
+
 .financial-statement-section {
   scroll-margin-top: 1rem;
 }
@@ -262,5 +442,30 @@
 
   .financial-period-toggle button {
     flex: 1 1 0;
+  }
+
+  .profit-loss-growth-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .profit-loss-growth-card {
+    border-right: 0;
+    border-bottom: 1px solid color-mix(in oklab, var(--border) 74%, transparent);
+  }
+
+  .profit-loss-growth-card:last-child {
+    border-bottom: 0;
+  }
+
+  .financial-preference-note {
+    text-align: left;
+  }
+
+  .financial-line-breakdown-row {
+    grid-template-columns: 1fr;
+  }
+
+  .financial-line-breakdown-row > span {
+    justify-content: flex-start;
   }
 }
