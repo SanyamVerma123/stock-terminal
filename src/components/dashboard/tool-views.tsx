@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useServerFn } from "@tanstack/react-start";
 import { CalendarDays, ExternalLink, Globe2, X } from "lucide-react";
-import { Bar, BarChart, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ReferenceLine, ResponsiveContainer, Scatter, ScatterChart, Tooltip, XAxis, YAxis, ZAxis } from "recharts";
 import {
   getEstimates,
   getMarketCalendar,
@@ -36,6 +36,7 @@ import { profilesForRegion } from "@/lib/sector-universe";
 import { cn } from "@/lib/utils";
 import { IndustryHeatmap } from "@/components/dashboard/industry-heatmap/IndustryHeatmap";
 import { DataLoading } from "@/components/ui/loading-state";
+import "@/sector-analysis.css";
 import type { Quote, ScreenerRow } from "@/lib/finance-types";
 
 const field =
@@ -681,6 +682,33 @@ export function TableBarChart({
   );
 }
 
+function SectorPulseVisual({ quotes }: { quotes: Quote[] }) {
+  const moving = quotes.filter((quote) => quote.changePercent !== null && quote.changePercent !== undefined);
+  const advancing = moving.filter((quote) => (quote.changePercent ?? 0) >= 0);
+  const declining = moving.filter((quote) => (quote.changePercent ?? 0) < 0);
+  const averageMove = moving.length ? moving.reduce((sum, quote) => sum + (quote.changePercent ?? 0), 0) / moving.length : null;
+  const largest = [...quotes].filter((quote) => quote.marketCap !== null).sort((left, right) => (right.marketCap ?? 0) - (left.marketCap ?? 0))[0];
+  const scatterData = moving.filter((quote) => (quote.marketCap ?? 0) > 0).map((quote) => ({ symbol: quote.symbol, marketCap: quote.marketCap ?? 0, move: quote.changePercent ?? 0, z: Math.max(18, Math.log10(Math.max(quote.marketCap ?? 1, 1)) * 10) })).slice(0, 25);
+  const breadth = moving.length ? (advancing.length / moving.length) * 100 : 0;
+  return (
+    <section className="sector-pulse-visual" aria-labelledby="sector-pulse-title">
+      <div className="sector-pulse-heading"><div><p className="market-kicker">Sector pulse</p><h3 id="sector-pulse-title">Breadth, leadership, and size</h3></div><span>{moving.length ? `${moving.length} live constituents` : "Live quotes syncing"}</span></div>
+      <div className="sector-pulse-grid">
+        <article className="sector-breadth-card"><p>Market breadth</p>{moving.length ? <><strong>{advancing.length}<small> advancing</small></strong><div className="sector-breadth-track"><i style={{ width: `${breadth}%` }}/></div><div><span>{declining.length} declining</span><b>{breadth.toFixed(0)}% positive</b></div></> : <p className="sector-pulse-empty">Awaiting constituent price changes.</p>}</article>
+        <article className="sector-snapshot-card"><p>Average 1D move</p><strong className={cn(averageMove !== null && averageMove < 0 && "negative")}>{averageMove === null ? "—" : `${averageMove >= 0 ? "+" : ""}${averageMove.toFixed(2)}%`}</strong><small>Equal-weight across available sector quotes</small></article>
+        <article className="sector-snapshot-card"><p>Largest tracked company</p><strong>{largest?.symbol ?? "—"}</strong><small>{largest?.marketCap ? fmtCompact(largest.marketCap) : "Market cap unavailable"}</small></article>
+        <article className="sector-scatter-card"><div><p>Size vs. daily direction</p><small>Bubble size reflects market capitalization</small></div>{scatterData.length >= 2 ? <div className="sector-scatter-frame"><ResponsiveContainer width="100%" height="100%"><ScatterChart margin={{ top: 8, right: 8, bottom: 0, left: -14 }}><CartesianGrid stroke="var(--border)" strokeOpacity={.45} strokeDasharray="3 6"/><XAxis type="number" dataKey="marketCap" name="Market cap" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} tickFormatter={(number) => fmtCompact(Number(number))}/><YAxis type="number" dataKey="move" name="1D move" tick={{ fontSize: 10, fill: "var(--muted-foreground)" }} axisLine={false} tickLine={false} tickFormatter={(number) => `${number}%`}/><ZAxis type="number" dataKey="z" range={[56, 250]}/><ReferenceLine y={0} stroke="var(--border)"/><Tooltip cursor={{ strokeDasharray: "3 3" }} contentStyle={{ background: "var(--card)", border: "1px solid var(--border)", borderRadius: 12, fontSize: 12 }} formatter={(number: number | string, name: string) => name === "Market cap" ? fmtCompact(Number(number)) : `${Number(number).toFixed(2)}%`}/><Scatter name="Companies" data={scatterData} fill="var(--primary)" fillOpacity={.72}/></ScatterChart></ResponsiveContainer></div> : <p className="sector-pulse-empty">Two or more live company quotes are needed for this comparison.</p>}</article>
+      </div>
+    </section>
+  );
+}
+
+function IndustrySignalDeck({ table, selectedIndustry, onSelect }: { table: { columns: string[]; rows: Record<string, string>[] }; selectedIndustry: string | null; onSelect: (industry: string) => void }) {
+  const label = table.columns[0] ?? "Industry";
+  const share = table.columns.find((column) => /weight|share|market cap/i.test(column)) ?? table.columns[1] ?? "";
+  return <div className="industry-signal-deck">{table.rows.slice(0, 8).map((row) => { const industry = row[label] ?? "Industry"; return <button key={industry} type="button" onClick={() => onSelect(industry)} className={cn(selectedIndustry === industry && "is-active")}><span>{readableIndustryLabel(industry)}</span><b>{row[share] ?? "—"}</b><small>{selectedIndustry === industry ? "Open detail" : "Inspect industry"}</small></button>; })}</div>;
+}
+
 export function SectorsView() {
   const overviewFn = useServerFn(getSectorOverview);
   const industryFn = useServerFn(getIndustryOverview);
@@ -766,7 +794,7 @@ export function SectorsView() {
     : [...new Set(matchingProfiles.map((profile) => profile.industry))];
 
   return (
-    <div className="space-y-4">
+    <div className="sector-workspace space-y-4">
       <div className="no-scrollbar flex gap-2 overflow-x-auto">
         {SECTOR_KEYS.map((s) => (
           <Chip
@@ -782,9 +810,14 @@ export function SectorsView() {
         ))}
       </div>
 
+      <section className="sector-intelligence-hero">
+        <div><p className="market-kicker">Sector intelligence lab</p><h2>{sectorLabel(sector)} research desk</h2><p>Move beyond the dashboard heat map with industry structure, constituent breadth, market-cap leadership, and company-level drilldowns.</p></div>
+        <div className="sector-hero-status"><span>{cfg.label}</span><b>{data?.source === "provider" ? "Provider-ranked" : "Representative coverage"}</b><small>{data?.coverageStatus ?? "Syncing coverage"}</small></div>
+      </section>
+
       {isProviderSectorData && data ? (
         <>
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="sector-kpi-grid grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
           {[
             ...(liveMarketCap !== null ? [["Market cap", fmtCompact(liveMarketCap)]] : []),
             [data.source === "tracked" ? "Tracked companies" : "Companies", data.companiesCount?.toLocaleString() ?? "—"],
@@ -797,6 +830,8 @@ export function SectorsView() {
             </div>
           ))}
         </div>
+
+      <SectorPulseVisual quotes={sectorQuotes ?? []} />
 
       {data.description && (
         <p className="rounded-2xl border border-border bg-card p-5 text-sm leading-relaxed text-muted-foreground">
@@ -821,14 +856,17 @@ export function SectorsView() {
             : `Representative coverage: ${data.topCompanies.rows.length} curated companies are shown while full provider classification data is unavailable.`}
       </div>
 
-      <Panel title="Industry coverage mix" subtitle={data.mixBasis === "market-cap" ? "Share of the selected sector’s available market capitalization." : "Representative company coverage inside the selected sector."}>
-        <TableBarChart table={industryTable} />
-      </Panel>
-      <Panel
-        title="Industry market mix"
-        subtitle={data?.industries.rows.length ? data.source === "tracked" ? data.mixBasis === "market-cap" ? "Share of tracked market capitalization, labeled by industry." : "Share of representative company coverage when live provider metrics are unavailable." : "Provider-reported industry mix, labeled by industry." : "Representative industry coverage is shown immediately while live sector composition loads."}
-      >
-        <IndustryMixPieChart table={industryTable} />
+      <div className="sector-analysis-grid">
+        <Panel title="Industry leadership" subtitle={data.mixBasis === "market-cap" ? "Industry rank by available market capitalization." : "Industry rank by represented company coverage."}>
+          <TableBarChart table={industryTable} />
+        </Panel>
+        <Panel title="Industry composition" subtitle="Concentration of the selected sector across available industries.">
+          <IndustryMixPieChart table={industryTable} />
+        </Panel>
+      </div>
+
+      <Panel title="Industry signals" subtitle="Select an industry card to open its company-level detail without leaving the sector workspace.">
+        <IndustrySignalDeck table={industryTable} selectedIndustry={industry} onSelect={(nextIndustry) => setIndustry(nextIndustry === industry ? null : nextIndustry)} />
       </Panel>
 
       <div className="no-scrollbar flex gap-2 overflow-x-auto">

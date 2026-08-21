@@ -29,8 +29,10 @@ import { useAppState } from "@/lib/app-state";
 import { Star } from "lucide-react";
 import { NewsTimeline } from "@/components/research/NewsTimeline";
 import { ResearchWithAIButton } from "@/components/research/ResearchWithAIButton";
+import { FinancialVisualAnalytics } from "@/components/finance/FinancialVisualAnalytics";
 import "@/stock-mobile.css";
 import "@/fundamentals.css";
+import "@/financial-visuals.css";
 
 export const Route = createFileRoute("/stock/$symbol")({
   head: ({ params }) => ({
@@ -449,6 +451,7 @@ function StockPage() {
               <div className="mt-4">
                 <FinancialStatementTable title={activeStatement.title} description={activeStatement.description} statement={activeStatement.data} quarterly={activeStatement.period === "Quarterly"} currency={q?.currency} statementKey={statement} expandedRows={expandedRows} onToggleRow={(rowLabel) => setExpandedRows((previous) => ({ ...previous, [`${statement}:${rowLabel}`]: !previous[`${statement}:${rowLabel}`] }))} />
                 {statement === "income" && <ProfitLossGrowthSummary statement={incomeFinancials} currency={q?.currency} />}
+                <FinancialVisualAnalytics income={incomeFinancials} cash={cashFinancials} currency={q?.currency} />
                 <p className="financial-preference-note" role="status">Your statement and Profit &amp; Loss period choice are saved on this device.</p>
               </div>
             </section>
