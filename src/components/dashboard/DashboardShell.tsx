@@ -145,15 +145,16 @@ function getMarketSessionStatus(market: MarketId) {
 function HeaderThemeSwitcher() {
   const { theme, setTheme } = useAppState();
   const options = [
-    { value: "system" as const, label: "Use system theme", icon: Monitor },
-    { value: "paper" as const, label: "Use light theme", icon: Sun },
-    { value: "terminal" as const, label: "Use dark theme", icon: Moon },
+    { value: "system" as const, label: "Use system theme", visibleLabel: "System", icon: Monitor },
+    { value: "paper" as const, label: "Use light theme", visibleLabel: "Light", icon: Sun },
+    { value: "terminal" as const, label: "Use dark theme", visibleLabel: "Dark", icon: Moon },
   ];
   return (
     <div className="header-theme-switcher" role="radiogroup" aria-label="Color theme">
-      {options.map(({ value, label, icon: Icon }) => (
-        <button key={value} type="button" role="radio" aria-label={label} aria-checked={theme === value} onClick={() => setTheme(value)} className={cn(theme === value && "is-active")}>
+      {options.map(({ value, label, visibleLabel, icon: Icon }) => (
+        <button key={value} type="button" role="radio" aria-label={label} title={visibleLabel} aria-checked={theme === value} onClick={() => setTheme(value)} className={cn(theme === value && "is-active")}>
           <Icon className="h-3.5 w-3.5" />
+          <span className="header-theme-option-label">{visibleLabel}</span>
         </button>
       ))}
     </div>

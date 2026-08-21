@@ -10,6 +10,9 @@ describe("dashboard header theme controls", () => {
     expect(headerSource).toContain('value: "system"');
     expect(headerSource).toContain('value: "paper"');
     expect(headerSource).toContain('value: "terminal"');
+    expect(headerSource).toContain('visibleLabel: "System"');
+    expect(headerSource).toContain('visibleLabel: "Light"');
+    expect(headerSource).toContain('visibleLabel: "Dark"');
     expect(headerSource).toContain("terminal-header-controls");
   });
 

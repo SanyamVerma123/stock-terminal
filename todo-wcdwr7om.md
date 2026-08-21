@@ -118,3 +118,9 @@
 - [x] Verify theme persistence and responsive header behavior.
 - [x] Record header-control review: desktop places the three-option system/light/dark selector at the top right directly before the US/IN switch and market-status pill. At 375px, the selector remains fully visible beside the market switch and compact Closed status with no page-width overflow; refresh is intentionally hidden at this breakpoint to preserve space. TypeScript and 48 regression tests pass.
 - [x] Save a checkpoint for the theme and top-right market-status update.
+- [x] Confirm the current theme-switcher mapping and labels.
+- [x] Display clear System, Light, and Dark labels for the monitor, sun, and moon controls without changing their persisted mappings.
+- [x] Preserve the full market-status pill at narrow phone widths by compacting the active theme label below 420px.
+- [x] Verify the clarified theme labels.
+- [x] Record theme-label review: the selected control displays System, Light, or Dark beside its icon on standard widths; below 420px it contracts to the icon so the US/IN switch and complete market-status pill remain within the header. Focused theme-control tests pass.
+- [ ] Save a checkpoint for the clarified theme labels.
