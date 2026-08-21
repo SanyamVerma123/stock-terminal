@@ -62,4 +62,4 @@
 - [x] Preserve mobile-fit table behavior and validate the revised fundamentals layout.
 - [x] Record fundamentals verification: desktop presents a three-column key-ratio grid alongside the existing statement table; phone presents every fundamental metric in one readable column with no clipped cells; existing table headers and contained horizontal scrolling are unchanged. TypeScript and 36 regression tests pass. Provider responses were unavailable during capture, so the live-data grid rendered its explicit unavailable-value state.
 - [x] Confirm rendered fundamentals captures: the 1280px view shows the three-column Fundamental snapshot aligned beside Financials, while the 375px view shows all twelve metrics in one unclipped column before Industry peers. The explicit unavailable-value state and Financials Line item header are visible in both captures.
-- [ ] Save a checkpoint for the Screener-inspired fundamentals revision.
+- [x] Save a checkpoint for the Screener-inspired fundamentals revision.
