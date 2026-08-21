@@ -142,3 +142,5 @@
 - [x] Move the primary search control to the top header, place the US/India switch to the right, and show an explicit green/red market-open status signal.
 - [x] Keep the India Equities page to its compact stock-card presentation without rendering a duplicate detailed table below it.
 - [x] Update agent.md with the current terminal interaction, responsive-layout, and validation conventions.
+- [x] Add the supplied animated AI working indicator at the start of each streaming analyst response and keep it moving with the response as text arrives.
+- [x] Keep the analyst conversation positioned on the active streamed response while preserving a user-controlled scroll position when reading older messages.

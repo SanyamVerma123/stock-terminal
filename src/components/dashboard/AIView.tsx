@@ -19,7 +19,7 @@ import {
   X,
 } from "lucide-react";
 import { InlineLoading } from "@/components/ui/loading-state";
-import { TerminalLoader, TextShimmerLoader } from "@/components/ui/loader";
+import { AIWorkingIndicator } from "@/components/ui/ai-working-indicator";
 import { listChatModels } from "@/lib/models.functions";
 import { PromptInput } from "@/components/ui/ai-chat-input";
 import { Markdown } from "@/components/chat/Markdown";
@@ -48,6 +48,15 @@ type ChatRuntimeObserver = {
   onFinish: (messages: UIMessage[]) => void;
   onError: (error: unknown) => void;
 };
+
+export function isNearChatBottom(
+  scrollTop: number,
+  clientHeight: number,
+  scrollHeight: number,
+  threshold = 88,
+) {
+  return scrollHeight - scrollTop - clientHeight <= threshold;
+}
 
 const chatRuntimeStore = new Map<string, Chat<UIMessage>>();
 const chatRuntimeObservers = new Map<string, ChatRuntimeObserver>();
@@ -325,25 +334,6 @@ const SUGGESTIONS = [
   "What moved Reliance today and why?",
 ];
 
-function ResearchActivity({ phase, detail }: { phase: string; detail: string }) {
-  return (
-    <div className="research-activity" role="status" aria-live="polite">
-      <span className="research-activity-terminal" aria-hidden="true">
-        <TerminalLoader size="md" />
-      </span>
-      <span className="min-w-0">
-        <TextShimmerLoader text={phase} size="sm" className="research-activity-title" />
-        <span className="research-activity-detail">{detail}</span>
-      </span>
-      <span className="research-activity-stages" aria-hidden="true">
-        <i />
-        <i />
-        <i />
-      </span>
-    </div>
-  );
-}
-
 export function AIView({ visible = true }: { visible?: boolean }) {
   const [sessionErrors, setSessionErrors] = useState<Record<string, ChatDiagnostic>>({});
   const [, forceRuntimeRender] = useState(0);
@@ -358,6 +348,8 @@ export function AIView({ visible = true }: { visible?: boolean }) {
   const historyPressTimer = useRef<number | null>(null);
   const suppressHistoryClick = useRef(false);
   const consumedPrefill = useRef<string | null>(null);
+  const conversationViewportRef = useRef<HTMLDivElement>(null);
+  const [followActiveResponse, setFollowActiveResponse] = useState(true);
   const [sessions, setSessions] = useState<ChatSession[]>(loadChatSessions);
   const [activeChatId, setActiveChatId] = useState(() => {
     if (typeof window === "undefined") return "";
@@ -561,6 +553,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
   const sendResearch = useCallback(
     (text: string, meta?: { model?: string | undefined; effort?: string | undefined }) => {
       clearRuntimeError();
+      setFollowActiveResponse(true);
       return sendMessage(
         { text },
         {
@@ -579,6 +572,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
   const retryResearch = useCallback(
     (assistantMessageId: string | undefined, fallbackText: string) => {
       clearRuntimeError();
+      setFollowActiveResponse(true);
       if (assistantMessageId) {
         return regenerate({
           messageId: assistantMessageId,
@@ -641,7 +635,28 @@ export function AIView({ visible = true }: { visible?: boolean }) {
   }));
   const latestUserText = [...messages].reverse().find((message) => message.role === "user");
   const latestAssistant = [...messages].reverse().find((message) => message.role === "assistant");
+  const latestMessage = messages.at(-1);
+  const activeAssistantResponse = latestMessage?.role === "assistant" ? latestMessage : undefined;
   const retryText = latestUserText ? messageText(latestUserText) : "";
+  const activeResponseText = activeAssistantResponse ? messageText(activeAssistantResponse) : "";
+  const hasActiveAssistantResponse = Boolean(activeAssistantResponse);
+  const activeWorkingPhase = status === "submitted" ? "researching" : "writing";
+  const handleConversationScroll = useCallback((event: React.UIEvent<HTMLDivElement>) => {
+    const viewport = event.currentTarget;
+    setFollowActiveResponse(
+      isNearChatBottom(viewport.scrollTop, viewport.clientHeight, viewport.scrollHeight),
+    );
+  }, []);
+
+  useEffect(() => {
+    if (!busy || !followActiveResponse) return;
+    const frame = window.requestAnimationFrame(() => {
+      const viewport = conversationViewportRef.current;
+      if (!viewport) return;
+      viewport.scrollTo({ top: viewport.scrollHeight, behavior: "auto" });
+    });
+    return () => window.cancelAnimationFrame(frame);
+  }, [activeResponseText, busy, followActiveResponse, messages.length]);
   const copyMessage = useCallback(async (messageId: string, text: string) => {
     if (!text || typeof navigator === "undefined" || !navigator.clipboard) return;
     try {
@@ -1032,7 +1047,11 @@ export function AIView({ visible = true }: { visible?: boolean }) {
             )}
           </div>
         </div>
-        <div className="min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-5 sm:py-4">
+        <div
+          ref={conversationViewportRef}
+          onScroll={handleConversationScroll}
+          className="ai-conversation-viewport min-h-0 flex-1 overflow-y-auto px-3 py-3 sm:px-5 sm:py-4"
+        >
           <div
             className={cn(
               "mx-auto w-full space-y-6 transition-[max-width] duration-200",
@@ -1075,6 +1094,7 @@ export function AIView({ visible = true }: { visible?: boolean }) {
 
             {messages.map((m, messageIndex) => {
               const assistantText = m.role === "assistant" ? messageText(m) : "";
+              const isActiveAssistantResponse = busy && m.role === "assistant" && m.id === activeAssistantResponse?.id;
               const previousUser = messages
                 .slice(0, messageIndex)
                 .reverse()
@@ -1097,62 +1117,65 @@ export function AIView({ visible = true }: { visible?: boolean }) {
                       ? m.parts.map((p, i) =>
                           p.type === "text" ? <span key={i}>{p.text}</span> : null,
                         )
-                      : m.parts.map((p, i) =>
-                          p.type === "text" ? (
-                            <Markdown
-                              key={i}
-                              content={p.text}
-                              messageId={`${m.id}-${i}`}
-                              onOpenArtifact={setArtifact}
-                            />
-                          ) : p.type === "tool-create_screener" ? (
-                            (() => {
-                              const result = screenerToolResultFromPart(p, `${m.id}-${i}`);
-                              return result ? <ScreenerResultCard key={i} result={result} /> : null;
-                            })()
-                          ) : p.type.startsWith("tool-") ? (
-                            (() => {
-                              const toolState =
-                                "state" in p && typeof p.state === "string" ? p.state : "";
-                              const toolActive =
-                                toolState === "input-streaming" || toolState === "input-available";
-                              const toolFailed = toolState === "output-error";
-                              return (
-                                <span
-                                  key={i}
-                                  className={cn(
-                                    "mr-1 mb-1 inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px]",
-                                    toolActive
-                                      ? "border-primary/20 bg-primary/5 text-muted-foreground"
-                                      : toolFailed
-                                        ? "border-negative/20 bg-negative/5 text-negative"
-                                        : "border-border/80 bg-card/50 text-muted-foreground",
-                                  )}
-                                >
-                                  {toolActive ? (
-                                    <span className="flex items-center gap-0.5" aria-hidden="true">
-                                      <span className="tool-dot h-1.5 w-1.5 rounded-full bg-primary" />
-                                      <span className="tool-dot tool-dot-delay-1 h-1.5 w-1.5 rounded-full bg-primary" />
-                                      <span className="tool-dot tool-dot-delay-2 h-1.5 w-1.5 rounded-full bg-primary" />
+                      : <>
+                          {isActiveAssistantResponse && <AIWorkingIndicator phase={activeWorkingPhase} />}
+                          {m.parts.map((p, i) =>
+                            p.type === "text" ? (
+                              <Markdown
+                                key={i}
+                                content={p.text}
+                                messageId={`${m.id}-${i}`}
+                                onOpenArtifact={setArtifact}
+                              />
+                            ) : p.type === "tool-create_screener" ? (
+                              (() => {
+                                const result = screenerToolResultFromPart(p, `${m.id}-${i}`);
+                                return result ? <ScreenerResultCard key={i} result={result} /> : null;
+                              })()
+                            ) : p.type.startsWith("tool-") ? (
+                              (() => {
+                                const toolState =
+                                  "state" in p && typeof p.state === "string" ? p.state : "";
+                                const toolActive =
+                                  toolState === "input-streaming" || toolState === "input-available";
+                                const toolFailed = toolState === "output-error";
+                                return (
+                                  <span
+                                    key={i}
+                                    className={cn(
+                                      "mr-1 mb-1 inline-flex items-center gap-1.5 rounded-full border px-2 py-1 text-[11px]",
+                                      toolActive
+                                        ? "border-primary/20 bg-primary/5 text-muted-foreground"
+                                        : toolFailed
+                                          ? "border-negative/20 bg-negative/5 text-negative"
+                                          : "border-border/80 bg-card/50 text-muted-foreground",
+                                    )}
+                                  >
+                                    {toolActive ? (
+                                      <span className="flex items-center gap-0.5" aria-hidden="true">
+                                        <span className="tool-dot h-1.5 w-1.5 rounded-full bg-primary" />
+                                        <span className="tool-dot tool-dot-delay-1 h-1.5 w-1.5 rounded-full bg-primary" />
+                                        <span className="tool-dot tool-dot-delay-2 h-1.5 w-1.5 rounded-full bg-primary" />
+                                      </span>
+                                    ) : (
+                                      <span className="text-[10px]" aria-hidden="true">
+                                        {toolFailed ? "!" : "✓"}
+                                      </span>
+                                    )}
+                                    <span>
+                                      {p.type.replace("tool-", "").replace(/_/g, " ")} {" "}
+                                      {toolActive
+                                        ? "in progress"
+                                        : toolFailed
+                                          ? "failed"
+                                          : "complete"}
                                     </span>
-                                  ) : (
-                                    <span className="text-[10px]" aria-hidden="true">
-                                      {toolFailed ? "!" : "✓"}
-                                    </span>
-                                  )}
-                                  <span>
-                                    {p.type.replace("tool-", "").replace(/_/g, " ")}{" "}
-                                    {toolActive
-                                      ? "in progress"
-                                      : toolFailed
-                                        ? "failed"
-                                        : "complete"}
                                   </span>
-                                </span>
-                              );
-                            })()
-                          ) : null,
-                        )}
+                                );
+                              })()
+                            ) : null,
+                          )}
+                        </>}
                     {m.role === "assistant" && (assistantText || messageRetryText) && (
                       <div className="mt-3 flex flex-wrap items-center gap-1.5 border-t border-border/50 pt-2">
                         {assistantText && (
@@ -1189,17 +1212,12 @@ export function AIView({ visible = true }: { visible?: boolean }) {
               );
             })}
 
-            {status === "submitted" && (
-              <ResearchActivity
-                phase="Preparing research"
-                detail="The AI analyst is gathering the requested market context."
-              />
-            )}
-            {status === "streaming" && (
-              <ResearchActivity
-                phase="Writing research"
-                detail="The AI analyst is synthesizing findings into your answer."
-              />
+            {busy && !hasActiveAssistantResponse && (
+              <div className="flex justify-start">
+                <div className="ai-message-assistant w-full max-w-[88%] rounded-2xl border border-border/70 bg-card/45 px-4 py-3 sm:px-5">
+                  <AIWorkingIndicator phase={activeWorkingPhase} />
+                </div>
+              </div>
             )}
             {activeError && retryText && (
               <ChatDiagnosticCard
