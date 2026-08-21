@@ -16,8 +16,8 @@
   ],
   "git_remote": {
     "repo_url": "https://7f0548f6b28a1758d9bf7be630d36cb4.artifacts.cloudflare.net/git/prod/MuJSeqviNXUCnYKgTh7Var.git",
-    "expiration": "2026-08-21T03:22:51.163Z",
-    "token": "art_v2_x_d3fb5a070bf45da9e30d28df65f288a1084c68dc?expires=1787282571",
+    "expiration": "2026-08-22T04:52:47.677Z",
+    "token": "art_v2_x_2f1df2006e861cfcb769e32fe6350193545c8771?expires=1787374367",
     "backend": "GIT_BACKEND_ARTIFACTS"
   },
   "name": "insightful-search-deployed",

@@ -141,3 +141,4 @@
 - [x] Verify complete available sector coverage through the market-data provider rather than a limited 10-item result.
 - [x] Move the primary search control to the top header, place the US/India switch to the right, and show an explicit green/red market-open status signal.
 - [x] Keep the India Equities page to its compact stock-card presentation without rendering a duplicate detailed table below it.
+- [x] Update agent.md with the current terminal interaction, responsive-layout, and validation conventions.
