@@ -55,4 +55,4 @@
 - [x] Reinspect the stock research page at phone width and identify actual viewport overflow: at 320px the shared header's AI Analyst label was clipped, the rightmost price range control could be cut off, and long peer-context copy could extend at the card edge.
 - [x] Correct confirmed narrow-phone overflow and validate the revised stock-page view.
 - [x] Record narrow-phone verification: at 320px, the compact shared header, all stock-page cards, the price-range strip, long peer copy, and live event data remain inside the visible width; wide datasets remain intentionally contained within their dedicated scroll regions.
-- [ ] Save a checkpoint for the confirmed narrow-phone stock-page correction.
+- [x] Save a checkpoint for the confirmed narrow-phone stock-page correction.
