@@ -34,9 +34,11 @@ import { SECTOR_INDUSTRIES, SECTOR_KEYS, sectorLabel } from "@/lib/markets";
 import { canonicalSectorKey } from "@/lib/sector-normalize";
 import { profilesForRegion } from "@/lib/sector-universe";
 import { cn } from "@/lib/utils";
+import { stockMovementClass } from "@/lib/stock-movement";
 import { IndustryHeatmap } from "@/components/dashboard/industry-heatmap/IndustryHeatmap";
 import { DataLoading } from "@/components/ui/loading-state";
 import "@/sector-analysis.css";
+import "@/stock-movement.css";
 import type { Quote, ScreenerRow } from "@/lib/finance-types";
 
 const field =
@@ -125,7 +127,7 @@ const PRIMARY_MOVER_NAMES = ["day_gainers", "day_losers", "most_actives"] as con
 function MoverCardDeck({ rows }: { rows: ScreenerRow[] }) {
   const deckRows = rows.slice(0, 25);
   const max = Math.max(...deckRows.map(row => Math.abs(row.changePercent ?? 0)), 1);
-  return <div className="mover-card-deck" aria-label="Scrollable market mover cards">{deckRows.map((row) => { const hasPrice = row.price !== null && row.price !== undefined; const hasChange = row.changePercent !== null && row.changePercent !== undefined; const positive = (row.changePercent ?? 0) >= 0; const width = `${Math.max(12, Math.min(100, Math.abs(row.changePercent ?? 0) / max * 100))}%`; return <a className="mover-card" href={`/stock/${encodeURIComponent(row.symbol)}`} key={row.symbol}><div className="mover-card-main"><div className="min-w-0"><b>{row.symbol}</b><small title={row.name}>{row.name || "Company name unavailable"}</small></div>{hasPrice ? <strong>{fmtPrice(row.price, row.currency)}</strong> : <span className="mover-quote-status">Live quote syncing</span>}</div><div className="mover-card-footer"><span className="mover-performance"><i className={positive ? "positive" : "negative"} style={{ width }}/></span>{hasChange ? <DeltaBadge value={row.changePercent} size="sm"/> : <span className="mover-change-pending">Awaiting price action</span>}</div></a>; })}</div>;
+  return <div className="mover-card-deck" aria-label="Scrollable market mover cards">{deckRows.map((row) => { const hasPrice = row.price !== null && row.price !== undefined; const hasChange = row.changePercent !== null && row.changePercent !== undefined; const positive = (row.changePercent ?? 0) >= 0; const width = `${Math.max(12, Math.min(100, Math.abs(row.changePercent ?? 0) / max * 100))}%`; return <a className={cn("mover-card", stockMovementClass(row.changePercent))} href={`/stock/${encodeURIComponent(row.symbol)}`} key={row.symbol}><div className="mover-card-main"><div className="min-w-0"><b>{row.symbol}</b><small title={row.name}>{row.name || "Company name unavailable"}</small></div>{hasPrice ? <strong>{fmtPrice(row.price, row.currency)}</strong> : <span className="mover-quote-status">Live quote syncing</span>}</div><div className="mover-card-footer"><span className="mover-performance"><i className={positive ? "positive" : "negative"} style={{ width }}/></span>{hasChange ? <DeltaBadge value={row.changePercent} size="sm"/> : <span className="mover-change-pending">Awaiting price action</span>}</div></a>; })}</div>;
 }
 
 export function MoversView({ initialName = "day_gainers" }: { initialName?: string } = {}) {
@@ -1018,7 +1020,7 @@ export function GlobalMarketsView() {
       )}
       <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {(summary ?? []).map((q) => (
-          <div key={q.name} className="rounded-2xl border border-border bg-card p-4">
+          <div key={q.name} className={cn("rounded-2xl border border-border bg-card p-4", stockMovementClass(q.changePercent))}>
             <p className="truncate text-xs uppercase tracking-wider text-muted-foreground">
               {q.name}
             </p>

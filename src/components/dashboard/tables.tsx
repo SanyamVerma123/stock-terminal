@@ -5,6 +5,9 @@ import type { GenericTable, ScreenerRow } from "@/lib/finance-types";
 import type { StatementTable } from "@/lib/finance-normalize";
 import { DataLoading } from "@/components/ui/loading-state";
 import { EmptyState } from "@/components/ui/empty-state";
+import { cn } from "@/lib/utils";
+import { stockMovementClass } from "@/lib/stock-movement";
+import "@/stock-movement.css";
 
 export function Panel({
   title,
@@ -60,5 +63,5 @@ export function ScreenerTable({
 }) {
   if (loading) return <DataLoading compact label="Screening live markets" detail="Filtering the latest prices, volume, and fundamentals." />;
   if (!rows || rows.length === 0) return <EmptyState compact title="No matches right now." detail="Change the filters or try a different live screener." />;
-  return <div className="screener-card-grid">{rows.map((r) => <Link key={r.symbol} to="/stock/$symbol" params={{ symbol: r.symbol }} className="screener-card"><div className="screener-card-top"><span>{r.exchange ?? "Market"}</span><DeltaBadge value={r.changePercent} size="sm"/></div><div className="screener-card-name"><b>{r.symbol}</b><small>{r.name}</small></div><strong className="screener-card-price">{fmtPrice(r.price)}</strong><div className="screener-card-metrics"><span><small>Market cap</small><b>{r.marketCap === null ? "—" : fmtCompact(r.marketCap)}</b></span><span><small>P/E</small><b>{r.peRatio === null ? "—" : r.peRatio.toFixed(1)}</b></span><span><small>Rating</small><b>{r.rating ?? "—"}</b></span></div></Link>)}</div>;
+  return <div className="screener-card-grid">{rows.map((r) => <Link key={r.symbol} to="/stock/$symbol" params={{ symbol: r.symbol }} className={cn("screener-card", stockMovementClass(r.changePercent))}><div className="screener-card-top"><span>{r.exchange ?? "Market"}</span><DeltaBadge value={r.changePercent} size="sm"/></div><div className="screener-card-name"><b>{r.symbol}</b><small>{r.name}</small></div><strong className="screener-card-price">{fmtPrice(r.price)}</strong><div className="screener-card-metrics"><span><small>Market cap</small><b>{r.marketCap === null ? "—" : fmtCompact(r.marketCap)}</b></span><span><small>P/E</small><b>{r.peRatio === null ? "—" : r.peRatio.toFixed(1)}</b></span><span><small>Rating</small><b>{r.rating ?? "—"}</b></span></div></Link>)}</div>;
 }

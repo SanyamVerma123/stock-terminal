@@ -18,7 +18,9 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
-import { InlineLoading } from "@/components/ui/loading-state";
+import { DataLoading } from "@/components/ui/loading-state";
+import { Loader } from "@/components/ui/loader";
+import "@/stock-movement.css";
 import { AIWorkingIndicator } from "@/components/ui/ai-working-indicator";
 import { listChatModels } from "@/lib/models.functions";
 import { PromptInput } from "@/components/ui/ai-chat-input";
@@ -297,10 +299,12 @@ function ScreenerResultCard({ result }: { result: ScreenerToolResult }) {
             </tr>
           </thead>
           <tbody className="divide-y divide-border/40">
-            {result.rows.slice(0, 12).map((row, index) => (
-              <tr
+            {result.rows.slice(0, 12).map((row, index) => {
+              const move = Number(row["changePercent"]);
+              const moveClass = Number.isFinite(move) ? move >= 0 ? "stock-move-row-positive" : "stock-move-row-negative" : "";
+              return <tr
                 key={`${String(row["symbol"] ?? row["name"] ?? "row")}-${index}`}
-                className="text-foreground"
+                className={cn("text-foreground", moveClass)}
               >
                 <td className="max-w-[220px] px-3 py-2">
                   <span className="font-semibold">{String(row["symbol"] ?? "—")}</span>
@@ -317,8 +321,8 @@ function ScreenerResultCard({ result }: { result: ScreenerToolResult }) {
                 </td>
                 <td className="px-3 py-2">{formatScreenerValue(row["peRatio"], "multiple")}</td>
                 <td className="px-3 py-2">{formatScreenerValue(row["marketCap"], "marketCap")}</td>
-              </tr>
-            ))}
+              </tr>;
+            })}
           </tbody>
         </table>
       </div>
@@ -1029,7 +1033,12 @@ export function AIView({ visible = true }: { visible?: boolean }) {
               )}
               {models.length === 0 ? <option value="">Save a provider key to load available models</option> : null}
             </select>
-            {!catalog && <InlineLoading label="Loading model catalog" variant="pulse-dot" />}
+            {!catalog && (
+              <span className="inline-flex items-center gap-1.5 text-[10px] text-muted-foreground" role="status">
+                <Loader variant="dots" size="sm" />
+                Loading model catalog
+              </span>
+            )}
             {catalog && models.length === 0 && (
               <span className="hidden max-w-[260px] text-[11px] text-negative xl:inline">
                 No provider model is ready. Save a valid key in Settings, then reload the catalog.

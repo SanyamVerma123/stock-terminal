@@ -124,3 +124,8 @@
 - [x] Verify the clarified theme labels.
 - [x] Record theme-label review: the selected control displays System, Light, or Dark beside its icon on standard widths; below 420px it contracts to the icon so the US/IN switch and complete market-status pill remain within the header. Focused theme-control tests pass.
 - [x] Save a checkpoint for the clarified theme labels.
+- [x] Inspect reusable stock cards, quote rows, watchlist tables, screener surfaces, and current theme-resolution logic.
+- [x] Add a reusable subtle green/red lower-corner movement shade to stock cards and rows throughout the terminal.
+- [x] Make System always use the paper theme, Light use the bright light theme, and Dark use the terminal theme.
+- [x] Add focused coverage, verify desktop and mobile visual states, and save a checkpoint.
+- [x] Record movement-shading verification: dashboard and stock-research desktop plus 375px stock-research views retain their established responsive bounds. Provider data was loading during capture, so populated shading behavior is guarded by focused coverage for dashboard screeners, rows, watchlist, movers, AI Analyst results, and stock-page peers. TypeScript and all 52 regression tests pass.

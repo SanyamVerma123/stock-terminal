@@ -16,9 +16,9 @@ describe("dashboard header theme controls", () => {
     expect(headerSource).toContain("terminal-header-controls");
   });
 
-  it("resolves system appearance from the browser preference and applies a matching color scheme", () => {
-    expect(stateSource).toContain("prefers-color-scheme: dark");
-    expect(stateSource).toContain('theme === "system" ? systemTheme : theme');
+  it("pins system to paper while retaining explicit light and dark theme mappings", () => {
+    expect(stateSource).toContain('theme === "system" ? "paper" : theme');
+    expect(stateSource).not.toContain("prefers-color-scheme: dark");
     expect(stateSource).toContain("document.documentElement.style.colorScheme");
     expect(stateSource).toContain('"system"');
   });

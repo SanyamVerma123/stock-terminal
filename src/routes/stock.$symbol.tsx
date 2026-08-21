@@ -22,6 +22,7 @@ import {
 import { RANGES, type RangeKey, type StatementTable } from "@/lib/finance-types";
 import { buildStatementHierarchy, type FinancialStatementKey } from "@/lib/statement-hierarchy";
 import { fmtCompact, fmtDate, fmtNumber, fmtPercent, fmtPrice } from "@/lib/format";
+import { stockMovementClass } from "@/lib/stock-movement";
 import { cn } from "@/lib/utils";
 import { DataLoading } from "@/components/ui/loading-state";
 import { TextShimmerLoader } from "@/components/ui/loader";
@@ -33,6 +34,7 @@ import { FinancialVisualAnalytics } from "@/components/finance/FinancialVisualAn
 import "@/stock-mobile.css";
 import "@/fundamentals.css";
 import "@/financial-visuals.css";
+import "@/stock-movement.css";
 
 export const Route = createFileRoute("/stock/$symbol")({
   head: ({ params }) => ({
@@ -557,7 +559,7 @@ function StockPage() {
             <Card title="Industry peers">
               <p className="text-xs text-muted-foreground">{r?.industry ?? "Industry classification loading"} · equal-weight 1D peer benchmark</p>
               <div className="mt-3 grid grid-cols-2 gap-2"><Stat label="Peer benchmark" value={peerQuotes?.length ? `${peerBenchmark >= 0 ? "+" : ""}${peerBenchmark.toFixed(2)}%` : "Loading"} /><Stat label="Peers quoted" value={String(peerQuotes?.length ?? 0)} /></div>
-              <div className="mt-3 space-y-1.5">{(peerQuotes ?? []).slice(0, 8).map((peer) => <a key={peer.symbol} href={`/stock/${encodeURIComponent(peer.symbol)}`} className="flex items-center justify-between rounded-lg border border-border bg-surface px-2.5 py-2 text-xs hover:border-primary/40"><span className="font-medium text-foreground">{peer.symbol}</span><span className={(peer.changePercent ?? 0) >= 0 ? "text-positive" : "text-negative"}>{peer.changePercent === null ? "—" : `${peer.changePercent >= 0 ? "+" : ""}${peer.changePercent.toFixed(2)}%`}</span></a>)}{peerSymbols.length === 0 ? <p className="text-xs text-muted-foreground">Provider peers will appear when industry coverage is available.</p> : null}</div>
+              <div className="mt-3 space-y-1.5">{(peerQuotes ?? []).slice(0, 8).map((peer) => <a key={peer.symbol} href={`/stock/${encodeURIComponent(peer.symbol)}`} className={cn("flex items-center justify-between rounded-lg border border-border bg-surface px-2.5 py-2 text-xs hover:border-primary/40", stockMovementClass(peer.changePercent))}><span className="font-medium text-foreground">{peer.symbol}</span><span className={(peer.changePercent ?? 0) >= 0 ? "text-positive" : "text-negative"}>{peer.changePercent === null ? "—" : `${peer.changePercent >= 0 ? "+" : ""}${peer.changePercent.toFixed(2)}%`}</span></a>)}{peerSymbols.length === 0 ? <p className="text-xs text-muted-foreground">Provider peers will appear when industry coverage is available.</p> : null}</div>
             </Card>
 
             <Card title="Events">

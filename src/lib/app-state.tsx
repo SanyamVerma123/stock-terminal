@@ -398,9 +398,6 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   });
   const [refreshSeconds, setRefreshState] = useState(60);
   const [theme, setThemeState] = useState<Theme>("paper");
-  const [systemTheme, setSystemTheme] = useState<"paper" | "terminal">(() =>
-    typeof window !== "undefined" && window.matchMedia("(prefers-color-scheme: dark)").matches ? "terminal" : "paper",
-  );
   const [aiPrefill, setAiPrefillState] = useState<string | null>(null);
   const [cloudAccount, setCloudAccount] = useState<CloudAccount | null>(null);
   const [cloudStatus, setCloudStatus] = useState<CloudStatus>("checking");
@@ -560,22 +557,14 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
   }, [applyCloudState]);
 
   useEffect(() => {
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const syncSystemTheme = () => setSystemTheme(media.matches ? "terminal" : "paper");
-    syncSystemTheme();
-    media.addEventListener("change", syncSystemTheme);
-    return () => media.removeEventListener("change", syncSystemTheme);
-  }, []);
-
-  useEffect(() => {
-    const appliedTheme = theme === "system" ? systemTheme : theme;
+    const appliedTheme = theme === "system" ? "paper" : theme;
     document.documentElement.dataset["theme"] = appliedTheme;
     document.documentElement.classList.toggle("light", appliedTheme === "light");
     document.documentElement.classList.toggle("paper", appliedTheme === "paper");
     document.documentElement.classList.toggle("terminal", appliedTheme === "terminal");
     document.documentElement.classList.toggle("neuborder", appliedTheme === "neuborder");
     document.documentElement.style.colorScheme = appliedTheme === "terminal" ? "dark" : "light";
-  }, [systemTheme, theme]);
+  }, [theme]);
 
   useEffect(() => {
     const pending = allWatchlist
