@@ -192,25 +192,25 @@ function FinancialStatementTable({
               </tr>
             </thead>
             <tbody>
-              {hierarchy.map(({ row, children }) => {
-                const rowId = `${statementKey}:${row.label}`;
+              {hierarchy.map(({ label, summary, children }) => {
+                const rowId = `${statementKey}:${label}`;
                 const expanded = expandedRows[rowId] === true;
-                return <Fragment key={row.label}>
+                return <Fragment key={label}>
                   <tr className={cn("border-b border-border/60 last:border-0", children.length > 0 && "financial-parent-row")}>
                     <td className="stock-data-row-label sticky left-0 z-10 bg-card py-2.5 pr-4 text-muted-foreground">
                       {children.length > 0 ? (
-                        <button type="button" className="financial-line-expand" aria-expanded={expanded} onClick={() => onToggleRow(row.label)}>
+                        <button type="button" className="financial-line-expand" aria-expanded={expanded} onClick={() => onToggleRow(label)}>
                           <span aria-hidden="true">{expanded ? "−" : "+"}</span>
-                          {row.label}
+                          {label}
                         </button>
-                      ) : <span className="financial-line-label">{row.label}</span>}
+                      ) : <span className="financial-line-label">{label}</span>}
                     </td>
-                    {row.values.map((value, index) => (
-                      <td key={index} className="tabular py-2.5 pl-4 text-right text-foreground">{fmtCompact(value, currency)}</td>
+                    {(statement?.columns ?? []).map((_, index) => (
+                      <td key={index} className="tabular py-2.5 pl-4 text-right text-foreground">{fmtCompact(summary?.values[index] ?? null, currency)}</td>
                     ))}
                   </tr>
                   {expanded && children.map((child) => (
-                    <tr key={`${row.label}-${child.label}`} className="financial-child-row border-b border-border/50">
+                    <tr key={`${label}-${child.label}`} className="financial-child-row border-b border-border/50">
                       <td className="stock-data-row-label sticky left-0 z-10 bg-card py-2 pl-4 pr-4 text-muted-foreground"><span className="financial-child-label">{child.label}</span></td>
                       {child.values.map((value, index) => (
                         <td key={`${child.label}-${index}`} className="tabular py-2 pl-4 text-right text-foreground">{fmtCompact(value, currency)}</td>

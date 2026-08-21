@@ -60,7 +60,7 @@ describe("stock research mobile layout", () => {
     expect(pageSource).toContain("financial-line-expand");
     expect(pageSource).toContain("aria-expanded={expanded}");
     expect(pageSource).toContain("buildStatementHierarchy");
-    expect(hierarchySource).toContain("STATEMENT_ACCOUNT_CHILDREN");
+    expect(hierarchySource).toContain("MAJOR_ACCOUNT_GROUPS");
     expect(pageSource).toContain("financial-child-row");
     expect(pageSource).toContain("financial-child-label");
     expect(pageSource).toContain("FINANCIAL_VIEW_PREFERENCE_KEY");

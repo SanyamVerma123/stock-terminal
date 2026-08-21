@@ -97,3 +97,9 @@
 - [x] Validate deterministic hierarchy fixtures: income, balance-sheet, and cash-flow child accounts are grouped under their matching parent rows and excluded from duplicate top-level rendering. TypeScript, 40 regression tests, and the production build passed.
 - [x] Save a checkpoint for the Screener-style parent-and-child account hierarchy revision.
 - [x] Save a checkpoint for the Screener-style account hierarchy revision.
+- [x] Define clear high-level financial headings such as Revenue, Expenses, Tax, Profit, Assets, Liabilities, and Cash Flow, with all related provider accounts assigned beneath them.
+- [x] Render only the high-level financial headings initially and reveal their grouped accounts through expandable rows.
+- [x] Add deterministic major-group tests and verify desktop and phone presentation.
+- [x] Record major-group review: the 1280px and 375px views preserve the focused single-statement card, selector, growth summary, and contained table shell. When rows are available, the table renders broad headings such as Revenue, Expenses, Tax, Net profit, Assets, Liabilities, Equity, and cash-activity groups; expansion exposes only the related account rows beneath that heading. Provider rows were unavailable during the visual capture; deterministic hierarchy tests validate the grouped behavior.
+- [x] Independently inspected final major-group captures: the 1280px view keeps the Profit & Loss selector, annual/quarterly controls, statement card, growth summary, and research panels aligned; the 375px view keeps all cards and controls within the phone width with no horizontal page overflow. Both captures correctly show the provider-unavailable state instead of invented financial rows.
+- [ ] Save a checkpoint for the major-heading financial statement revision.
