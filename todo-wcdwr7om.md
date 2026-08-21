@@ -84,7 +84,7 @@
 - [x] Persist and restore the selected statement plus the Profit & Loss yearly/quarterly preference.
 - [x] Add focused tests and verify desktop and phone layout behavior.
 - [x] Record enhancement verification: the reviewed desktop and 375px phone views show the Profit & Loss growth-summary surface, saved-preference note, and contained financial table region without page-width overflow. The 38-test suite covers the summary, row expander, and local preference hooks. Provider statement rows were unavailable in the live capture, so the individual expand controls are exercised by source-backed regression coverage rather than populated live rows.
-- [ ] Save a checkpoint for the financial-analysis enhancement.
+- [x] Save a checkpoint for the financial-analysis enhancement.
 - [x] Enrich expandable aggregate line items with related provider-supplied rows where the normalized flat statement data supports a real breakdown.
 - [x] Inspect and document the final rendered desktop and phone enhancement screenshots before release.
 - [x] Rendered enhancement review: the 1280px screen shows three compact growth cards and saved-preference feedback beneath the selected Profit & Loss table; the 375px screen stacks the growth cards legibly and retains the selected-statement table in its contained region. When provider rows are present, aggregate labels expand into explicitly named provider-supplied related line rows; when no related rows exist, expansion remains a truthful period-level detail view rather than fabricated sub-data.
