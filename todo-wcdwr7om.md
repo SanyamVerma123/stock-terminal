@@ -45,3 +45,10 @@
 - [x] Verify the premium heat-map and stock-page compact-view behavior on desktop, tablet, and mobile.
 - [x] Record responsive visual verification: desktop and tablet retain the centered terminal layout and visible Zoom out control; tablet centers the narrower square map canvas; phone preserves the existing single-column research-sheet layout without horizontal page overflow. Live provider data was unavailable during capture, so the heat-map loading state was reviewed rather than populated tiles.
 - [x] Save a checkpoint for the premium presentation refinement.
+- [x] Inspect the current stock research page on mobile and identify every wide chart, table, and header container.
+- [x] Record mobile inspection findings: the sticky app header, quote hero and metrics, responsive price chart, Financials periods, and analyst-rating history are the mobile-fit surfaces; only the two data tables require contained horizontal scrolling.
+- [x] Remove the ineffective stock-page Zoom out control and its compact-view styling.
+- [x] Make the stock research page fit the mobile viewport while retaining a readable header, price area, metrics, and chart.
+- [x] Keep wide research data in contained horizontal scroll areas with visible column headers and affordances.
+- [x] Verify the corrected stock research page on phone and desktop, run validation, and save a checkpoint.
+- [x] Record responsive verification: the Zoom out control is absent; the phone view fits in one vertical page without viewport overflow; price loading content is contained; Financials retains its Line item header and the two wide research tables now expose sticky first-column headers, focusable horizontal scrolling, and swipe guidance. Desktop retains its two-column research-sheet presentation. Live provider responses were unavailable during capture, so populated table rows were covered by the focused 35-test suite and source-backed table assertions.

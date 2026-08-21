@@ -1,0 +1,124 @@
+.stock-data-scroll {
+  position: relative;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in oklab, var(--primary) 32%, transparent) transparent;
+}
+
+.stock-data-scroll-hint {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .stock-research-main {
+    width: 100%;
+    max-width: none;
+  }
+
+  .stock-research-hero {
+    padding-top: 0;
+  }
+
+  .stock-research-heading {
+    width: 100%;
+  }
+
+  .stock-research-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stock-research-metrics .research-metric,
+  .research-sheet-card .research-metric {
+    min-width: 0;
+  }
+
+  .research-sheet-card {
+    border-radius: 16px;
+  }
+
+  .research-sheet-card-header {
+    align-items: flex-start;
+    padding: 0.75rem !important;
+  }
+
+  .research-sheet-card > div:last-child {
+    padding: 0.75rem !important;
+  }
+
+  .stock-price-chart {
+    min-width: 0;
+  }
+
+  .stock-price-chart .recharts-responsive-container,
+  .stock-price-chart .recharts-wrapper {
+    min-width: 0 !important;
+  }
+
+  .stock-chart-meta {
+    gap: 0.5rem;
+  }
+
+  .stock-chart-meta small {
+    display: none;
+  }
+
+  .stock-data-scroll {
+    margin-right: -0.75rem;
+    margin-left: -0.75rem;
+    padding-right: 0.75rem;
+    padding-left: 0.75rem;
+    -webkit-overflow-scrolling: touch;
+    box-shadow: inset -14px 0 12px -16px color-mix(in oklab, var(--foreground) 55%, transparent);
+  }
+
+  .stock-data-scroll:focus-visible {
+    outline: 2px solid var(--primary);
+    outline-offset: -2px;
+  }
+
+  .stock-data-scroll table {
+    min-width: 640px;
+  }
+
+  .stock-data-row-label {
+    box-shadow: 8px 0 10px -12px color-mix(in oklab, var(--foreground) 72%, transparent);
+  }
+
+  .stock-data-scroll-hint {
+    display: block;
+    margin-top: 0.5rem;
+    color: var(--muted-foreground);
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: 0.04em;
+  }
+}
+
+@media (max-width: 420px) {
+  .research-sheet-card .grid.grid-cols-2 {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .stock-research-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .data-loading-compact .data-loading-rail {
+    display: none;
+  }
+
+  .data-loading-compact .data-loading-copy {
+    width: 100%;
+  }
+
+  .data-loading-compact .data-loading-copy b {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .data-loading-compact .data-loading-copy small {
+    max-width: none;
+  }
+}

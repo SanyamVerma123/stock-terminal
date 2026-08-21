@@ -27,6 +27,7 @@ import { useAppState } from "@/lib/app-state";
 import { Star } from "lucide-react";
 import { NewsTimeline } from "@/components/research/NewsTimeline";
 import { ResearchWithAIButton } from "@/components/research/ResearchWithAIButton";
+import "@/stock-mobile.css";
 
 export const Route = createFileRoute("/stock/$symbol")({
   head: ({ params }) => ({
@@ -80,7 +81,6 @@ function StockPage() {
   const [range, setRange] = useState<RangeKey>("6mo");
   const [statement, setStatement] = useState<"income" | "balance" | "cash">("income");
   const [quarterly, setQuarterly] = useState(false);
-  const [compactView, setCompactView] = useState(false);
   const { isWatched, toggleWatchlist } = useAppState();
 
   const summaryFn = useServerFn(getSummary);
@@ -184,7 +184,7 @@ function StockPage() {
     <div className="stock-research-shell min-h-screen bg-background">
       <SiteHeader />
 
-      <main className={cn("stock-research-main mx-auto max-w-7xl px-4 py-8 sm:px-6", compactView && "stock-research-compact")}>
+      <main className="stock-research-main mx-auto max-w-7xl px-4 py-8 sm:px-6">
         <div className="stock-research-hero flex flex-wrap items-end justify-between gap-6">
           <div className="stock-research-heading">
             <div className="flex items-center gap-2">
@@ -193,15 +193,6 @@ function StockPage() {
               </span>
               <span className="tabular text-xs text-muted-foreground">{symbol}</span>
               <button className={cn("watch-stock-button", isWatched(symbol) && "is-watched")} onClick={() => toggleWatchlist(symbol, q?.name ?? symbol)} title={isWatched(symbol) ? "Remove from watchlist" : "Add to watchlist"}><Star size={14} fill={isWatched(symbol) ? "currentColor" : "none"}/>{isWatched(symbol) ? "Watching" : "Watch"}</button>
-              <button
-                type="button"
-                aria-pressed={compactView}
-                aria-label={compactView ? "Use standard research view" : "Use compact zoomed-out research view"}
-                className={cn("stock-compact-toggle", compactView && "is-active")}
-                onClick={() => setCompactView((value) => !value)}
-              >
-                {compactView ? "Standard view" : "Zoom out"}
-              </button>
             </div>
             <h1 className="stock-research-title mt-2 text-3xl font-semibold tracking-tight text-foreground">
               {loadingSummary ? <TextShimmerLoader text={`Loading ${symbol} overview`} /> : (q?.name ?? symbol)}
@@ -285,11 +276,11 @@ function StockPage() {
                 </div>
               }
             >
-              <div className="-mx-4 overflow-x-auto px-4">
-                <table className="w-full min-w-[560px] border-collapse text-sm">
+              <div className="stock-data-scroll -mx-4 px-4" role="region" aria-label="Financial statement data" tabIndex={0}>
+                <table className="w-full min-w-[640px] border-collapse text-sm">
                   <thead>
                     <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
-                      <th className="py-2 pr-4 font-medium">Line item</th>
+                      <th className="stock-data-row-label sticky left-0 z-20 bg-card py-2 pr-4 font-medium">Line item</th>
                       {(financials?.columns ?? []).map((c) => (
                         <th key={c} className="tabular py-2 pl-4 text-right font-medium">
                           {fmtDate(c)}
@@ -300,7 +291,7 @@ function StockPage() {
                   <tbody>
                     {(financials?.rows ?? []).map((row) => (
                       <tr key={row.label} className="border-b border-border/60 last:border-0">
-                        <td className="py-2.5 pr-4 text-muted-foreground">{row.label}</td>
+                        <td className="stock-data-row-label sticky left-0 z-10 bg-card py-2.5 pr-4 text-muted-foreground">{row.label}</td>
                         {row.values.map((v, i) => (
                           <td key={i} className="tabular py-2.5 pl-4 text-right text-foreground">
                             {fmtCompact(v, q?.currency)}
@@ -314,6 +305,7 @@ function StockPage() {
                   <p className="py-6 text-sm text-muted-foreground">No statement data.</p>
                 )}
               </div>
+              <p className="stock-data-scroll-hint" aria-hidden="true">Swipe sideways to view all periods</p>
             </Card>
 
             <Card title="Analyst coverage">
@@ -350,25 +342,34 @@ function StockPage() {
                 })}
               </div>
               {!!upgrades?.length && (
-                <div className="mt-5 -mx-4 overflow-x-auto px-4">
-                  <table className="w-full min-w-[480px] text-sm">
+                <div className="mt-5">
+                  <div className="stock-data-scroll -mx-4 px-4" role="region" aria-label="Analyst rating changes" tabIndex={0}>
+                  <table className="w-full min-w-[660px] text-sm">
+                    <thead>
+                      <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
+                        <th className="stock-data-row-label sticky left-0 z-20 bg-card py-2 pr-4 font-medium">Date</th>
+                        <th className="py-2 pr-4 font-medium">Firm</th>
+                        <th className="py-2 pr-4 font-medium">From</th>
+                        <th className="py-2 pr-4 font-medium">To</th>
+                        <th className="py-2 pr-4 font-medium">Action</th>
+                        <th className="tabular py-2 text-right font-medium">Target</th>
+                      </tr>
+                    </thead>
                     <tbody>
                       {upgrades.slice(0, 8).map((u, i) => (
                         <tr key={i} className="border-b border-border/60 last:border-0">
-                          {Object.values(u)
-                            .slice(0, 4)
-                            .map((cell, j) => (
-                              <td
-                                key={j}
-                                className="py-2 pr-4 text-muted-foreground first:text-foreground"
-                              >
-                                {cell}
-                              </td>
-                            ))}
+                          <td className="stock-data-row-label sticky left-0 z-10 bg-card py-2 pr-4 text-foreground">{fmtDate(u.date)}</td>
+                          <td className="py-2 pr-4 text-muted-foreground">{u.firm || "—"}</td>
+                          <td className="py-2 pr-4 text-muted-foreground">{u.fromGrade || "—"}</td>
+                          <td className="py-2 pr-4 text-muted-foreground">{u.toGrade || "—"}</td>
+                          <td className="py-2 pr-4 text-muted-foreground">{u.action || "—"}</td>
+                          <td className="tabular py-2 text-right text-foreground">{fmtPrice(u.priceTarget, q?.currency)}</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
+                  </div>
+                  <p className="stock-data-scroll-hint" aria-hidden="true">Swipe sideways to view every analyst field</p>
                 </div>
               )}
             </Card>
