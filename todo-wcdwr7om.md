@@ -77,4 +77,4 @@
 - [x] Record interactive-layout review: the 1280px view presents the three statement buttons with Profit & Loss selected and its Yearly/Quarterly controls; the 375px view keeps the price chart, all period controls, the selected statement card, and table swipe guidance within the phone width. The screenshots show no provider statement data for the selected ticker, so live populated rows remain covered by the statement rendering and query tests.
 - [x] Run final validation for the interactive single-table financials update.
 - [x] Confirm the final 375px rendered review: the chart remains within its card, all price-range controls are visible, the Yearly/Quarterly selector appears only with Profit & Loss selected, and the focused table/card stays within the phone viewport with its own deliberate period-scroll affordance. TypeScript and all 37 regression tests pass.
-- [ ] Save a checkpoint for the interactive single-table financials update.
+- [x] Save a checkpoint for the interactive single-table financials update.
