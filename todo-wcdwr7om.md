@@ -69,4 +69,4 @@
 - [x] Validate statement switching, desktop and mobile table presentation, and add regression coverage.
 - [x] Record complete-statements verification: the 1280px view displays the Financial statements overview, the navigation links, and sequential Profit & Loss, Balance Sheet, and Cash Flow cards. The 375px view retains all three cards and their contained period-table scroll affordances without page-width overflow. TypeScript and 37 regression tests pass. Provider statement responses were unavailable during the live capture, so each section visibly reports its no-provider-data state.
 - [x] Confirm rendered three-statement captures: the reviewed 1280px image shows the annual toggle, three statement links, and independently labelled Profit & Loss, Balance Sheet, and Cash Flow cards; the reviewed 375px image keeps those same three sections and their swipe guidance within the page width.
-- [ ] Save a checkpoint for the complete Screener-style financial-statements update.
+- [x] Save a checkpoint for the complete Screener-style financial-statements update.
