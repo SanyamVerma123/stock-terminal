@@ -14,4 +14,23 @@ describe("capitalizationTreemap", () => {
     expect(areaByKey.get("mid")).toBeCloseTo(3000, 6);
     expect(areaByKey.get("small")).toBeCloseTo(1000, 6);
   });
+
+  it("keeps a representative mix of weighted sectors in compact square-oriented tiles", () => {
+    const rectangles = capitalizationTreemap([
+      { key: "largest", value: 44 },
+      { key: "large", value: 24 },
+      { key: "medium", value: 12 },
+      { key: "small-a", value: 8 },
+      { key: "small-b", value: 5 },
+      { key: "small-c", value: 4 },
+      { key: "small-d", value: 3 },
+    ]);
+    const totalArea = rectangles.reduce((sum, rectangle) => sum + rectangle.width * rectangle.height, 0);
+    const worstAspectRatio = Math.max(
+      ...rectangles.map((rectangle) => Math.max(rectangle.width / rectangle.height, rectangle.height / rectangle.width)),
+    );
+
+    expect(totalArea).toBeCloseTo(10_000, 6);
+    expect(worstAspectRatio).toBeLessThanOrEqual(4);
+  });
 });

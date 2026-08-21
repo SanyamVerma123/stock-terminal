@@ -34,3 +34,7 @@
 - [x] Verify the final stock research refinement on desktop and record the result.
 - [x] Recorded desktop verification: `/stock/TCS.NS` renders the refined research-sheet hero, metric tiles, chart, fundamentals, analyst coverage, and supporting cards without layout breakage.
 - [x] Save a final checkpoint for the merged visual upgrade after all final checks pass.
+- [x] Sync the preview to the latest shared project version and inspect the current heat-map geometry.
+- [x] Refine only the sector heat-map block geometry into a clean square composition, without changing logic, weights, or text direction.
+- [x] Verify the synchronized heat map retains its existing data behavior and has an improved square layout on desktop and mobile.
+- [x] Save a checkpoint for the synchronized square heat-map refinement.

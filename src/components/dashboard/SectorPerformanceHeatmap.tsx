@@ -21,45 +21,63 @@ type TreemapRect = { key: string; left: number; top: number; width: number; heig
 
 /**
  * Each output rectangle retains its sector's exact share of total mapped area.
- * Rows are balanced only for readability; width × height remains proportional to market cap.
+ * A squarified layout groups tiles only when that keeps their aspect ratios closer to squares.
  */
 export function capitalizationTreemap(tiles: CapitalizationTile[]): TreemapRect[] {
   const normalized = tiles
     .filter((tile) => Number.isFinite(tile.value) && tile.value > 0)
     .map((tile) => ({ ...tile, value: tile.value }));
   const total = normalized.reduce((sum, tile) => sum + tile.value, 0) || 1;
-  const ordered = [...normalized].sort((a, b) => b.value - a.value);
-  const target = total / 2;
-  const firstRow: CapitalizationTile[] = [];
-  const secondRow: CapitalizationTile[] = [];
-  let firstTotal = 0;
+  const tilesByArea = [...normalized]
+    .sort((a, b) => b.value - a.value)
+    .map((tile) => ({ ...tile, area: (tile.value / total) * 10_000 }));
+  const rectangles: TreemapRect[] = [];
+  let remaining = { left: 0, top: 0, width: 100, height: 100 };
+  let cursor = 0;
 
-  ordered.forEach((tile) => {
-    if (firstTotal < target || secondRow.length === 0) {
-      firstRow.push(tile);
-      firstTotal += tile.value;
-    } else {
-      secondRow.push(tile);
+  const worstAspectRatio = (row: typeof tilesByArea, shortSide: number) => {
+    const rowArea = row.reduce((sum, tile) => sum + tile.area, 0);
+    const smallest = Math.min(...row.map((tile) => tile.area));
+    const largest = Math.max(...row.map((tile) => tile.area));
+    return Math.max(
+      (shortSide * shortSide * largest) / (rowArea * rowArea),
+      (rowArea * rowArea) / (shortSide * shortSide * smallest),
+    );
+  };
+
+  while (cursor < tilesByArea.length && remaining.width > 0 && remaining.height > 0) {
+    const row = [tilesByArea[cursor++]!];
+    const shortSide = Math.min(remaining.width, remaining.height);
+    while (cursor < tilesByArea.length) {
+      const candidate = tilesByArea[cursor]!;
+      if (worstAspectRatio([...row, candidate], shortSide) > worstAspectRatio(row, shortSide)) break;
+      row.push(candidate);
+      cursor += 1;
     }
-  });
-  if (!secondRow.length && firstRow.length > 1) secondRow.push(firstRow.pop()!);
 
-  let top = 0;
-  return [firstRow, secondRow]
-    .filter((row) => row.length > 0)
-    .flatMap((row) => {
-      const rowTotal = row.reduce((sum, tile) => sum + tile.value, 0) || 1;
-      const height = (rowTotal / total) * 100;
-      let left = 0;
-      const rects = row.map((tile) => {
-        const width = (tile.value / rowTotal) * 100;
-        const rect = { key: tile.key, left, top, width, height };
-        left += width;
-        return rect;
+    const rowArea = row.reduce((sum, tile) => sum + tile.area, 0);
+    if (remaining.width >= remaining.height) {
+      const stripWidth = rowArea / remaining.height;
+      let top = remaining.top;
+      row.forEach((tile) => {
+        const height = tile.area / stripWidth;
+        rectangles.push({ key: tile.key, left: remaining.left, top, width: stripWidth, height });
+        top += height;
       });
-      top += height;
-      return rects;
-    });
+      remaining = { ...remaining, left: remaining.left + stripWidth, width: remaining.width - stripWidth };
+    } else {
+      const stripHeight = rowArea / remaining.width;
+      let left = remaining.left;
+      row.forEach((tile) => {
+        const width = tile.area / stripHeight;
+        rectangles.push({ key: tile.key, left, top: remaining.top, width, height: stripHeight });
+        left += width;
+      });
+      remaining = { ...remaining, top: remaining.top + stripHeight, height: remaining.height - stripHeight };
+    }
+  }
+
+  return rectangles;
 }
 
 export function SectorPerformanceHeatmap() {
