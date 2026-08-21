@@ -95,5 +95,5 @@
 - [x] Record hierarchy review: parent accounts now show a plus/minus control only when actual matching child accounts exist; expanding reveals those accounts as indented table rows directly below the parent, matching the requested Screener pattern. The reviewed desktop and 375px phone views preserve the single-table layout and no page-width overflow. Live statement rows were unavailable in the capture, so the populated hierarchy behavior is asserted through the source-backed 38-test suite.
 - [x] Add deterministic hierarchy fixtures for income, balance-sheet, and cash-flow parent/child grouping, independent of provider availability.
 - [x] Validate deterministic hierarchy fixtures: income, balance-sheet, and cash-flow child accounts are grouped under their matching parent rows and excluded from duplicate top-level rendering. TypeScript, 40 regression tests, and the production build passed.
-- [ ] Save a checkpoint for the Screener-style parent-and-child account hierarchy revision.
-- [ ] Save a checkpoint for the Screener-style account hierarchy revision.
+- [x] Save a checkpoint for the Screener-style parent-and-child account hierarchy revision.
+- [x] Save a checkpoint for the Screener-style account hierarchy revision.
