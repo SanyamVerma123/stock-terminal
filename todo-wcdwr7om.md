@@ -139,3 +139,8 @@
 - [x] Replace Lovable favicon and browser-branding references with the Insightful Search app icon for Vercel-compatible builds.
 - [x] Validate production metadata and save a checkpoint for the external-deployment branding correction.
 - [x] Record external-branding verification: the root route now uses the Insightful Search title, description, SVG chart-mark favicon, and web manifest rather than the Lovable browser labels. Both `/favicon.svg` and `/site.webmanifest` return HTTP 200 from the production-style local server. Strict TypeScript and all 58 regression tests pass.
+- [x] Inspect the mobile sector heat-map sizing and stock research page overflow sources.
+- [x] Make narrow heat-map tiles communicate direction without clipped or overlapping labels.
+- [x] Keep the mobile stock research page within the viewport, retaining horizontal scrolling only inside explicit data regions.
+- [x] Validate the corrected phone layouts and publish the responsive fixes.
+- [x] Record mobile-layout verification: small weighted map cells now use compact sector labels or a directional glyph, while retaining full accessible labels; their text is clipped to the tile boundary rather than overprinting neighbors. The 375px live AAPL stock page displays the symbol, metrics, chart, price range, financial controls, and content inside the viewport; wide tables retain their own contained scrolling. Strict TypeScript and all 59 regression tests pass.

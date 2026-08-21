@@ -469,11 +469,18 @@
   }
 
   .financial-period-toggle {
+    display: grid;
+    max-width: 100%;
     width: 100%;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    overflow: hidden;
   }
 
   .financial-period-toggle button {
-    flex: 1 1 0;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .profit-loss-growth-grid {

@@ -19,6 +19,19 @@ function movementClass(value: number | null) {
 type CapitalizationTile = { key: string; value: number };
 type TreemapRect = { key: string; left: number; top: number; width: number; height: number };
 
+const COMPACT_SECTOR_LABELS: Record<string, string> = {
+  "basic-materials": "Materials",
+  "communication-services": "Comms",
+  "consumer-cyclical": "Cyclical",
+  "consumer-defensive": "Defensive",
+  "financial-services": "Financials",
+  "real-estate": "Real estate",
+};
+
+export function compactSectorLabel(sectorKey: string) {
+  return COMPACT_SECTOR_LABELS[sectorKey] ?? sectorLabel(sectorKey);
+}
+
 /**
  * Each output rectangle retains its sector's exact share of total mapped area.
  * A squarified layout groups tiles only when that keeps their aspect ratios closer to squares.
@@ -160,8 +173,10 @@ export function SectorPerformanceHeatmap() {
             const move = signal?.symbol ? quoteBySymbol.get(signal.symbol)?.changePercent ?? null : null;
             const rect = rectangleByKey.get(sectorKey)!;
             const area = rect.width * rect.height;
-            const compact = area < 800;
+            const compact = area < 1_050 || rect.width < 29;
+            const micro = rect.width < 13 || rect.height < 14;
             const verticalContent = rect.width < 11 && rect.height > 24;
+            const label = compact ? compactSectorLabel(sectorKey) : sectorLabel(sectorKey);
             const detail = signal?.label ?? (signal?.symbol ? "Lead-company proxy" : fmtCompact(value!.marketCap));
             return (
               <button
@@ -176,15 +191,24 @@ export function SectorPerformanceHeatmap() {
                   width: `${rect.width}%`,
                   height: `${rect.height}%`,
                 }}
-                className={`heatmap-cell absolute overflow-hidden border border-background/60 p-1.5 sm:p-2 ${verticalContent ? "heatmap-cell-vertical" : ""} ${selectedSector === sectorKey ? "ring-2 ring-primary ring-offset-1 ring-offset-card" : ""} ${movementClass(move)}`}
+                aria-label={`${sectorLabel(sectorKey)} · ${move === null ? "daily movement unavailable" : `${move >= 0 ? "+" : ""}${move.toFixed(2)}%`}`}
+                className={`heatmap-cell absolute overflow-hidden border border-background/60 p-1.5 sm:p-2 ${verticalContent ? "heatmap-cell-vertical" : ""} ${micro ? "heatmap-cell-micro" : ""} ${selectedSector === sectorKey ? "ring-2 ring-primary ring-offset-1 ring-offset-card" : ""} ${movementClass(move)}`}
               >
-                <p className={`truncate font-semibold leading-tight text-center ${compact ? "text-[7px] sm:text-[9px]" : "text-[9px] sm:text-[11px]"}`}>
-                  {sectorLabel(sectorKey)}
-                </p>
-                <p className={`mt-1 truncate tabular font-semibold text-center ${compact ? "text-[10px] sm:text-xs" : "text-sm sm:text-lg"}`}>
-                  {move === null ? "—" : `${move >= 0 ? "+" : ""}${move.toFixed(2)}%`}
-                </p>
-                {!compact && <p className="mt-1 truncate text-[8px] opacity-75 sm:text-[10px]">{detail}</p>}
+                {micro ? (
+                  <span className="heatmap-cell-direction" aria-hidden="true">
+                    {move === null ? "•" : move >= 0 ? "▲" : "▼"}
+                  </span>
+                ) : (
+                  <>
+                    <p className={`heatmap-cell-label font-semibold leading-tight text-center ${compact ? "text-[8px] sm:text-[9px]" : "text-[9px] sm:text-[11px]"}`}>
+                      {label}
+                    </p>
+                    <p className={`heatmap-cell-move mt-1 tabular font-semibold text-center ${compact ? "text-[10px] sm:text-xs" : "text-sm sm:text-lg"}`}>
+                      {move === null ? "—" : `${move >= 0 ? "+" : ""}${move.toFixed(2)}%`}
+                    </p>
+                    {!compact && <p className="heatmap-cell-detail mt-1 text-[8px] opacity-75 sm:text-[10px]">{detail}</p>}
+                  </>
+                )}
               </button>
             );
           })}

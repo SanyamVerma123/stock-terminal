@@ -26,6 +26,11 @@ describe("stock research mobile layout", () => {
     expect(mobileStyles).toContain("-webkit-overflow-scrolling: touch");
     expect(mobileStyles).toContain(".stock-research-main");
     expect(mobileStyles).toContain(".stock-price-chart .recharts-responsive-container");
+    expect(mobileStyles).toContain(".stock-research-shell,");
+    expect(mobileStyles).toContain("overflow-x: clip");
+    expect(mobileStyles).toContain("margin-right: 0 !important");
+    expect(mobileStyles).toContain(".financial-statement-tabs");
+    expect(fundamentalsStyles).toContain("grid-template-columns: repeat(2, minmax(0, 1fr))");
   });
 
   it("uses a structured Screener-inspired fundamentals snapshot above detailed statements", () => {

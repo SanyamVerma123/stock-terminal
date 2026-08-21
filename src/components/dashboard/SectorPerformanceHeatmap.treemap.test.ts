@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { capitalizationTreemap } from "./SectorPerformanceHeatmap";
+import { capitalizationTreemap, compactSectorLabel } from "./SectorPerformanceHeatmap";
 
 describe("capitalizationTreemap", () => {
   it("allocates tile area in direct proportion to supplied market capitalization", () => {
@@ -32,5 +32,11 @@ describe("capitalizationTreemap", () => {
 
     expect(totalArea).toBeCloseTo(10_000, 6);
     expect(worstAspectRatio).toBeLessThanOrEqual(4);
+  });
+
+  it("uses concise, recognizable labels for constrained phone tiles", () => {
+    expect(compactSectorLabel("communication-services")).toBe("Comms");
+    expect(compactSectorLabel("basic-materials")).toBe("Materials");
+    expect(compactSectorLabel("technology")).toBe("Technology");
   });
 });
