@@ -18,7 +18,7 @@ import {
   getSummary,
   getUpgrades,
 } from "@/lib/finance.functions";
-import { RANGES, type RangeKey } from "@/lib/finance-types";
+import { RANGES, type RangeKey, type StatementTable } from "@/lib/finance-types";
 import { fmtCompact, fmtDate, fmtNumber, fmtPercent, fmtPrice } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { DataLoading } from "@/components/ui/loading-state";
@@ -86,10 +86,67 @@ function FundamentalMetric({ label, value }: { label: string; value: string }) {
   );
 }
 
+function FinancialStatementSection({
+  id,
+  title,
+  description,
+  statement,
+  quarterly,
+  currency,
+}: {
+  id: string;
+  title: string;
+  description: string;
+  statement: StatementTable | undefined;
+  quarterly: boolean;
+  currency: string | null | undefined;
+}) {
+  return (
+    <section id={id} className="financial-statement-section research-sheet-card overflow-hidden rounded-2xl border border-border bg-card" aria-labelledby={`${id}-title`}>
+      <div className="research-sheet-card-header flex items-center justify-between gap-3 border-b border-border px-4 py-3">
+        <div>
+          <p className="fundamentals-kicker">Financial statement</p>
+          <h3 id={`${id}-title`} className="mt-0.5 text-sm font-medium text-foreground">{title}</h3>
+        </div>
+        <span className="financial-statement-period">{quarterly ? "Quarterly" : "Annual"}</span>
+      </div>
+      <div className="p-4">
+        <div className="fundamentals-statement-context">
+          <span>{description}</span>
+          <span>{currency === "INR" ? "Reported in Indian rupees" : "Provider-reported figures"}</span>
+        </div>
+        <div className="stock-data-scroll -mx-4 px-4" role="region" aria-label={`${title} data`} tabIndex={0}>
+          <table className="w-full min-w-[640px] border-collapse text-sm">
+            <thead>
+              <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
+                <th className="stock-data-row-label sticky left-0 z-20 bg-card py-2 pr-4 font-medium">Line item</th>
+                {(statement?.columns ?? []).map((column) => (
+                  <th key={column} className="tabular py-2 pl-4 text-right font-medium">{fmtDate(column)}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {(statement?.rows ?? []).map((row) => (
+                <tr key={row.label} className="border-b border-border/60 last:border-0">
+                  <td className="stock-data-row-label sticky left-0 z-10 bg-card py-2.5 pr-4 text-muted-foreground">{row.label}</td>
+                  {row.values.map((value, index) => (
+                    <td key={index} className="tabular py-2.5 pl-4 text-right text-foreground">{fmtCompact(value, currency)}</td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          {!statement?.rows.length && <p className="py-6 text-sm text-muted-foreground">No provider statement data.</p>}
+        </div>
+        <p className="stock-data-scroll-hint" aria-hidden="true">Swipe sideways to view all periods</p>
+      </div>
+    </section>
+  );
+}
+
 function StockPage() {
   const { symbol } = Route.useParams();
   const [range, setRange] = useState<RangeKey>("6mo");
-  const [statement, setStatement] = useState<"income" | "balance" | "cash">("income");
   const [quarterly, setQuarterly] = useState(false);
   const { isWatched, toggleWatchlist } = useAppState();
 
@@ -131,9 +188,19 @@ function StockPage() {
     queryFn: () => rankedNewsFn({ data: { symbol } }),
     staleTime: 120_000,
   });
-  const { data: financials } = useQuery({
-    queryKey: ["financials", symbol, statement, quarterly],
-    queryFn: () => finFn({ data: { symbol, statement, quarterly } }),
+  const { data: incomeFinancials } = useQuery({
+    queryKey: ["financials", symbol, "income", quarterly],
+    queryFn: () => finFn({ data: { symbol, statement: "income", quarterly } }),
+    staleTime: 300_000,
+  });
+  const { data: balanceFinancials } = useQuery({
+    queryKey: ["financials", symbol, "balance", quarterly],
+    queryFn: () => finFn({ data: { symbol, statement: "balance", quarterly } }),
+    staleTime: 300_000,
+  });
+  const { data: cashFinancials } = useQuery({
+    queryKey: ["financials", symbol, "cash", quarterly],
+    queryFn: () => finFn({ data: { symbol, statement: "cash", quarterly } }),
     staleTime: 300_000,
   });
   const { data: analyst } = useQuery({
@@ -257,70 +324,32 @@ function StockPage() {
               {loadingHistory ? <DataLoading compact label={`Loading ${symbol} price history`} detail="Preparing the selected chart range." /> : <div className="chart-ready"><StockPriceChart symbol={symbol} points={history ?? []} currency={q?.currency} /></div>}
             </Card>
 
-            <Card
-              title="Financials"
-              action={
-                <div className="flex items-center gap-1">
-                  {(["income", "balance", "cash"] as const).map((s) => (
-                    <button
-                      key={s}
-                      type="button"
-                      onClick={() => setStatement(s)}
-                      className={cn(
-                        "rounded-full px-2.5 py-1 text-xs capitalize transition-colors",
-                        statement === s
-                          ? "bg-accent text-foreground"
-                          : "text-muted-foreground hover:bg-accent hover:text-foreground",
-                      )}
-                    >
-                      {s}
-                    </button>
-                  ))}
-                  <button
-                    type="button"
-                    onClick={() => setQuarterly((v) => !v)}
-                    className="ml-2 rounded-full border border-border px-2.5 py-1 text-xs text-muted-foreground hover:text-foreground"
-                  >
-                    {quarterly ? "Quarterly" : "Annual"}
-                  </button>
+            <section className="financial-analysis" aria-labelledby="financial-analysis-title">
+              <div className="financial-analysis-header">
+                <div>
+                  <p className="fundamentals-kicker">Complete financials</p>
+                  <h2 id="financial-analysis-title" className="mt-0.5 text-lg font-semibold tracking-tight text-foreground">Financial statements</h2>
+                  <p className="mt-1 text-xs text-muted-foreground">Profit &amp; Loss, Balance Sheet, and Cash Flow—structured for period-by-period review.</p>
                 </div>
-              }
-            >
-              <div className="fundamentals-statement-context">
-                <span>{quarterly ? "Quarterly financial statement" : "Annual financial statement"}</span>
-                <span>{q?.currency === "INR" ? "Reported in Indian rupees" : "Provider-reported figures"}</span>
+                <button
+                  type="button"
+                  onClick={() => setQuarterly((value) => !value)}
+                  className="financial-frequency-toggle"
+                >
+                  {quarterly ? "Quarterly" : "Annual"}
+                </button>
               </div>
-              <div className="stock-data-scroll -mx-4 px-4" role="region" aria-label="Financial statement data" tabIndex={0}>
-                <table className="w-full min-w-[640px] border-collapse text-sm">
-                  <thead>
-                    <tr className="border-b border-border text-left text-xs uppercase tracking-wider text-muted-foreground">
-                      <th className="stock-data-row-label sticky left-0 z-20 bg-card py-2 pr-4 font-medium">Line item</th>
-                      {(financials?.columns ?? []).map((c) => (
-                        <th key={c} className="tabular py-2 pl-4 text-right font-medium">
-                          {fmtDate(c)}
-                        </th>
-                      ))}
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {(financials?.rows ?? []).map((row) => (
-                      <tr key={row.label} className="border-b border-border/60 last:border-0">
-                        <td className="stock-data-row-label sticky left-0 z-10 bg-card py-2.5 pr-4 text-muted-foreground">{row.label}</td>
-                        {row.values.map((v, i) => (
-                          <td key={i} className="tabular py-2.5 pl-4 text-right text-foreground">
-                            {fmtCompact(v, q?.currency)}
-                          </td>
-                        ))}
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {!financials?.rows.length && (
-                  <p className="py-6 text-sm text-muted-foreground">No statement data.</p>
-                )}
+              <nav className="financial-analysis-nav" aria-label="Financial statement sections">
+                <a href="#profit-loss">Profit &amp; Loss</a>
+                <a href="#balance-sheet">Balance Sheet</a>
+                <a href="#cash-flow">Cash Flow</a>
+              </nav>
+              <div className="mt-4 space-y-4">
+                <FinancialStatementSection id="profit-loss" title="Profit &amp; Loss" description="Revenue, expenses, operating performance, and net income" statement={incomeFinancials} quarterly={quarterly} currency={q?.currency} />
+                <FinancialStatementSection id="balance-sheet" title="Balance Sheet" description="Assets, liabilities, equity, and financial position" statement={balanceFinancials} quarterly={quarterly} currency={q?.currency} />
+                <FinancialStatementSection id="cash-flow" title="Cash Flow" description="Operating, investing, financing, and net cash movement" statement={cashFinancials} quarterly={quarterly} currency={q?.currency} />
               </div>
-              <p className="stock-data-scroll-hint" aria-hidden="true">Swipe sideways to view all periods</p>
-            </Card>
+            </section>
 
             <Card title="Analyst coverage">
               <div className="grid gap-3 sm:grid-cols-4">
