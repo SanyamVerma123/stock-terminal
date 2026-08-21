@@ -38,3 +38,10 @@
 - [x] Refine only the sector heat-map block geometry into a clean square composition, without changing logic, weights, or text direction.
 - [x] Verify the synchronized heat map retains its existing data behavior and has an improved square layout on desktop and mobile.
 - [x] Save a checkpoint for the synchronized square heat-map refinement.
+- [x] Inspect the current heat-map and stock-page layout before the premium presentation refinement.
+- [x] Center the heat-map tile content, preserve vertical full-tile content where narrow-tile orientation is needed, and add refined curved tile treatment.
+- [x] Reduce the heat-map canvas footprint on tablet viewports without changing desktop or mobile data behavior.
+- [x] Add an accessible stock-research compact-view control for users who want a denser, zoomed-out research sheet.
+- [x] Verify the premium heat-map and stock-page compact-view behavior on desktop, tablet, and mobile.
+- [x] Record responsive visual verification: desktop and tablet retain the centered terminal layout and visible Zoom out control; tablet centers the narrower square map canvas; phone preserves the existing single-column research-sheet layout without horizontal page overflow. Live provider data was unavailable during capture, so the heat-map loading state was reviewed rather than populated tiles.
+- [ ] Save a checkpoint for the premium presentation refinement.

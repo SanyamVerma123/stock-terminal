@@ -80,6 +80,7 @@ function StockPage() {
   const [range, setRange] = useState<RangeKey>("6mo");
   const [statement, setStatement] = useState<"income" | "balance" | "cash">("income");
   const [quarterly, setQuarterly] = useState(false);
+  const [compactView, setCompactView] = useState(false);
   const { isWatched, toggleWatchlist } = useAppState();
 
   const summaryFn = useServerFn(getSummary);
@@ -183,7 +184,7 @@ function StockPage() {
     <div className="stock-research-shell min-h-screen bg-background">
       <SiteHeader />
 
-      <main className="stock-research-main mx-auto max-w-7xl px-4 py-8 sm:px-6">
+      <main className={cn("stock-research-main mx-auto max-w-7xl px-4 py-8 sm:px-6", compactView && "stock-research-compact")}>
         <div className="stock-research-hero flex flex-wrap items-end justify-between gap-6">
           <div className="stock-research-heading">
             <div className="flex items-center gap-2">
@@ -192,6 +193,15 @@ function StockPage() {
               </span>
               <span className="tabular text-xs text-muted-foreground">{symbol}</span>
               <button className={cn("watch-stock-button", isWatched(symbol) && "is-watched")} onClick={() => toggleWatchlist(symbol, q?.name ?? symbol)} title={isWatched(symbol) ? "Remove from watchlist" : "Add to watchlist"}><Star size={14} fill={isWatched(symbol) ? "currentColor" : "none"}/>{isWatched(symbol) ? "Watching" : "Watch"}</button>
+              <button
+                type="button"
+                aria-pressed={compactView}
+                aria-label={compactView ? "Use standard research view" : "Use compact zoomed-out research view"}
+                className={cn("stock-compact-toggle", compactView && "is-active")}
+                onClick={() => setCompactView((value) => !value)}
+              >
+                {compactView ? "Standard view" : "Zoom out"}
+              </button>
             </div>
             <h1 className="stock-research-title mt-2 text-3xl font-semibold tracking-tight text-foreground">
               {loadingSummary ? <TextShimmerLoader text={`Loading ${symbol} overview`} /> : (q?.name ?? symbol)}

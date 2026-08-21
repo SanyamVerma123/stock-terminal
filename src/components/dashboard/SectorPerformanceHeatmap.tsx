@@ -154,14 +154,14 @@ export function SectorPerformanceHeatmap() {
           />
         </div>
       ) : (
-        <div className="heatmap-canvas relative mt-4 aspect-square overflow-hidden">
+        <div className="heatmap-canvas heatmap-canvas-square relative mt-4 aspect-square overflow-hidden">
           {weightedSectors.map(({ sectorKey, value }) => {
             const signal = signals.find((item) => item.sectorKey === sectorKey);
             const move = signal?.symbol ? quoteBySymbol.get(signal.symbol)?.changePercent ?? null : null;
             const rect = rectangleByKey.get(sectorKey)!;
             const area = rect.width * rect.height;
             const compact = area < 800;
-            const verticalLabel = rect.width < 11 && rect.height > 24;
+            const verticalContent = rect.width < 11 && rect.height > 24;
             const detail = signal?.label ?? (signal?.symbol ? "Lead-company proxy" : fmtCompact(value!.marketCap));
             return (
               <button
@@ -176,12 +176,12 @@ export function SectorPerformanceHeatmap() {
                   width: `${rect.width}%`,
                   height: `${rect.height}%`,
                 }}
-                className={`heatmap-cell absolute overflow-hidden border border-background/60 p-1.5 text-left sm:p-2 ${selectedSector === sectorKey ? "ring-2 ring-primary ring-offset-1 ring-offset-card" : ""} ${movementClass(move)}`}
+                className={`heatmap-cell absolute overflow-hidden border border-background/60 p-1.5 sm:p-2 ${verticalContent ? "heatmap-cell-vertical" : ""} ${selectedSector === sectorKey ? "ring-2 ring-primary ring-offset-1 ring-offset-card" : ""} ${movementClass(move)}`}
               >
-                <p className={`${verticalLabel ? "heatmap-cell-label-vertical" : "truncate"} font-semibold leading-tight ${compact ? "text-[7px] sm:text-[9px]" : "text-[9px] sm:text-[11px]"}`}>
+                <p className={`truncate font-semibold leading-tight text-center ${compact ? "text-[7px] sm:text-[9px]" : "text-[9px] sm:text-[11px]"}`}>
                   {sectorLabel(sectorKey)}
                 </p>
-                <p className={`mt-1 truncate tabular font-semibold ${compact ? "text-[10px] sm:text-xs" : "text-sm sm:text-lg"}`}>
+                <p className={`mt-1 truncate tabular font-semibold text-center ${compact ? "text-[10px] sm:text-xs" : "text-sm sm:text-lg"}`}>
                   {move === null ? "—" : `${move >= 0 ? "+" : ""}${move.toFixed(2)}%`}
                 </p>
                 {!compact && <p className="mt-1 truncate text-[8px] opacity-75 sm:text-[10px]">{detail}</p>}
