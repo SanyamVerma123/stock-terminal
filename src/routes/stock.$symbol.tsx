@@ -225,7 +225,7 @@ function StockPage() {
             <Card
               title="Price"
               action={
-                <div className="flex flex-wrap gap-1">
+                <div className="price-range-tabs flex flex-wrap gap-1">
                   {RANGES.map((rg) => (
                     <button
                       key={rg.key}

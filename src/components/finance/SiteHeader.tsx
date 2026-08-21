@@ -117,35 +117,36 @@ export function TickerSearch({
 
 export function SiteHeader({ compactSearch = true }: { compactSearch?: boolean }) {
   const links = [
-    { to: "/", label: "Markets" },
-    { to: "/compare", label: "Compare" },
-    { to: "/chat", label: "AI Analyst" },
+    { to: "/", label: "Markets", shortLabel: "Markets" },
+    { to: "/compare", label: "Compare", shortLabel: "Compare" },
+    { to: "/chat", label: "AI Analyst", shortLabel: "AI" },
   ] as const;
 
   return (
     <header className="sticky top-0 z-30 border-b border-border bg-background/85 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6">
-        <Link to="/" className="flex shrink-0 items-center gap-2">
+      <div className="site-header-inner mx-auto flex h-16 max-w-7xl items-center gap-6 px-4 sm:px-6">
+        <Link to="/" className="site-header-brand flex shrink-0 items-center gap-2">
           <span className="flex size-7 items-center justify-center rounded-lg bg-primary text-xs font-bold text-primary-foreground">
             S
           </span>
-          <span className="text-sm font-semibold tracking-tight text-foreground">Screener</span>
+          <span className="site-header-brand-label text-sm font-semibold tracking-tight text-foreground">Screener</span>
         </Link>
         {compactSearch && (
           <div className="hidden max-w-md flex-1 md:block">
             <TickerSearch />
           </div>
         )}
-        <nav className="ml-auto flex items-center gap-1">
+        <nav className="site-header-nav ml-auto flex items-center gap-1">
           {links.map((l) => (
             <Link
               key={l.to}
               to={l.to}
-              className="rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
+              className="site-header-nav-link rounded-full px-3 py-1.5 text-sm text-muted-foreground transition-colors hover:bg-accent hover:text-foreground"
               activeProps={{ className: "bg-accent text-foreground" }}
               activeOptions={{ exact: l.to === "/" }}
             >
-              {l.label}
+              <span className="site-header-nav-label">{l.label}</span>
+              <span className="site-header-nav-short-label">{l.shortLabel}</span>
             </Link>
           ))}
         </nav>

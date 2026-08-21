@@ -52,3 +52,7 @@
 - [x] Keep wide research data in contained horizontal scroll areas with visible column headers and affordances.
 - [x] Verify the corrected stock research page on phone and desktop, run validation, and save a checkpoint.
 - [x] Record responsive verification: the Zoom out control is absent; the phone view fits in one vertical page without viewport overflow; price loading content is contained; Financials retains its Line item header and the two wide research tables now expose sticky first-column headers, focusable horizontal scrolling, and swipe guidance. Desktop retains its two-column research-sheet presentation. Live provider responses were unavailable during capture, so populated table rows were covered by the focused 35-test suite and source-backed table assertions.
+- [x] Reinspect the stock research page at phone width and identify actual viewport overflow: at 320px the shared header's AI Analyst label was clipped, the rightmost price range control could be cut off, and long peer-context copy could extend at the card edge.
+- [x] Correct confirmed narrow-phone overflow and validate the revised stock-page view.
+- [x] Record narrow-phone verification: at 320px, the compact shared header, all stock-page cards, the price-range strip, long peer copy, and live event data remain inside the visible width; wide datasets remain intentionally contained within their dedicated scroll regions.
+- [ ] Save a checkpoint for the confirmed narrow-phone stock-page correction.
