@@ -403,8 +403,8 @@ function StockPage() {
           </div>
         </div>
 
-        <div className="mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
-          <div className="space-y-6">
+        <div className="stock-research-content-grid mt-8 grid gap-6 lg:grid-cols-[1.6fr_1fr]">
+          <div className="stock-research-primary-column space-y-6">
             <Card
               title="Price"
               action={
@@ -427,7 +427,7 @@ function StockPage() {
                 </div>
               }
             >
-              {loadingHistory ? <DataLoading compact label={`Loading ${symbol} price history`} detail="Preparing the selected chart range." /> : <div className="chart-ready"><StockPriceChart symbol={symbol} points={history ?? []} currency={q?.currency} /></div>}
+              {loadingHistory ? <DataLoading compact label={`Loading ${symbol} price history`} detail="Preparing the selected chart range." /> : <div className="stock-chart-frame chart-ready"><StockPriceChart symbol={symbol} points={history ?? []} currency={q?.currency} /></div>}
             </Card>
 
             <section className="financial-analysis" aria-labelledby="financial-analysis-title">
@@ -435,12 +435,12 @@ function StockPage() {
                 <div>
                   <p className="fundamentals-kicker">Complete financials</p>
                   <h2 id="financial-analysis-title" className="mt-0.5 text-lg font-semibold tracking-tight text-foreground">Financial statements</h2>
-                  <p className="mt-1 max-w-full text-xs text-muted-foreground" style={{ overflowWrap: "anywhere", whiteSpace: "normal" }}>Select one statement at a time for a focused period-by-period review.</p>
+                  <p className="mt-1 max-w-full text-xs text-muted-foreground" style={{ overflowWrap: "anywhere", whiteSpace: "normal" }}>Choose a statement and period for the focused review.</p>
                 </div>
                 {statement === "income" && (
-                  <div className="financial-period-toggle" aria-label="Profit and Loss period">
-                    <button type="button" onClick={() => updateFinancialPreference({ statement: "income", quarterly: false })} className={cn(!quarterly && "is-active")}>Yearly</button>
-                    <button type="button" onClick={() => updateFinancialPreference({ statement: "income", quarterly: true })} className={cn(quarterly && "is-active")}>Quarterly</button>
+                  <div className="financial-period-toggle grid w-full max-w-[13rem] grid-cols-2" style={{ display: "grid", gridTemplateColumns: "repeat(2, minmax(0, 1fr))", width: "100%", maxWidth: "13rem" }} aria-label="Profit and Loss period">
+                    <button type="button" style={{ width: "100%", minWidth: 0 }} onClick={() => updateFinancialPreference({ statement: "income", quarterly: false })} className={cn(!quarterly && "is-active")}>Yearly</button>
+                    <button type="button" style={{ width: "100%", minWidth: 0 }} onClick={() => updateFinancialPreference({ statement: "income", quarterly: true })} className={cn(quarterly && "is-active")}>Quarterly</button>
                   </div>
                 )}
               </div>
@@ -459,7 +459,7 @@ function StockPage() {
             </section>
 
             <Card title="Analyst coverage">
-              <div className="grid gap-3 sm:grid-cols-4">
+              <div className="analyst-target-grid grid gap-3 sm:grid-cols-4">
                 <Stat label="Low" value={fmtPrice(analyst?.targets.low, q?.currency)} />
                 <Stat label="Mean" value={fmtPrice(analyst?.targets.mean, q?.currency)} />
                 <Stat label="Median" value={fmtPrice(analyst?.targets.median, q?.currency)} />
@@ -525,7 +525,7 @@ function StockPage() {
             </Card>
           </div>
 
-          <div className="space-y-6">
+          <div className="stock-research-secondary-column space-y-6">
             <section className="fundamentals-card research-sheet-card overflow-hidden rounded-2xl border border-border bg-card" aria-labelledby="fundamentals-title">
               <div className="research-sheet-card-header flex items-center justify-between gap-3 border-b border-border px-4 py-3">
                 <div>

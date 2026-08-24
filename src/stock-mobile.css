@@ -32,10 +32,27 @@
   .stock-research-main {
     width: 100%;
     max-width: none;
+    padding-top: 1rem !important;
+    padding-bottom: 1.5rem !important;
   }
 
   .stock-research-hero {
     padding-top: 0;
+    gap: 1rem;
+  }
+
+  .stock-research-title {
+    margin-top: 0.5rem !important;
+    font-size: 1.5rem !important;
+  }
+
+  .stock-research-price {
+    margin-top: 0.55rem !important;
+    gap: 0.55rem !important;
+  }
+
+  .stock-research-price > span {
+    font-size: 2rem !important;
   }
 
   .financial-statement-tabs {
@@ -49,6 +66,7 @@
 
   .stock-research-metrics {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.4rem;
   }
 
   .stock-research-metrics .research-metric,
@@ -57,16 +75,49 @@
   }
 
   .research-sheet-card {
-    border-radius: 16px;
+    border-radius: 14px;
   }
 
   .research-sheet-card-header {
     align-items: flex-start;
-    padding: 0.75rem !important;
+    min-height: 0;
+    padding: 0.6rem 0.7rem !important;
   }
 
   .research-sheet-card > div:last-child {
-    padding: 0.75rem !important;
+    padding: 0.65rem 0.7rem !important;
+  }
+
+  .research-metric {
+    padding: 0.5rem 0.6rem !important;
+  }
+
+  .research-metric-label {
+    font-size: 9px !important;
+  }
+
+  .research-metric > p:last-child {
+    margin-top: 0.2rem !important;
+    font-size: 0.78rem !important;
+  }
+
+  .stock-research-content-grid {
+    margin-top: 1rem !important;
+    gap: 1rem !important;
+  }
+
+  .stock-research-primary-column,
+  .stock-research-secondary-column {
+    gap: 1rem !important;
+  }
+
+  .stock-chart-frame .stock-price-chart > div:last-child {
+    height: 200px !important;
+  }
+
+  .analyst-target-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.45rem !important;
   }
 
   .stock-price-chart {
@@ -148,6 +199,27 @@
     font-family: var(--font-mono);
     font-size: 9px;
     letter-spacing: 0.04em;
+  }
+
+  .fundamentals-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .fundamental-metric {
+    padding: 0.5rem 0.6rem !important;
+  }
+
+  .fundamental-metric-label {
+    font-size: 8px;
+  }
+
+  .fundamental-metric-value {
+    margin-top: 0.2rem;
+    font-size: 10px;
+  }
+
+  .fundamentals-context {
+    padding: 0.65rem 0.7rem 0.75rem;
   }
 }
 

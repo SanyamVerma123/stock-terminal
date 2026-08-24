@@ -39,6 +39,10 @@ describe("stock research mobile layout", () => {
     expect(chartSource).toContain("allowEscapeViewBox={{ x: false, y: false }}");
     expect(chartSource).toContain("reverseDirection={{ x: true, y: true }}");
     expect(mobileStyles).toContain(".stock-price-chart .recharts-tooltip-wrapper");
+    expect(mobileStyles).toContain(".stock-research-content-grid");
+    expect(mobileStyles).toContain(".analyst-target-grid");
+    expect(mobileStyles).toContain(".fundamentals-grid");
+    expect(pageSource).toContain('gridTemplateColumns: "repeat(2, minmax(0, 1fr))"');
   });
 
   it("uses a structured Screener-inspired fundamentals snapshot above detailed statements", () => {
