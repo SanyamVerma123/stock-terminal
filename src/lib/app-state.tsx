@@ -882,6 +882,13 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       theme,
       setTheme: (next) => {
         const normalizedTheme = next === "system" ? "paper" : next;
+        if (typeof window !== "undefined" && !window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+          const root = document.documentElement;
+          root.classList.remove("theme-transitioning");
+          void root.offsetWidth;
+          root.classList.add("theme-transitioning");
+          window.setTimeout(() => root.classList.remove("theme-transitioning"), 260);
+        }
         setThemeState(normalizedTheme);
         saveLocalState("sc:theme", normalizedTheme);
       },

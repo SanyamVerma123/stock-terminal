@@ -165,3 +165,7 @@
 - [x] Keep all eight mobile chart-range labels—including MAX—fully visible within the Price card.
 - [x] Record mobile preview verification: the 360px HCLTECH page now uses viewport-bounded research modules, visual panels, and chart surfaces. All eight chart periods—including MAX—are visible inside the Price card, and the Yearly/Quarterly controls remain evenly contained. Only designated financial tables retain local sideways scrolling.
 - [x] Record theme verification: the visible theme control now maps White to the bright light token set, Paper to the warm paper token set, and Black to the terminal token set. Legacy System preferences are migrated to Paper, while theme changes persist to on-device storage. Strict TypeScript and all 60 regression tests pass.
+- [x] Inspect current theme switcher and global motion rules for a safe transition insertion point.
+- [x] Add a smooth White, Paper, and Black theme transition that respects reduced-motion preferences.
+- [x] Validate the transition and publish the updated theme-switch interaction.
+- [x] Record transition verification: theme selection adds a short 260ms transition state only for users without a reduced-motion preference, then removes it automatically. Page, shell, card, header, sidebar, market, and financial-visual color surfaces animate over a restrained 180–240ms range, while the active Paper switcher state remains contained. Strict TypeScript and all 60 regression tests pass.

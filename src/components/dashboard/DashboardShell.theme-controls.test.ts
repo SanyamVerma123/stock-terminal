@@ -4,6 +4,7 @@ import { describe, expect, it } from "vitest";
 const headerSource = readFileSync(new URL("./DashboardShell.tsx", import.meta.url), "utf8");
 const stateSource = readFileSync(new URL("../../lib/app-state.tsx", import.meta.url), "utf8");
 const styleSource = readFileSync(new URL("../../styles.css", import.meta.url), "utf8");
+const themeControlSource = readFileSync(new URL("../../theme-controls.css", import.meta.url), "utf8");
 
 describe("dashboard header theme controls", () => {
   it("renders persisted White, Paper, and Black theme choices in the top-right header controls", () => {
@@ -21,6 +22,8 @@ describe("dashboard header theme controls", () => {
     expect(stateSource).toContain('theme === "system" ? "paper" : theme');
     expect(stateSource).toContain('storedTheme === "system"');
     expect(stateSource).toContain('next === "system" ? "paper" : next');
+    expect(stateSource).toContain('root.classList.add("theme-transitioning")');
+    expect(stateSource).toContain("prefers-reduced-motion: reduce");
     expect(stateSource).not.toContain("prefers-color-scheme: dark");
     expect(stateSource).toContain("document.documentElement.style.colorScheme");
   });
@@ -29,5 +32,7 @@ describe("dashboard header theme controls", () => {
     expect(styleSource).toContain(".light {");
     expect(styleSource).toContain(".paper {");
     expect(styleSource).toContain(".terminal {");
+    expect(themeControlSource).toContain("html.theme-transitioning");
+    expect(themeControlSource).toContain("prefers-reduced-motion:no-preference");
   });
 });
