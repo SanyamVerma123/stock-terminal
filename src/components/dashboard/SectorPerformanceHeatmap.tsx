@@ -138,6 +138,13 @@ export function SectorPerformanceHeatmap() {
   const canDrawWeightedMap = coverage >= 2;
   const [selectedSector, setSelectedSector] = useState<string | null>(null);
   const selected = selectedSector ? resolved.find(({ sectorKey }) => sectorKey === selectedSector) : undefined;
+  const { data: selectedDetail } = useQuery({
+    queryKey: ["sector-map-selected-detail", cfg.id, selectedSector],
+    queryFn: () => overviewFn({ data: { sectorKey: selectedSector!, region: cfg.id, detailIndustryCoverage: true } }),
+    enabled: Boolean(selectedSector),
+    staleTime: 300_000,
+    refetchOnWindowFocus: false,
+  });
   const selectedSignal = selectedSector ? signals.find((signal) => signal.sectorKey === selectedSector) : undefined;
   const selectedQuote = selectedSignal?.symbol ? quoteBySymbol.get(selectedSignal.symbol) : undefined;
 
@@ -224,7 +231,7 @@ export function SectorPerformanceHeatmap() {
           <div className="grid grid-cols-3 gap-2 text-right">
             <span><small>Market cap</small><b>{fmtCompact(selected.value?.marketCap)}</b></span>
             <span><small>1D move</small><b className={(selectedQuote?.changePercent ?? 0) >= 0 ? "text-positive" : "text-negative"}>{selectedQuote?.changePercent === null || selectedQuote?.changePercent === undefined ? "—" : `${selectedQuote.changePercent >= 0 ? "+" : ""}${selectedQuote.changePercent.toFixed(2)}%`}</b></span>
-            <span><small>Companies</small><b>{selected.value?.companiesCount?.toLocaleString() ?? "—"}</b></span>
+            <span><small>{selectedDetail?.source === "tracked" ? "Tracked companies" : "Companies"}</small><b>{(selectedDetail?.companiesCount ?? selected.value?.companiesCount)?.toLocaleString() ?? "—"}</b></span>
           </div>
         </div>
       )}

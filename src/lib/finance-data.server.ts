@@ -25,7 +25,7 @@ import type {
   StockSummary,
 } from "./finance-types";
 import { MARKET_INDICES } from "./finance-types";
-import { CRYPTO_SYMS, FOREX_SYMS, MARKETS } from "./markets";
+import { CRYPTO_SYMS, FOREX_SYMS, MARKETS, sectorLabel } from "./markets";
 import { fmtPrice } from "./format";
 import { UNIVERSE } from "./universe";
 import {
@@ -897,9 +897,9 @@ async function fetchProviderEquityRows(input: EquityScreenInput, timeoutMs = 6_5
 }
 
 async function enrichScreenerRows(rowsToEnrich: ScreenerRow[]) {
-  const unresolved = rowsToEnrich.filter((row) => !row.sector || !row.industry).slice(0, 40);
+  const unresolved = rowsToEnrich.filter((row) => !row.sector || !row.industry).slice(0, 50);
   if (unresolved.length === 0) return rowsToEnrich;
-  const metadata = await fetchClassify(unresolved.map((row) => row.symbol));
+  const metadata = await fetchClassify(unresolved.map((row) => row.symbol), 50);
   return rowsToEnrich.map((row) => {
     const match = metadata.find((item) => item.symbol === row.symbol);
     if (!match) return row;
@@ -910,6 +910,38 @@ async function enrichScreenerRows(rowsToEnrich: ScreenerRow[]) {
       industry: row.industry ?? canonicalIndustryKey(match.industry),
     };
   });
+}
+
+function screenerRowsToGenericTable(screenerRows: ScreenerRow[]): GenericTable {
+  return {
+    columns: ["Symbol", "Name", "Sector", "Industry", "Price", "Today", "Market Cap"],
+    rows: screenerRows.map((row) => ({
+      Symbol: row.symbol,
+      Name: row.name,
+      Sector: row.sector ? sectorLabel(row.sector) : "—",
+      Industry: row.industry ? sectorLabel(row.industry) : "—",
+      Price: row.price === null ? "—" : fmtPrice(row.price, row.currency),
+      Today: row.changePercent === null ? "—" : `${row.changePercent >= 0 ? "+" : ""}${row.changePercent.toFixed(2)}%`,
+      "Market Cap": compactMarketCap(row.marketCap),
+    })),
+  };
+}
+
+/** Resolves one selected sector through the provider screener when its aggregate endpoint has no constituents. */
+async function fetchProviderSectorRows(sector: string, region: string) {
+  const raw = await resolveWithin(
+    callMcpTool("screen_equities", {
+      region,
+      sector: providerScreenValue(sector, "sector"),
+      size: 50,
+      sort_field: "intradaymarketcap",
+      sort_ascending: false,
+    }).catch(() => null),
+    null,
+    9_000,
+  );
+  const returned = raw ? toScreenerRows(pick(raw, "quotes") ?? pick(raw, "data")) : [];
+  return returned.length > 0 ? enrichScreenerRows(returned) : [];
 }
 
 async function quotesToStaticRows(profiles: StaticSectorProfile[], size: number) {
@@ -975,7 +1007,7 @@ export async function fetchScreenEquities(input: EquityScreenInput): Promise<Scr
   if (input.industry || input.sector) {
     const overview = input.industry
       ? await fetchIndustryOverview(input.industry, input.region ?? "US")
-      : (await fetchSectorOverview(input.sector!, input.region ?? "US")).topCompanies;
+      : (await fetchSectorOverview(input.sector!, input.region ?? "US", { detailIndustryCoverage: true })).topCompanies;
     const providerRows = await enrichOverviewScreenerRows(overviewTableToScreenerRows(overview, input));
     const filteredOverviewRows = filterScreenerRows(providerRows, input);
     if (filteredOverviewRows.length > 0) {
@@ -1410,10 +1442,13 @@ export async function fetchSectorOverview(
     : {};
   let providerTopCompanies = toGenericTable(pick(raw, "top_companies"), 100);
   let providerIndustries = toGenericTable(pick(raw, "industries"), 100);
+  if (options.detailIndustryCoverage && providerTopCompanies.rows.length === 0) {
+    const liveSectorRows = await fetchProviderSectorRows(canonicalSector, region);
+    if (liveSectorRows.length > 0) providerTopCompanies = screenerRowsToGenericTable(liveSectorRows);
+  }
   if (
     options.detailIndustryCoverage &&
-    providerTopCompanies.rows.length > 0 &&
-    providerIndustries.rows.length === 0
+    providerTopCompanies.rows.length > 0
   ) {
     const classifications = await cachedSectorClassifications(
       region,
@@ -1421,7 +1456,7 @@ export async function fetchSectorOverview(
       sectorTableSymbols(providerTopCompanies),
     );
     const derived = deriveIndustryCoverageFromClassifications(providerTopCompanies, classifications);
-    if (derived.industries.rows.length > 0) {
+    if (derived.industries.rows.length > providerIndustries.rows.length) {
       providerTopCompanies = derived.topCompanies;
       providerIndustries = derived.industries;
     }
