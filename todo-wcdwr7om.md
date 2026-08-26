@@ -169,3 +169,9 @@
 - [x] Add a smooth White, Paper, and Black theme transition that respects reduced-motion preferences.
 - [x] Validate the transition and publish the updated theme-switch interaction.
 - [x] Record transition verification: theme selection adds a short 260ms transition state only for users without a reduced-motion preference, then removes it automatically. Page, shell, card, header, sidebar, market, and financial-visual color surfaces animate over a restrained 180–240ms range, while the active Paper switcher state remains contained. Strict TypeScript and all 60 regression tests pass.
+- [x] Inspect the configured market-data connection, current provider availability, and client loading behavior.
+- [x] Measure quote, screener, sector, and stock-detail request paths to identify the main data-delay bottleneck.
+- [x] Improve data delivery and truthful loading/error states without fabricating market values.
+- [x] Validate the resolved data-loading behavior and publish the improvement.
+- [x] Record data-loading diagnosis: direct provider calls returned usable data but took 3.29 seconds for a sector overview, 3.40 seconds for a five-symbol batch quote, 4.06 seconds for a single India quote, and 5.05 seconds for a ranked India screener. The app compounded that latency through duplicate screen-equity requests, serial classification waves, stale-time-zero refetches, and full loading replacement during background updates.
+- [x] Record delivery improvements: the MCP adapter now reuses matching in-flight requests and short-lived truthful cached results, unfiltered screeners make one provider call rather than two, sector classifications run in bounded parallel waves, and movers/screeners preserve their current data during refreshes. Pro Screener waits for the explicit Run screen action after filters change. Strict TypeScript and all 63 regression tests pass.

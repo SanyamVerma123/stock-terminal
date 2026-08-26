@@ -7,6 +7,35 @@ type JsonRpcResponse = {
 
 let rpcId = 0;
 
+type CachedToolResult = { expiresAt: number; value: unknown };
+
+const toolResultCache = new Map<string, CachedToolResult>();
+const pendingToolCalls = new Map<string, Promise<unknown>>();
+
+const TOOL_CACHE_TTL_MS: Partial<Record<string, number>> = {
+  get_price_snapshot: 15_000,
+  batch_snapshots: 15_000,
+  get_market_summary: 15_000,
+  screen_equities: 20_000,
+  screen_predefined: 20_000,
+  batch_price_history: 60_000,
+  get_price_history: 60_000,
+  get_sector_overview: 120_000,
+  get_industry_overview: 120_000,
+  get_company_info: 300_000,
+  get_income_statement: 300_000,
+  get_balance_sheet: 300_000,
+  get_cash_flow: 300_000,
+  get_recommendations: 300_000,
+  get_analyst_price_targets: 300_000,
+  get_earnings_history: 300_000,
+  list_sectors: 3_600_000,
+};
+
+function cacheKey(name: string, args: Record<string, unknown>) {
+  return `${name}:${JSON.stringify(Object.entries(args).sort(([left], [right]) => left.localeCompare(right)))}`;
+}
+
 function parseSse(text: string): JsonRpcResponse {
   for (const line of text.split("\n")) {
     if (line.startsWith("data: ")) {
@@ -36,6 +65,26 @@ export async function callMcpTool<T = unknown>(
   for (const [k, v] of Object.entries(args)) {
     if (v !== undefined && v !== null && v !== "") cleaned[k] = v;
   }
+
+  const key = cacheKey(name, cleaned);
+  const cached = toolResultCache.get(key);
+  if (cached && cached.expiresAt > Date.now()) return cached.value as T;
+  const inFlight = pendingToolCalls.get(key);
+  if (inFlight) return inFlight as Promise<T>;
+
+  const pending = executeMcpTool<T>(name, cleaned);
+  pendingToolCalls.set(key, pending);
+  try {
+    const value = await pending;
+    const ttl = TOOL_CACHE_TTL_MS[name];
+    if (ttl) toolResultCache.set(key, { value, expiresAt: Date.now() + ttl });
+    return value;
+  } finally {
+    pendingToolCalls.delete(key);
+  }
+}
+
+async function executeMcpTool<T>(name: string, cleaned: Record<string, unknown>): Promise<T> {
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), 10_000);

@@ -155,10 +155,10 @@ export function MoversView({ initialName = "day_gainers" }: { initialName?: stri
     queryKey: ["fresh-fast-movers", cfg.region, 25],
     queryFn: () => fastMoversFn({ data: { size: 25, region: cfg.region } }),
     enabled: primaryName !== null,
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
-    refetchInterval: 30_000,
+    staleTime: 20_000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
+    refetchInterval: 60_000,
     refetchIntervalInBackground: false,
   });
   const {
@@ -169,9 +169,9 @@ export function MoversView({ initialName = "day_gainers" }: { initialName?: stri
     queryKey: ["predefined-mover", name, cfg.region],
     queryFn: () => runPresetFn({ data: { name, size: 25, region: cfg.region } }),
     enabled: primaryName === null,
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+    staleTime: 20_000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
     refetchInterval: 60_000,
     refetchIntervalInBackground: false,
   });
@@ -197,7 +197,7 @@ export function MoversView({ initialName = "day_gainers" }: { initialName?: stri
         ))}
       </div>
       <Panel title={name.replace(/_/g, " ")} subtitle="Fresh provider-ranked market screener">
-        {isLoading || isFetching || !data || data.length === 0 ? <DataLoading compact label={`Ranking ${name.replace(/_/g, " ")}`} detail="Retrieving the provider-defined live ranked universe and quote fields for this screener." /> : <MoverCardDeck rows={data} />}
+        {isLoading || !data || data.length === 0 ? <DataLoading compact label={`Ranking ${name.replace(/_/g, " ")}`} detail="Retrieving the provider-defined live ranked universe and quote fields for this screener." /> : <MoverCardDeck rows={data} />}
       </Panel>
     </div>
   );
@@ -274,9 +274,9 @@ export function SavedScreenerView({ screenerId, filters, name }: { screenerId: s
   const { data, isLoading } = useQuery({
     queryKey: ["saved-screen", JSON.stringify(params)],
     queryFn: () => runFn({ data: params }),
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+    staleTime: 20_000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
   return <div className="space-y-4">
     <div className="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-primary/25 bg-card/55 p-4">
@@ -303,24 +303,26 @@ export function ProScreenerView() {
   });
 
   const [f, setF] = useState<ScreenerFilters>({ ...EMPTY_FILTERS, region: cfg.region });
+  const [appliedFilters, setAppliedFilters] = useState<ScreenerFilters>({ ...EMPTY_FILTERS, region: cfg.region });
   const [runs, setRuns] = useState(0);
 
   useEffect(() => {
-    setF((current) =>
-      current.region === cfg.region ? current : { ...current, region: cfg.region },
-    );
+    const withMarketRegion = (current: ScreenerFilters) =>
+      current.region === cfg.region ? current : { ...current, region: cfg.region };
+    setF(withMarketRegion);
+    setAppliedFilters(withMarketRegion);
   }, [cfg.region]);
   const [name, setName] = useState("");
   const set = <K extends keyof ScreenerFilters>(k: K, v: ScreenerFilters[K]) =>
     setF((p) => ({ ...p, [k]: v }));
 
-  const params = toParams(f);
+  const params = toParams(appliedFilters);
   const { data, isLoading, isFetching } = useQuery({
     queryKey: ["proscreen", runs, JSON.stringify(params)],
     queryFn: () => runFn({ data: params }),
-    staleTime: 0,
-    refetchOnMount: "always",
-    refetchOnWindowFocus: true,
+    staleTime: 20_000,
+    refetchOnMount: false,
+    refetchOnWindowFocus: false,
   });
 
   const sectorOptions = Array.from(
@@ -493,14 +495,21 @@ export function ProScreenerView() {
 
           <button
             type="button"
-            onClick={() => setRuns((r) => r + 1)}
+            onClick={() => {
+              setAppliedFilters({ ...f });
+              setRuns((r) => r + 1);
+            }}
             className="h-9 rounded-lg bg-primary px-4 text-sm font-medium text-primary-foreground"
           >
             Run screen
           </button>
           <button
             type="button"
-            onClick={() => setF({ ...EMPTY_FILTERS, region: cfg.region })}
+            onClick={() => {
+              const reset = { ...EMPTY_FILTERS, region: cfg.region };
+              setF(reset);
+              setAppliedFilters(reset);
+            }}
             className="h-9 rounded-lg border border-border px-4 text-sm text-muted-foreground hover:text-foreground"
           >
             Reset
@@ -530,9 +539,12 @@ export function ProScreenerView() {
               key={s.id}
               className="inline-flex items-center gap-2 rounded-full border border-border px-3 py-1 text-xs text-muted-foreground"
             >
-              <button
-                type="button"
-                onClick={() => setF(s.filters)}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setF(s.filters);
+                    setAppliedFilters(s.filters);
+                  }}
                 className="hover:text-foreground"
               >
                 {s.name}
@@ -550,7 +562,7 @@ export function ProScreenerView() {
       </div>
 
       <Panel title="Screen results" subtitle="Live equity screener from the market data service">
-        <ScreenerTable rows={data} loading={isLoading || isFetching} />
+        <ScreenerTable rows={data} loading={isLoading && !data} />
       </Panel>
     </div>
   );
@@ -724,7 +736,7 @@ export function SectorsView() {
     queryFn: () => overviewFn({ data: { sectorKey: sector, region: cfg.id, detailIndustryCoverage: true } }),
     staleTime: 300_000,
     refetchOnWindowFocus: false,
-    refetchInterval: 30_000,
+    refetchInterval: 120_000,
     refetchIntervalInBackground: false,
   });
   const { data: ind, isLoading: isIndustryLoading } = useQuery({

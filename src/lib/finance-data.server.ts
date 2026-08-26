@@ -877,22 +877,21 @@ function screenerRequest(input: EquityScreenInput, includeClassification: boolea
 }
 
 async function fetchProviderEquityRows(input: EquityScreenInput, timeoutMs = 6_500) {
-  const [raw, broadRaw] = await Promise.all([
-    resolveWithin(
-      callMcpTool("screen_equities", screenerRequest(input, true)).catch(() => null),
-      null,
-      timeoutMs,
-    ),
-    resolveWithin(
-      callMcpTool("screen_equities", screenerRequest(input, false)).catch(() => null),
-      null,
-      timeoutMs,
-    ),
-  ]);
-  const classifiedRows = raw ? toScreenerRows(pick(raw, "quotes") ?? pick(raw, "data")) : [];
-  const classifiedMatches = filterScreenerRows(classifiedRows, input);
-  if (classifiedMatches.length > 0) return classifiedMatches;
+  const needsClassification = Boolean(input.sector || input.industry);
+  const primaryRaw = await resolveWithin(
+    callMcpTool("screen_equities", screenerRequest(input, needsClassification)).catch(() => null),
+    null,
+    timeoutMs,
+  );
+  const primaryRows = primaryRaw ? toScreenerRows(pick(primaryRaw, "quotes") ?? pick(primaryRaw, "data")) : [];
+  const primaryMatches = filterScreenerRows(primaryRows, input);
+  if (primaryMatches.length > 0 || !needsClassification) return primaryMatches;
 
+  const broadRaw = await resolveWithin(
+    callMcpTool("screen_equities", screenerRequest(input, false)).catch(() => null),
+    null,
+    timeoutMs,
+  );
   const broadRows = broadRaw ? toScreenerRows(pick(broadRaw, "quotes") ?? pick(broadRaw, "data")) : [];
   return filterScreenerRows(broadRows, input);
 }
@@ -1075,10 +1074,12 @@ async function cachedSectorClassifications(region: string, sector: string, symbo
 /** Sector / industry classification used to auto-group the watchlist. */
 export async function fetchClassify(symbols: string[], limit = 40): Promise<TickerMeta[]> {
   const selected = symbols.slice(0, limit);
-  const classified: TickerMeta[] = [];
-  for (let start = 0; start < selected.length; start += 8) {
+  const batches = Array.from({ length: Math.ceil(selected.length / 8) }, (_, index) =>
+    selected.slice(index * 8, index * 8 + 8),
+  );
+  const classifyBatch = async (batch: string[]) => {
     const settled = await Promise.allSettled(
-      selected.slice(start, start + 8).map(async (symbol) => {
+      batch.map(async (symbol) => {
         const raw = await callMcpTool("get_company_info", { ticker: symbol });
         const info = isRecord(pick(raw, "info"))
           ? (pick(raw, "info") as Record<string, unknown>)
@@ -1095,7 +1096,12 @@ export async function fetchClassify(symbols: string[], limit = 40): Promise<Tick
         } satisfies TickerMeta;
       }),
     );
-    classified.push(...settled.flatMap((result) => (result.status === "fulfilled" ? [result.value] : [])));
+    return settled.flatMap((result) => (result.status === "fulfilled" ? [result.value] : []));
+  };
+  const classified: TickerMeta[] = [];
+  for (let start = 0; start < batches.length; start += 2) {
+    const wave = await Promise.all(batches.slice(start, start + 2).map(classifyBatch));
+    classified.push(...wave.flat());
   }
   return classified;
 }
