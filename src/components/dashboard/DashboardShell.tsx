@@ -145,9 +145,9 @@ function getMarketSessionStatus(market: MarketId) {
 function HeaderThemeSwitcher() {
   const { theme, setTheme } = useAppState();
   const options = [
-    { value: "system" as const, label: "Use system theme", visibleLabel: "System", icon: Monitor },
-    { value: "paper" as const, label: "Use light theme", visibleLabel: "Light", icon: Sun },
-    { value: "terminal" as const, label: "Use dark theme", visibleLabel: "Dark", icon: Moon },
+    { value: "light" as const, label: "Use white theme", visibleLabel: "White", icon: Sun },
+    { value: "paper" as const, label: "Use paper theme", visibleLabel: "Paper", icon: Monitor },
+    { value: "terminal" as const, label: "Use black theme", visibleLabel: "Black", icon: Moon },
   ];
   return (
     <div className="header-theme-switcher" role="radiogroup" aria-label="Color theme">

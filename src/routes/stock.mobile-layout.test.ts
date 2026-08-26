@@ -43,6 +43,7 @@ describe("stock research mobile layout", () => {
     expect(mobileStyles).toContain(".analyst-target-grid");
     expect(mobileStyles).toContain(".fundamentals-grid");
     expect(pageSource).toContain('gridTemplateColumns: "repeat(2, minmax(0, 1fr))"');
+    expect(mobileStyles).toContain("grid-template-columns: repeat(8, minmax(0, 1fr))");
   });
 
   it("uses a structured Screener-inspired fundamentals snapshot above detailed statements", () => {

@@ -423,9 +423,11 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
     setRefreshState(loadLocalState<number>("sc:refresh", 60));
     const storedTheme = loadLocalState<Theme>("sc:theme", "paper");
     setThemeState(
-      (["terminal", "light", "paper", "neuborder", "system"] as Theme[]).includes(storedTheme)
-        ? storedTheme
-        : "paper",
+      storedTheme === "system"
+        ? "paper"
+        : (["terminal", "light", "paper", "neuborder"] as Theme[]).includes(storedTheme)
+          ? storedTheme
+          : "paper",
     );
   }, []);
 
@@ -510,8 +512,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       saveLocalState("sc:refresh", state.refreshSeconds);
     }
     if (state.theme) {
-      setThemeState(state.theme);
-      saveLocalState("sc:theme", state.theme);
+      const normalizedTheme = state.theme === "system" ? "paper" : state.theme;
+      setThemeState(normalizedTheme);
+      saveLocalState("sc:theme", normalizedTheme);
     }
     if (state.aiPreferences) {
       setApiKeysState((previous) => {
@@ -878,8 +881,9 @@ export function AppStateProvider({ children }: { children: ReactNode }) {
       },
       theme,
       setTheme: (next) => {
-        setThemeState(next);
-        saveLocalState("sc:theme", next);
+        const normalizedTheme = next === "system" ? "paper" : next;
+        setThemeState(normalizedTheme);
+        saveLocalState("sc:theme", normalizedTheme);
       },
       browserNotificationPermission,
       requestBrowserNotifications,

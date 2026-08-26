@@ -283,11 +283,17 @@
 
   .price-range-tabs {
     width: 100%;
-    flex-wrap: nowrap !important;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    padding-bottom: 2px;
-    -webkit-overflow-scrolling: touch;
+    display: grid !important;
+    grid-template-columns: repeat(8, minmax(0, 1fr));
+    gap: 0 !important;
+    overflow: hidden;
+    padding-bottom: 0;
+  }
+
+  .price-range-tabs button {
+    min-width: 0;
+    padding: 0.35rem 0 !important;
+    font-size: 10px !important;
   }
 
   .research-sheet-card p {
